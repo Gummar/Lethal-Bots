@@ -120,7 +120,7 @@ namespace LethalBots.Patches.MapHazardsPatches
             else
             {
                 Plugin.LogDebug($"SyncKillLethalBot from turret for LOCAL client #{lethalBotAI.NetworkManager.LocalClientId}, lethalBot object: Bot #{lethalBotAI.BotId}");
-                lethalBotAI.NpcController.Npc.KillPlayer(turret.aimPoint.forward * 40f, spawnBody: true, CauseOfDeath.Gunshots);
+                player.KillPlayer(turret.aimPoint.forward * 40f, spawnBody: true, CauseOfDeath.Gunshots);
             }
 
             return null;
