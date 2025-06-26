@@ -14,6 +14,8 @@ namespace LethalBots.Patches.MapHazardsPatches
     {
         // TODO: This needs to be changed to use a transpiler since we use the player collider
         // NEEDTOVALIDATE: Should I use a transpiler or do my own logic here.......
+        // It may be better to use postfixes and prefixes since I can allow players to toggle 
+        // whether they want the bots to take damage from traps!
         [HarmonyPatch("OnTriggerStay")]
         [HarmonyPostfix]
         static void OnTriggerStay_PostFix(SpikeRoofTrap __instance, Collider other)
