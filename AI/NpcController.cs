@@ -1819,7 +1819,7 @@ namespace LethalBots.AI
             foreach (PlayerControllerB player in instanceSOR.allPlayerScripts)
             {
                 if (!LethalBotManager.Instance.IsPlayerLethalBot(player) 
-                    && (!Plugin.IsModLethalInternsLoaded || !LethalBotManager.Instance.IsPlayerIntern(player)))
+                    && (!Plugin.IsModLethalInternsLoaded || !LethalBotManager.IsPlayerIntern(player)))
                 {
                     if ((player.transform.position - thisPosition).sqrMagnitude < distance * distance)
                     {

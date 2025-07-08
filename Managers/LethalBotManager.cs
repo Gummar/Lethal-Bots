@@ -1869,7 +1869,7 @@ namespace LethalBots.Managers
         /// </remarks>
         /// <param name="player"></param>
         /// <returns></returns>
-        internal bool IsPlayerIntern(PlayerControllerB player)
+        internal static bool IsPlayerIntern(PlayerControllerB player)
         {
             if (player == null) return false;
             return LethalInternship.Managers.InternManager.Instance.IsPlayerIntern(player);

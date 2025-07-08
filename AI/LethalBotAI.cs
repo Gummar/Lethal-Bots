@@ -7235,7 +7235,7 @@ namespace LethalBots.AI
                 if (!player.isPlayerControlled
                     || player.isPlayerDead
                     || LethalBotManager.Instance.IsPlayerLethalBot(player) 
-                    || (Plugin.IsModLethalInternsLoaded && LethalBotManager.Instance.IsPlayerIntern(player)))
+                    || (Plugin.IsModLethalInternsLoaded && LethalBotManager.IsPlayerIntern(player)))
                 {
                     continue;
                 }
