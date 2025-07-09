@@ -152,7 +152,7 @@ namespace LethalBots.AI.AIStates
                     }
                     else
                     {
-                        // Wait here until its safe to move to the ship
+                        // Wait here until its safe to move
                         waitForSafePathTimer += ai.AIIntervalTime;
                         ai.StopMoving();
                         npcController.OrderToStopSprint();
