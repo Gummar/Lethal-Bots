@@ -448,7 +448,7 @@ namespace LethalBots.AI.AIStates
         /// <summary>
         /// A class used by ChooseFleeingNodeFromPosition to asses the safety of a node
         /// </summary>
-        private class NodeSafety : IComparable<NodeSafety>, IEquatable<NodeSafety>
+        private sealed class NodeSafety : IComparable<NodeSafety>, IEquatable<NodeSafety>
         {
             public GameObject node;
             public bool isPathOutOfSight;
@@ -529,7 +529,7 @@ namespace LethalBots.AI.AIStates
             {
                 if (left is null)
                 {
-                    return right is null;
+                    return false;
                 }
                 return left.CompareTo(right) > 0;
             }
