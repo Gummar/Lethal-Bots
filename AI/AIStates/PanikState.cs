@@ -148,7 +148,7 @@ namespace LethalBots.AI.AIStates
                 // if we have been waiting for a bit give up and head back!
                 if (ShouldReturnToShip())
                 {
-                     ai.State = new ReturnToShipState(this);
+                    ai.State = new ReturnToShipState(this);
                     return;
                 }
                 else if (calmDownTimer > Const.FLEEING_CALM_DOWN_TIME + 60f)
