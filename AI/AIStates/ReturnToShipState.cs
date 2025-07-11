@@ -32,6 +32,24 @@ namespace LethalBots.AI.AIStates
             this.targetShipPos = RoundManager.Instance.GetNavMeshPosition(ourShip[Random.Range(0, ourShip.Length - 1)].position, default, 2.7f);
         }
 
+        public ReturnToShipState(LethalBotAI ai) : base(ai)
+        {
+            CurrentState = EnumAIStates.ReturnToShip;
+
+            // Lets pick a random node on the ship to go to
+            Transform[] ourShip = StartOfRound.Instance.insideShipPositions;
+            this.targetShipPos = RoundManager.Instance.GetNavMeshPosition(ourShip[Random.Range(0, ourShip.Length - 1)].position, default, 2.7f);
+        }
+
+        public override void OnEnterState()
+        {
+            // It doesn't matter if we had started the state before,
+            // we should always recheck the nearest entrance
+            targetEntrance = FindClosestEntrance(this.targetShipPos);
+            findEntranceTimer = 0f;
+            base.OnEnterState();
+        }
+
         public override void DoAI()
         {
             // Check for enemies

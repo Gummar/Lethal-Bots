@@ -7,10 +7,9 @@ namespace LethalBots.AI.AIStates
     public class ChargeHeldItemState : AIState
     {
         private GrabbableObject? itemToCharge;
-        public ChargeHeldItemState(AIState oldState, GrabbableObject? itemToCharge, AIState? changeToOnEnd = null) : base(oldState)
+        public ChargeHeldItemState(AIState oldState, GrabbableObject? itemToCharge, AIState? changeToOnEnd = null) : base(oldState, changeToOnEnd)
         {
             CurrentState = EnumAIStates.ChargeHeldItem;
-            previousAIState = changeToOnEnd ?? oldState;
             if (itemToCharge != null)
             {
                 this.itemToCharge = itemToCharge;

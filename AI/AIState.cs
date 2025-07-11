@@ -68,9 +68,9 @@ namespace LethalBots.AI
         /// Constructor from another state
         /// </summary>
         /// <param name="oldState"></param>
-        protected AIState(AIState oldState) : this(oldState.ai)
+        protected AIState(AIState oldState, AIState? changeToOnEnd = null) : this(oldState.ai, changeToOnEnd)
         {
-            this.previousAIState = oldState;
+            this.previousAIState = changeToOnEnd ?? oldState;
             this.previousState = oldState.GetAIState();
             this.targetLastKnownPosition = oldState.targetLastKnownPosition;
             this.TargetItem = oldState.TargetItem;
@@ -87,13 +87,14 @@ namespace LethalBots.AI
         /// </summary>
         /// <param name="ai"></param>
         /// <exception cref="System.NullReferenceException"><c>LethalBotAI</c> null in parameters</exception>
-        protected AIState(LethalBotAI ai)
+        protected AIState(LethalBotAI ai, AIState? changeToOnEnd = null)
         {
             if (ai == null)
             {
                 throw new System.NullReferenceException("Enemy AI is null.");
             }
 
+            this.previousAIState = changeToOnEnd;
             this.ai = ai;
 
             this.npcController = ai.NpcController;
@@ -471,9 +472,10 @@ namespace LethalBots.AI
         /// <summary>
         /// Checks if the entrance is safe to use.<br/>
         /// </summary>
-        /// <param name="entrance"></param>
+        /// <param name="entrance">The target entance to test</param>
+        /// <param name="useEntrancePoint">Should we use the entrance point rather than the exit?</param>
         /// <returns></returns>
-        public bool IsEntranceSafe(EntranceTeleport? entrance)
+        public bool IsEntranceSafe(EntranceTeleport? entrance, bool useEntrancePoint = false)
         {
             if (entrance == null 
                 || !entrance.FindExitPoint())
@@ -485,16 +487,17 @@ namespace LethalBots.AI
             if (entranceSafetyCache.TryGetValue(entrance, out var cachedSafety))
             {
                 // If the last safety check was less than 1 second ago, we can use the cached value
-                if (Time.timeSinceLevelLoad - cachedSafety.lastSafetyCheck < 1f)
+                if ((Time.timeSinceLevelLoad - cachedSafety.lastSafetyCheck) < 1f)
                 {
                     return cachedSafety.isSafe;
                 }
             }
 
             // If we don't have a cached value, we need to check if the entrance is safe
+            Vector3 entrancePoint = useEntrancePoint ? entrance.entrancePoint.position : entrance.exitPoint.position;
             foreach (EnemyAI enemy in RoundManager.Instance.SpawnedEnemies)
             {
-                if ((enemy.transform.position - entrance.exitPoint.transform.position).sqrMagnitude < 7.7f * 7.7f && !enemy.isEnemyDead)
+                if (!enemy.isEnemyDead && (enemy.transform.position - entrancePoint).sqrMagnitude < 7.7f * 7.7f)
                 {
                     // We found an enemy near the exit point, so we should not use this entrance!
                     entranceSafetyCache[entrance] = (false, Time.timeSinceLevelLoad);

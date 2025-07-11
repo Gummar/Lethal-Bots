@@ -69,7 +69,7 @@ namespace LethalBots.AI.AIStates
                     // Why run when we can fight back!
                     if (ai.HasCombatWeapon() && ai.CanEnemyBeKilled(this.currentEnemy))
                     {
-                        ai.State = new FightEnemyState(this, this.currentEnemy);
+                        ai.State = new FightEnemyState(this, this.currentEnemy, this.previousAIState);
                         return;
                     }
 
@@ -130,7 +130,7 @@ namespace LethalBots.AI.AIStates
             }
 
             // Are we waiting for the enemy to leave the entrance?
-            if (calmDownTimer > 0f)
+            if (calmDownTimer > 0f && !this.currentEnemy.isOutside)
             {
                 // Check if we should end early!
                 ai.StopMoving();
@@ -150,15 +150,13 @@ namespace LethalBots.AI.AIStates
                 if (ShouldReturnToShip())
                 {
                     ai.State = new ReturnToShipState(this);
-                    return;
                 }
                 else if (calmDownTimer > Const.FLEEING_CALM_DOWN_TIME + 60f)
                 {
                     ai.State = new SearchingForScrapState(this, targetEntrance);
-                    return;
                 }
                 else if (calmDownTimer > Const.FLEEING_CALM_DOWN_TIME 
-                    && IsEntranceSafe(targetEntrance)
+                    && IsEntranceSafe(targetEntrance, true)
                     && FindNearbyJester() == null)
                 {
                     ChangeBackToPreviousState();
@@ -217,7 +215,7 @@ namespace LethalBots.AI.AIStates
             // Why run when we can fight back!
             if (ai.HasCombatWeapon() && ai.CanEnemyBeKilled(this.currentEnemy))
             {
-                ai.State = new FightEnemyState(this, this.currentEnemy);
+                ai.State = new FightEnemyState(this, this.currentEnemy, this.previousAIState);
                 return;
             }
 

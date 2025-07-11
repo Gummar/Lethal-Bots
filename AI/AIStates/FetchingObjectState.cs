@@ -15,10 +15,9 @@ namespace LethalBots.AI.AIStates
         /// <summary>
         /// <inheritdoc cref="AIState(AIState)"/>
         /// </summary>
-        public FetchingObjectState(AIState state, GrabbableObject? targetItem, bool isSelling = false, AIState? changeToOnEnd = null) : base(state)
+        public FetchingObjectState(AIState state, GrabbableObject? targetItem, bool isSelling = false, AIState? changeToOnEnd = null) : base(state, changeToOnEnd)
         {
             CurrentState = EnumAIStates.FetchingObject;
-            previousAIState = changeToOnEnd ?? state;
             this.TargetItem = targetItem;
             this.isSelling = isSelling;
         }

@@ -50,7 +50,7 @@ namespace LethalBots.AI.AIStates
                 return _enemyCollision;
             }
         }
-        public FightEnemyState(AIState oldState, EnemyAI enemyAI) : base(oldState)
+        public FightEnemyState(AIState oldState, EnemyAI enemyAI, AIState? changeToOnEnd = null) : base(oldState, changeToOnEnd)
         {
             CurrentState = EnumAIStates.FightEnemy;
 
