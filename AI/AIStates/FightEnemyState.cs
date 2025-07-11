@@ -61,9 +61,10 @@ namespace LethalBots.AI.AIStates
         {
             if (!hasBeenStarted)
             {
-                if (this.currentEnemy == null)
+                if (this.currentEnemy == null 
+                    || this.currentEnemy.isEnemyDead)
                 {
-                    Plugin.LogWarning("FightEnemyState: currentEnemy is null, cannot start the state!");
+                    Plugin.LogWarning("FightEnemyState: currentEnemy is null or dead, cannot start the state!");
                     ChangeBackToPreviousState();
                     return;
                 }

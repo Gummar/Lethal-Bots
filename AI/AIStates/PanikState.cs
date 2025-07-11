@@ -56,9 +56,10 @@ namespace LethalBots.AI.AIStates
         {
             if (!hasBeenStarted)
             {
-                if (this.currentEnemy == null)
+                if (this.currentEnemy == null 
+                    || this.currentEnemy.isEnemyDead)
                 {
-                    Plugin.LogWarning("PanikState: currentEnemy is null, cannot start panik state!");
+                    Plugin.LogWarning("PanikState: currentEnemy is null or dead, cannot start panik state!");
                     ChangeBackToPreviousState();
                     return;
                 }
