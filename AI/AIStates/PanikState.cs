@@ -137,17 +137,15 @@ namespace LethalBots.AI.AIStates
                 if (ai.HasScrapInInventory())
                 {
                     ai.State = new ReturnToShipState(this);
-                    return;
                 }
                 else if (previousState == EnumAIStates.ReturnToShip
                     || previousState == EnumAIStates.ChillAtShip)
                 {
                     ai.State = new ReturnToShipState(this);
-                    return;
                 }
                 // Wait outside the door a bit before heading back in,
                 // if we have been waiting for a bit give up and head back!
-                if (ShouldReturnToShip())
+                else if (ShouldReturnToShip())
                 {
                     ai.State = new ReturnToShipState(this);
                 }
