@@ -478,7 +478,8 @@ namespace LethalBots.AI
         public bool IsEntranceSafe(EntranceTeleport? entrance, bool useEntrancePoint = false)
         {
             if (entrance == null 
-                || !entrance.FindExitPoint())
+                || !entrance.FindExitPoint() 
+                || FindNearbyJester() != null)
             {
                 return false;
             }

@@ -156,8 +156,7 @@ namespace LethalBots.AI.AIStates
                     ai.State = new SearchingForScrapState(this, targetEntrance);
                 }
                 else if (calmDownTimer > Const.FLEEING_CALM_DOWN_TIME 
-                    && IsEntranceSafe(targetEntrance, true)
-                    && FindNearbyJester() == null)
+                    && IsEntranceSafe(targetEntrance, true))
                 {
                     ChangeBackToPreviousState();
                 }

@@ -5930,7 +5930,11 @@ namespace LethalBots.AI
                 }
                 if (itemsFall)
                 {
-                    DictJustDroppedItems[grabbableObject] = Time.realtimeSinceStartup;
+                    // If the object is not a maneater baby, we should add it to the just dropped items dictionary!
+                    if (grabbableObject is not CaveDwellerPhysicsProp)
+                    {
+                        DictJustDroppedItems[grabbableObject] = Time.realtimeSinceStartup;
+                    }
                     grabbableObject.parentObject = null;
                     grabbableObject.heldByPlayerOnServer = false;
                     if (NpcController.Npc.isInElevator)
@@ -6285,7 +6289,11 @@ namespace LethalBots.AI
             NpcController.Npc.playerBodyAnimator.SetBool(Const.PLAYER_ANIMATION_BOOL_CANCELHOLDING, true);
             NpcController.Npc.playerBodyAnimator.SetTrigger(Const.PLAYER_ANIMATION_TRIGGER_THROW);
 
-            DictJustDroppedItems[grabbableObject] = Time.realtimeSinceStartup;
+            // If the object is not a maneater baby, we should add it to the just dropped items dictionary!
+            if (grabbableObject is not CaveDwellerPhysicsProp)
+            {
+                DictJustDroppedItems[grabbableObject] = Time.realtimeSinceStartup;
+            }
             this.HeldItem = null;
             NpcController.Npc.isHoldingObject = false;
             NpcController.Npc.currentlyHeldObjectServer = null;

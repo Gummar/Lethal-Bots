@@ -183,9 +183,11 @@ namespace LethalBots.AI.AIStates
             }
 
             // Look at door or not if hidden by stuff
+            // NOTE: 2816 is the layer keys and lockpickers use in their raycast checks.
             Vector3 lockerPickerPos = GetClosestSideToDoor();
-            if (!Physics.Linecast(npcController.Npc.gameplayCamera.transform.position, lockerPickerPos, out RaycastHit hitInfo, StartOfRound.Instance.collidersAndRoomMaskAndDefault)
-                || hitInfo.collider.gameObject.GetComponentInParent<DoorLock>() == this.targetDoor)
+            if (!Physics.Linecast(npcController.Npc.gameplayCamera.transform.position, lockerPickerPos, out RaycastHit hitInfo, 2816)
+                || hitInfo.transform.GetComponent<DoorLock>() == this.targetDoor 
+                || hitInfo.transform.GetComponent<TriggerPointToDoor>()?.pointToDoor == this.targetDoor)
             {
                 npcController.OrderToLookAtPosition(lockerPickerPos);
             }
