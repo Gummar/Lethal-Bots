@@ -358,7 +358,7 @@ namespace LethalBots.AI
         /// <param name="entrance"></param>
         /// <returns>true: <paramref name="entrance"/> is the front entrance. false: <paramref name="entrance"/> is not the front entrance</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected bool IsFrontEntrance(EntranceTeleport? entrance)
+        protected static bool IsFrontEntrance(EntranceTeleport? entrance)
         {
             return entrance != null && entrance.entranceId == 0;
         }
