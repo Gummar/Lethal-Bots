@@ -994,7 +994,7 @@ namespace LethalBots.AI
 
         /// <summary>
         /// Checks if a valid path can be made to the target position.
-        /// This is alot like <seealso cref="PathIsIntersectedByLineOfSight(Vector3, out bool, bool, bool, EnemyAI?)"/>
+        /// This is alot like <seealso cref="PathIsIntersectedByLineOfSight(Vector3, out bool, bool, bool, EnemyAI?, bool)"/>
         /// </summary>
         /// <param name="targetPos">The target position the bot want to create a path to</param>
         /// <param name="path">The <see cref="NavMeshPath"/> to calculate the vaild path to</param>
