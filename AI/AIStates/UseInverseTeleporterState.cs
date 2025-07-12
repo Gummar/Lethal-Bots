@@ -27,7 +27,7 @@ namespace LethalBots.AI.AIStates
         public override void DoAI()
         {
             // Teleporter has finished teleporting players, but we didn't make it!
-            if (ai.InverseTeleporter == null 
+            if (LethalBotAI.InverseTeleporter == null 
                 || !LethalBotManager.IsInverseTeleporterActive)
             {
                 // Took this from the TimeOfDay class file,
@@ -47,11 +47,11 @@ namespace LethalBots.AI.AIStates
                 return;
             }
 
-            float sqrMagDistanceTeleport = (ai.InverseTeleporter.teleportOutPosition.position - npcController.Npc.transform.position).sqrMagnitude;
+            float sqrMagDistanceTeleport = (LethalBotAI.InverseTeleporter.teleportOutPosition.position - npcController.Npc.transform.position).sqrMagnitude;
             if (sqrMagDistanceTeleport >= Const.DISTANCE_FROM_INVERSE_TELEPORTER * Const.DISTANCE_FROM_INVERSE_TELEPORTER)
             {
                 npcController.OrderToSprint();
-                ai.SetDestinationToPositionLethalBotAI(ai.InverseTeleporter.teleportOutPosition.position);
+                ai.SetDestinationToPositionLethalBotAI(LethalBotAI.InverseTeleporter.teleportOutPosition.position);
                 ai.OrderMoveToDestination();
             }
             else
