@@ -188,7 +188,7 @@ namespace LethalBots.AI.AIStates
                         // Last time we were looking for scrap there was a trapped player,
                         // we should grab a key so we can potentially free them!
                         npcController.StopPreformingEmote();
-                        if (SearchingForScrapState.IsThereATrappedPlayer 
+                        if (LethalBotManager.IsThereATrappedPlayer 
                             && !ai.HasKeyInInventory())
                         {
                             GrabbableObject? key = FindKey();

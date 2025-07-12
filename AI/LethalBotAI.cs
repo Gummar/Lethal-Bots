@@ -126,12 +126,12 @@ namespace LethalBots.AI
         public TimedAngleFOVWithLocalPlayerCheck AngleFOVWithLocalPlayerTimedCheck = null!;
 
         private EnumStateControllerMovement StateControllerMovement;
-        private InteractTrigger[] laddersInteractTrigger = null!;
-        public EntranceTeleport[] EntrancesTeleportArray { private set; get; } = null!;
-        public QuicksandTrigger[] QuicksandArray { private set; get; } = null!;
-        private DoorLock[] doorLocksArray = null!;
-        private ShipTeleporter? _inverseTeleporter = null;
-        public ShipTeleporter? InverseTeleporter
+        private static InteractTrigger[] laddersInteractTrigger = null!;
+        public static EntranceTeleport[] EntrancesTeleportArray { private set; get; } = null!;
+        public static QuicksandTrigger[] QuicksandArray { private set; get; } = null!;
+        private static DoorLock[] doorLocksArray = null!;
+        private static ShipTeleporter? _inverseTeleporter = null;
+        public static ShipTeleporter? InverseTeleporter
         {
             get
             {
@@ -142,7 +142,7 @@ namespace LethalBots.AI
                 return _inverseTeleporter;
             }
         }
-        public MineshaftElevatorController? ElevatorScript { private set; get; } = null;
+        public static MineshaftElevatorController? ElevatorScript { private set; get; } = null;
         private float timerElevatorCooldown;
         private static float pressElevatorButtonCooldown;
         public bool IsInElevatorStartRoom { private set; get; }
@@ -2727,7 +2727,7 @@ namespace LethalBots.AI
             return $"<size={sizePercentage}%>{indicator}</size>";
         }
 
-        private ShipTeleporter? FindInverseTeleporter()
+        private static ShipTeleporter? FindInverseTeleporter()
         {
             ShipTeleporter[] shipTeleporters = Object.FindObjectsOfType<ShipTeleporter>(includeInactive: false);
             foreach (var teleporter in shipTeleporters)

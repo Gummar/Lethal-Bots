@@ -101,7 +101,7 @@ namespace LethalBots.AI.AIStates
                 targetLastKnownPosition = ai.targetPlayer.transform.position;
 
                 // If we can't path to the player, this is probably a mineshaft map and they are probably on a diffrent floor than us!
-                if (targetLastKnownPosition.HasValue && ai.ElevatorScript != null && !ai.IsValidPathToTarget(targetLastKnownPosition.Value, false))
+                if (targetLastKnownPosition.HasValue && LethalBotAI.ElevatorScript != null && !ai.IsValidPathToTarget(targetLastKnownPosition.Value, false))
                 {
                     if (ai.targetPlayer.isInsideFactory)
                     {
@@ -156,7 +156,7 @@ namespace LethalBots.AI.AIStates
                     // Target still visible
                     targetLastKnownPosition = ai.targetPlayer.transform.position;
                     // If we can't path to the player, this is probably a mineshaft map and they are probably on a diffrent floor than us!
-                    if (targetLastKnownPosition.HasValue && ai.ElevatorScript != null && !ai.IsValidPathToTarget((Vector3)targetLastKnownPosition, false))
+                    if (targetLastKnownPosition.HasValue && LethalBotAI.ElevatorScript != null && !ai.IsValidPathToTarget((Vector3)targetLastKnownPosition, false))
                     {
                         if (ai.targetPlayer.isInsideFactory)
                         {

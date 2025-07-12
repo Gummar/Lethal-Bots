@@ -274,7 +274,7 @@ namespace LethalBots.AI.AIStates
                     StopPanikCoroutine();
 
                     // If we need to go up an elevator we should do so!
-                    if (ai.ElevatorScript != null && !ai.IsInElevatorStartRoom && !ai.IsValidPathToTarget(targetEntrance.entrancePoint.position, false))
+                    if (LethalBotAI.ElevatorScript != null && !ai.IsInElevatorStartRoom && !ai.IsValidPathToTarget(targetEntrance.entrancePoint.position, false))
                     {
                         // Use elevator returns a bool if the can successfully use the elevator
                         ai.UseElevator(true);

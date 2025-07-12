@@ -21,10 +21,8 @@ namespace LethalBots.AI.AIStates
     {
         private Coroutine? searchingWanderCoroutine = null;
         private Coroutine? lookingAroundCoroutine = null;
-        private Coroutine? trappedPlayerCheckCoroutine = null;
         private float scrapTimer;
         private float waitForSafePathTimer;
-        public static bool IsThereATrappedPlayer { private set; get; }
 
         public SearchingForScrapState(AIState oldState, EntranceTeleport? entranceToAvoid = null) : base(oldState)
         {
@@ -135,9 +133,6 @@ namespace LethalBots.AI.AIStates
                 // Find a safe path to the entrance
                 StartSafePathCoroutine();
 
-                // Don't need this anymore!
-                StopTrappedPlayerCoroutine();
-
                 // If we are close enough, we should use the entrance to enter
                 float entranceDistSqr = (targetEntrance.entrancePoint.position - npcController.Npc.transform.position).sqrMagnitude;
                 if (entranceDistSqr >= Const.DISTANCE_CLOSE_ENOUGH_TO_DESTINATION * Const.DISTANCE_CLOSE_ENOUGH_TO_DESTINATION)
@@ -186,9 +181,6 @@ namespace LethalBots.AI.AIStates
                 // Don't need this anymore!
                 StopSafePathCoroutine();
 
-                // Start checking for trapped players!
-                StartTrappedPlayerCoroutine();
-
                 // The bot should return after not finding any other scrap for a bit,
                 // after all we don't want to lose what we have by leaving too late!
                 if (ai.HasScrapInInventory())
@@ -207,7 +199,7 @@ namespace LethalBots.AI.AIStates
 
                 // Now that we are inside, lets go find some loot
                 // If we need to go down an elevator we should do so!
-                if (ai.ElevatorScript != null && ai.IsInElevatorStartRoom)
+                if (LethalBotAI.ElevatorScript != null && ai.IsInElevatorStartRoom)
                 {
                     if (searchForScrap.inProgress)
                     {
@@ -220,7 +212,7 @@ namespace LethalBots.AI.AIStates
                 {
                     // If there is a player trapped in the facility,
                     // we should unlock all doors we can find to help them out!
-                    if (IsThereATrappedPlayer)
+                    if (LethalBotManager.IsThereATrappedPlayer)
                     {
                         DoorLock? lockedDoor = ai.UnlockDoorIfNeeded(200f, false);
                         if (lockedDoor != null)
@@ -258,7 +250,6 @@ namespace LethalBots.AI.AIStates
             base.StopAllCoroutines();
             StopSearchingWanderCoroutine();
             StopLookingAroundCoroutine();
-            StopTrappedPlayerCoroutine();
         }
 
         public override void TryPlayCurrentStateVoiceAudio()
@@ -276,72 +267,6 @@ namespace LethalBots.AI.AIStates
                 IsLethalBotInside = npcController.Npc.isInsideFactory,
                 AllowSwearing = Plugin.Config.AllowSwearing.Value
             });
-        }
-
-        /// <summary>
-        /// A function that checks if the player can path to the exit!
-        /// </summary>
-        /// <remarks>
-        /// This is basically and advanced call to <see cref="NavMesh.CalculatePath(Vector3, Vector3, int, NavMeshPath)"/> with mutliple checks
-        /// to make sure the path is complete!
-        /// </remarks>
-        /// <param name="player">The player to test</param>
-        /// <returns>true: if there is a valid path, false: if there is no valid path</returns>
-        private bool CanPlayerPathToExit(PlayerControllerB player)
-        {
-            // Setup some variables
-            Vector3 startPosition = RoundManager.Instance.GetNavMeshPosition(player.transform.position, RoundManager.Instance.navHit, 2.7f);
-            LethalBotAI? isPlayerBot = LethalBotManager.Instance.GetLethalBotAI(player);
-            bool isOutside = isPlayerBot != null ? isPlayerBot.isOutside : !player.isInsideFactory;
-            int areaMask = isPlayerBot != null ? isPlayerBot.agent.areaMask : NavMesh.AllAreas;
-            NavMeshPath path = new NavMeshPath();
-            foreach (var entrance in ai.EntrancesTeleportArray)
-            {
-                if (((isOutside && entrance.isEntranceToBuilding)
-                        || (!isOutside && !entrance.isEntranceToBuilding)) 
-                    && entrance.FindExitPoint())
-                {
-                    // Check if we can create a path there first!
-                    Vector3 exitPosition = RoundManager.Instance.GetNavMeshPosition(entrance.entrancePoint.position, RoundManager.Instance.navHit, 2.7f);
-                    if (!IsValidPathToEntrance(startPosition, exitPosition, areaMask, ref path, entrance))
-                    {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// Helper function that checks if we can path to the main entrance!
-        /// </summary>
-        /// <param name="startPosition"></param>
-        /// <param name="exitPosition"></param>
-        /// <param name="areaMask"></param>
-        /// <param name="path"></param>
-        /// <param name="targetEntrance"></param>
-        /// <returns></returns>
-        private bool IsValidPathToEntrance(Vector3 startPosition, Vector3 exitPosition, int areaMask, ref NavMeshPath path, EntranceTeleport targetEntrance)
-        {
-            // Check if we can path to the entrance!
-            if (!LethalBotAI.IsValidPathToTarget(startPosition, exitPosition, areaMask, ref path))
-            {
-                // Check if this is the front entrance if we need to use an elevator
-                if (IsFrontEntrance(targetEntrance) && ai.ElevatorScript != null)
-                {
-                    // Check if we can path to the bottom of the elevator
-                    if (LethalBotAI.IsValidPathToTarget(startPosition, ai.ElevatorScript.elevatorBottomPoint.position, areaMask, ref path))
-                    {
-                        return true;
-                    }
-
-                    // Check if they are inside the elevator!
-                    return (startPosition - ai.ElevatorScript.elevatorInsidePoint.position).sqrMagnitude < 2f * 2f;
-                }
-                return false;
-            }
-            return true;
         }
 
         /// <remarks>
@@ -370,56 +295,6 @@ namespace LethalBots.AI.AIStates
                 return distSqrToEntrance < Const.DISTANCE_NEARBY_ENTRANCE * Const.DISTANCE_NEARBY_ENTRANCE;
             }
             return base.ShouldIgnoreInitialDangerCheck();
-        }
-
-        // Should this be in the main AI instead?
-        private IEnumerator trappedPlayerCheck()
-        {
-            yield return null;
-            while (ai.State != null
-                    && ai.State.GetAIState() == EnumAIStates.SearchingForScrap)
-            {
-                // Check if there is a player trapped in the facility
-                bool foundTrappedPlayer = false;
-                StartOfRound instance = StartOfRound.Instance;
-                for (int i = 0; i < instance.allPlayerScripts.Length; i++)
-                {
-                    PlayerControllerB player = instance.allPlayerScripts[i];
-                    if (player.isPlayerControlled && !player.isPlayerDead && player.isInsideFactory)
-                    {
-                        // Check if the player is trapped
-                        if (!CanPlayerPathToExit(player))
-                        {
-                            foundTrappedPlayer = true;
-                            break;
-                        }
-                        yield return null; // Give the main thread a chance to do something else
-                    }
-                }
-
-                IsThereATrappedPlayer = foundTrappedPlayer;
-
-                yield return new WaitForSeconds(Const.TIMER_CHECK_FOR_TRAPPED_PLAYER);
-            }
-
-            trappedPlayerCheckCoroutine = null;
-        }
-
-        private void StartTrappedPlayerCoroutine()
-        {
-            if (trappedPlayerCheckCoroutine == null)
-            {
-                trappedPlayerCheckCoroutine = ai.StartCoroutine(trappedPlayerCheck());
-            }
-        }
-
-        private void StopTrappedPlayerCoroutine()
-        {
-            if (trappedPlayerCheckCoroutine != null)
-            {
-                ai.StopCoroutine(trappedPlayerCheckCoroutine);
-                trappedPlayerCheckCoroutine = null;
-            }
         }
 
         /// <summary>

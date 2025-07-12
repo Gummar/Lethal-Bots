@@ -144,6 +144,7 @@ namespace LethalBots.Managers
         private Coroutine registerItemsCoroutine = null!;
         private Coroutine? spawnLethalBotsAtShipCoroutine = null;
         private Coroutine BeamOutLethalBotsCoroutine = null!;
+        private Coroutine? trappedPlayerCheckCoroutine = null;
         /// <summary>
         /// Returns if the inverse teleporter is active or not.<br/>
         /// Used by the <see cref="LethalBotAI"/> to check if they should use it to teleport in or not.
@@ -151,6 +152,16 @@ namespace LethalBots.Managers
         public static bool IsInverseTeleporterActive 
         { 
             private set;
+            get; 
+        }
+        /// <summary>
+        /// Returns if there is a trapped player in the facility.</br>
+        /// Use by the <see cref="LethalBotAI"/> to check if they should bring a key 
+        /// and look for locked doors to free them.
+        /// </summary>
+        public static bool IsThereATrappedPlayer 
+        { 
+            private set; 
             get; 
         }
         private ClientRpcParams ClientRpcParams = new ClientRpcParams();
@@ -434,6 +445,7 @@ namespace LethalBots.Managers
             UpdateAnimationsCulling();
 
             timerUpdatePlayerCount += Time.deltaTime;
+            StartOfRound instanceSOR = StartOfRound.Instance;
             if (timerUpdatePlayerCount > 1f)
             {
                 timerUpdatePlayerCount = 0f;
@@ -441,7 +453,6 @@ namespace LethalBots.Managers
                     && (IsServer || IsHost))
                 {
                     // Check and update the amount of dead and living players
-                    StartOfRound instanceSOR = StartOfRound.Instance;
                     int livingPlayerCount = 0;
                     foreach (PlayerControllerB playerControllerB in instanceSOR.allPlayerScripts)
                     {
@@ -452,6 +463,17 @@ namespace LethalBots.Managers
                     }
                     SendNewPlayerCountServerRpc(instanceSOR.connectedPlayersAmount, livingPlayerCount, AllRealPlayersCount);
                 }
+            }
+
+            // Start checking for trapped player once the ship has landed
+            // and we are not in the lobby!
+            if (instanceSOR != null && !instanceSOR.inShipPhase && instanceSOR.shipHasLanded)
+            {
+                StartTrappedPlayerCoroutine();
+            }
+            else
+            {
+                StopTrappedPlayerCoroutine();
             }
         }
 
@@ -1639,6 +1661,126 @@ namespace LethalBots.Managers
                 ShipTeleporterPatch.SetPlayerTeleporterId_ReversePatch(teleporter, playerControllerB, -1);
             }
             IsInverseTeleporterActive = false;
+        }
+
+        #endregion
+
+        #region Trapped Players Checks
+
+        private IEnumerator trappedPlayerCheck()
+        {
+            yield return null;
+            StartOfRound instanceSOR = StartOfRound.Instance;
+            while (instanceSOR != null 
+                && !instanceSOR.inShipPhase 
+                && instanceSOR.shipHasLanded)
+            {
+                // Check if there is a player trapped in the facility
+                bool foundTrappedPlayer = false;
+                for (int i = 0; i < instanceSOR.allPlayerScripts.Length; i++)
+                {
+                    PlayerControllerB player = instanceSOR.allPlayerScripts[i];
+                    if (player.isPlayerControlled && !player.isPlayerDead && player.isInsideFactory)
+                    {
+                        // Check if the player is trapped
+                        if (!CanPlayerPathToExit(player))
+                        {
+                            foundTrappedPlayer = true;
+                            break;
+                        }
+                        yield return null; // Give the main thread a chance to do something else
+                    }
+                }
+
+                IsThereATrappedPlayer = foundTrappedPlayer;
+
+                yield return new WaitForSeconds(Const.TIMER_CHECK_FOR_TRAPPED_PLAYER);
+            }
+
+            trappedPlayerCheckCoroutine = null;
+        }
+
+        private void StartTrappedPlayerCoroutine()
+        {
+            if (trappedPlayerCheckCoroutine == null)
+            {
+                trappedPlayerCheckCoroutine = StartCoroutine(trappedPlayerCheck());
+            }
+        }
+
+        private void StopTrappedPlayerCoroutine()
+        {
+            if (trappedPlayerCheckCoroutine != null)
+            {
+                StopCoroutine(trappedPlayerCheckCoroutine);
+                trappedPlayerCheckCoroutine = null;
+            }
+        }
+
+        /// <summary>
+        /// A function that checks if the player can path to the exit!
+        /// </summary>
+        /// <remarks>
+        /// This is basically and advanced call to <see cref="NavMesh.CalculatePath(Vector3, Vector3, int, NavMeshPath)"/> with mutliple checks
+        /// to make sure the path is complete!
+        /// </remarks>
+        /// <param name="player">The player to test</param>
+        /// <returns>true: if there is a valid path, false: if there is no valid path</returns>
+        private bool CanPlayerPathToExit(PlayerControllerB player)
+        {
+            // Setup some variables
+            Vector3 startPosition = RoundManager.Instance.GetNavMeshPosition(player.transform.position, RoundManager.Instance.navHit, 2.7f);
+            LethalBotAI? isPlayerBot = GetLethalBotAI(player);
+            bool isOutside = isPlayerBot != null ? isPlayerBot.isOutside : !player.isInsideFactory;
+            int areaMask = isPlayerBot != null ? isPlayerBot.agent.areaMask : NavMesh.AllAreas;
+            NavMeshPath path = new NavMeshPath();
+            foreach (var entrance in LethalBotAI.EntrancesTeleportArray)
+            {
+                if (((isOutside && entrance.isEntranceToBuilding)
+                        || (!isOutside && !entrance.isEntranceToBuilding))
+                    && entrance.FindExitPoint())
+                {
+                    // Check if we can create a path there first!
+                    Vector3 exitPosition = RoundManager.Instance.GetNavMeshPosition(entrance.entrancePoint.position, RoundManager.Instance.navHit, 2.7f);
+                    if (!IsValidPathToEntrance(startPosition, exitPosition, areaMask, ref path, entrance))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Helper function that checks if we can path to the main entrance!
+        /// </summary>
+        /// <param name="startPosition"></param>
+        /// <param name="exitPosition"></param>
+        /// <param name="areaMask"></param>
+        /// <param name="path"></param>
+        /// <param name="targetEntrance"></param>
+        /// <returns></returns>
+        private bool IsValidPathToEntrance(Vector3 startPosition, Vector3 exitPosition, int areaMask, ref NavMeshPath path, EntranceTeleport targetEntrance)
+        {
+            // Check if we can path to the entrance!
+            if (!LethalBotAI.IsValidPathToTarget(startPosition, exitPosition, areaMask, ref path))
+            {
+                // Check if this is the front entrance if we need to use an elevator
+                if (AIState.IsFrontEntrance(targetEntrance) && LethalBotAI.ElevatorScript != null)
+                {
+                    // Check if we can path to the bottom of the elevator
+                    if (LethalBotAI.IsValidPathToTarget(startPosition, LethalBotAI.ElevatorScript.elevatorBottomPoint.position, areaMask, ref path))
+                    {
+                        return true;
+                    }
+
+                    // Check if they are inside the elevator!
+                    return (startPosition - LethalBotAI.ElevatorScript.elevatorInsidePoint.position).sqrMagnitude < 2f * 2f;
+                }
+                return false;
+            }
+            return true;
         }
 
         #endregion

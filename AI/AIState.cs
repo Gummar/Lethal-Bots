@@ -294,7 +294,7 @@ namespace LethalBots.AI
             EntranceTeleport? closestEntrance = null;
             float closestEntranceDist = float.MaxValue;
             shipPos ??= RoundManager.Instance.GetNavMeshPosition(StartOfRound.Instance.middleOfShipNode.position);
-            foreach (var entrance in ai.EntrancesTeleportArray)
+            foreach (var entrance in LethalBotAI.EntrancesTeleportArray)
             {
                 // If we are avoiding a specific entrance, we should skip it!
                 if (entranceToAvoid != null && entranceToAvoid == entrance)
@@ -358,7 +358,7 @@ namespace LethalBots.AI
         /// <param name="entrance"></param>
         /// <returns>true: <paramref name="entrance"/> is the front entrance. false: <paramref name="entrance"/> is not the front entrance</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected static bool IsFrontEntrance(EntranceTeleport? entrance)
+        public static bool IsFrontEntrance(EntranceTeleport? entrance)
         {
             return entrance != null && entrance.entranceId == 0;
         }
@@ -371,7 +371,7 @@ namespace LethalBots.AI
         protected bool IsEntranceCoveredInQuickSand(EntranceTeleport? entrance)
         {
             // Check to make sure that the quicksand array is not null or empty
-            if (ai.QuicksandArray == null || ai.QuicksandArray.Length == 0)
+            if (LethalBotAI.QuicksandArray == null || LethalBotAI.QuicksandArray.Length == 0)
             {
                 return false;
             }
@@ -386,7 +386,7 @@ namespace LethalBots.AI
                 Vector3 closestNodePos = instanceRM.GetNavMeshPosition(closestNode.position, instanceRM.navHit, 2.7f, ai.agent.areaMask);
                 float quicksandBuffer = 2f;
                 Plugin.LogDebug($"Testing quicksand safety for exit {entrance}");
-                foreach (var quicksand in ai.QuicksandArray)
+                foreach (var quicksand in LethalBotAI.QuicksandArray)
                 {
                     if (!quicksand.isActiveAndEnabled)
                         continue;
@@ -453,10 +453,10 @@ namespace LethalBots.AI
             if (!ai.IsValidPathToTarget(targetEntrance.entrancePoint.position, calculatePathDistance))
             {
                 // Check if this is the front entrance if we need to use an elevator
-                if (!targetEntrance.isEntranceToBuilding && IsFrontEntrance(targetEntrance) && ai.ElevatorScript != null)
+                if (!targetEntrance.isEntranceToBuilding && IsFrontEntrance(targetEntrance) && LethalBotAI.ElevatorScript != null)
                 {
                     // Check if we can path to the bottom of the elevator
-                    if (ai.IsValidPathToTarget(ai.ElevatorScript.elevatorBottomPoint.position, calculatePathDistance))
+                    if (ai.IsValidPathToTarget(LethalBotAI.ElevatorScript.elevatorBottomPoint.position, calculatePathDistance))
                     {
                         return true;
                     }
