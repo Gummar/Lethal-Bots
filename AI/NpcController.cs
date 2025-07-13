@@ -1898,23 +1898,35 @@ namespace LethalBots.AI
                         ourOwner = Npc;
                     }
 
-                    List<UnlockableEmote> allUnlockableEmotes = SessionManager.unlockedEmotes;
-                    if (!ConfigSync.instance.syncShareEverything && ourOwner != instanceSOR.localPlayerController)
-                    {
-                        SessionManager.unlockedEmotesByPlayer.TryGetValue(ourOwner.playerUsername, out allUnlockableEmotes);
-                    }
-                    if (allUnlockableEmotes == null)
-                    {
-                        allUnlockableEmotes = SessionManager.unlockedEmotes;
-                    }
-                    int randomEmoteID = Random.Range(0, allUnlockableEmotes.Count);
-                    LethalBotAIController.PerformTooManyEmoteLethalBotAndSync(allUnlockableEmotes[randomEmoteID].emoteId);
+                    PreformRandomTooManyEmote(ourOwner);
                 }
                 else
                 {
                     PerformDefaultEmote(Random.Range(1, 3)); // Set to 3 since its max exclusive
                 }
             }
+        }
+
+        /// <summary>
+        /// Helper method to preform a random toomany emote!
+        /// </summary>
+        /// <remarks>
+        /// This function only exists to prevent loading the TooManyEmotes mod if it is not installed.
+        /// </remarks>
+        /// <param name="ourOwner">The player controller this bot is owned by</param>
+        private void PreformRandomTooManyEmote(PlayerControllerB ourOwner)
+        {
+            List<UnlockableEmote> allUnlockableEmotes = SessionManager.unlockedEmotes;
+            if (!ConfigSync.instance.syncShareEverything && ourOwner != StartOfRound.Instance.localPlayerController)
+            {
+                SessionManager.unlockedEmotesByPlayer.TryGetValue(ourOwner.playerUsername, out allUnlockableEmotes);
+            }
+            if (allUnlockableEmotes == null)
+            {
+                allUnlockableEmotes = SessionManager.unlockedEmotes;
+            }
+            int randomEmoteID = Random.Range(0, allUnlockableEmotes.Count);
+            LethalBotAIController.PerformTooManyEmoteLethalBotAndSync(allUnlockableEmotes[randomEmoteID].emoteId);
         }
 
         /// <summary>
