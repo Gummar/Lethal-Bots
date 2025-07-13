@@ -60,7 +60,8 @@ namespace LethalBots.Patches.ModPatches.BunkbedRevive
                                                                 enumSpawnAnimation = EnumSpawnAnimation.OnlyPlayerSpawnAnimation,
                                                                 SpawnPosition = StartOfRoundPatch.GetPlayerSpawnPosition_ReversePatch(StartOfRound.Instance, playerClientId, simpleTeleport: false),
                                                                 YRot = 0,
-                                                                IsOutside = true
+                                                                IsOutside = true,
+                                                                IndexNextPlayerObject = playerClientId
                                                             });
             LethalBotManager.Instance.UpdateReviveCountServerRpc(lethalBotIdentity.IdIdentity + Plugin.PluginIrlPlayersCount);
             // Immediately change the number of living players

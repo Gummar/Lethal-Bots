@@ -58,7 +58,8 @@ namespace LethalBots.Patches.ModPatches.Zaprillator
                                                                 enumSpawnAnimation = EnumSpawnAnimation.OnlyPlayerSpawnAnimation,
                                                                 SpawnPosition = ____ragdoll.ragdoll.transform.position,
                                                                 YRot = 0,
-                                                                IsOutside = !GameNetworkManager.Instance.localPlayerController.isInsideFactory
+                                                                IsOutside = !GameNetworkManager.Instance.localPlayerController.isInsideFactory,
+                                                                IndexNextPlayerObject = (int)____ragdoll.ragdoll.playerScript.playerClientId
                                                             });
             // Immediately change the number of living players
             // The host will update the number of living players when the bot is spawned

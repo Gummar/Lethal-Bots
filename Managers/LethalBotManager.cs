@@ -446,7 +446,7 @@ namespace LethalBots.Managers
 
             timerUpdatePlayerCount += Time.deltaTime;
             StartOfRound instanceSOR = StartOfRound.Instance;
-            if (timerUpdatePlayerCount > 1f)
+            if (timerUpdatePlayerCount > 0.5f)
             {
                 timerUpdatePlayerCount = 0f;
                 if (!isSpawningBots.Value && sendPlayerCountUpdate.Value 
@@ -726,7 +726,7 @@ namespace LethalBots.Managers
 
         private void SpawnLethalBotServer(SpawnLethalBotParamsNetworkSerializable spawnLethalBotsParamsNetworkSerializable)
         {
-            int indexNextPlayerObject = GetNextAvailablePlayerObject();
+            int indexNextPlayerObject = spawnLethalBotsParamsNetworkSerializable.IndexNextPlayerObject ?? GetNextAvailablePlayerObject();
             if (indexNextPlayerObject < 0)
             {
                 Plugin.LogInfo($"No more bots can be spawned at the same time, see Max Server size value : {Plugin.PluginIrlPlayersCount}");
@@ -850,11 +850,18 @@ namespace LethalBots.Managers
             StartOfRound instance = StartOfRound.Instance;
             LethalBotIdentity lethalBotIdentity = IdentityManager.Instance.LethalBotIdentities[spawnParamsNetworkSerializable.LethalBotIdentityID];
 
-            GameObject objectParent = instance.allPlayerObjects[spawnParamsNetworkSerializable.IndexNextPlayerObject];
+            // Make sure we have a vaild player index
+            if (!spawnParamsNetworkSerializable.IndexNextPlayerObject.HasValue)
+            {
+                Plugin.LogError($"Fatal error : client #{NetworkManager.LocalClientId} no indexNextPlayerObject in SpawnLethalBotParamsNetworkSerializable ! Please check for previous errors in the console");
+                return;
+            }
+
+            GameObject objectParent = instance.allPlayerObjects[spawnParamsNetworkSerializable.IndexNextPlayerObject.Value];
             objectParent.transform.position = spawnParamsNetworkSerializable.SpawnPosition;
             objectParent.transform.rotation = Quaternion.Euler(new Vector3(0f, spawnParamsNetworkSerializable.YRot, 0f));
 
-            PlayerControllerB lethalBotController = instance.allPlayerScripts[spawnParamsNetworkSerializable.IndexNextPlayerObject];
+            PlayerControllerB lethalBotController = instance.allPlayerScripts[spawnParamsNetworkSerializable.IndexNextPlayerObject.Value];
             lethalBotController.playerUsername = lethalBotIdentity.Name;
             lethalBotController.isPlayerDead = false;
             lethalBotController.isPlayerControlled = true;
@@ -1478,6 +1485,13 @@ namespace LethalBots.Managers
             }
             SendNewPlayerCountServerRpc(newPlayerCount, newLivingPlayerCount, GameNetworkManager.Instance.connectedPlayers);
             isSpawningBots.Value = false;
+
+            // Only set the starting revives if the mod is loaded!
+            if (Plugin.IsModReviveCompanyLoaded)
+            { 
+                SetStartingRevivesReviveCompany();
+            }
+
             HUDManager.Instance.DisplayTip("Finished Spawning Bots!", string.Format("{0} bots were spawned!", nbSpawnedBots), false, false, "LC_Tip1");
             spawnLethalBotsAtShipCoroutine = null;
         }
@@ -1513,9 +1527,9 @@ namespace LethalBots.Managers
             // Only the host can update the real player count
             AllRealPlayersCount = numRealPlayers;
 
-            Plugin.LogDebug($"[Server] Old Num of Connected Players {oldPlayerCount} -> {instanceSOR.connectedPlayersAmount}");
-            Plugin.LogDebug($"[Server] Old Num of Living Players {oldLivingPlayerCount} -> {instanceSOR.livingPlayers}");
-            Plugin.LogDebug($"[Server] Real Players Count: {AllRealPlayersCount}");
+            Plugin.LogInfo($"[Server] Old Num of Connected Players {oldPlayerCount} -> {instanceSOR.connectedPlayersAmount}");
+            Plugin.LogInfo($"[Server] Old Num of Living Players {oldLivingPlayerCount} -> {instanceSOR.livingPlayers}");
+            Plugin.LogInfo($"[Server] Real Players Count: {AllRealPlayersCount}");
 
             // Send the updated values to all clients
             sendPlayerCountUpdate.Value = false;
@@ -1538,7 +1552,7 @@ namespace LethalBots.Managers
                 return;
             }
 
-            Plugin.LogDebug("[Client] Received updated player counts!");
+            Plugin.LogInfo("[Client] Received updated player counts!");
 
             StartOfRound instanceSOR = StartOfRound.Instance;
             int oldPlayerCount = instanceSOR.connectedPlayersAmount;
@@ -1548,9 +1562,9 @@ namespace LethalBots.Managers
             instanceSOR.livingPlayers = numLivingPlayers;
             AllRealPlayersCount = numRealPlayers;
 
-            Plugin.LogDebug($"[Client] Old Num of Connected Players {oldPlayerCount} -> {instanceSOR.connectedPlayersAmount}");
-            Plugin.LogDebug($"[Client] Old Num of Living Players {oldLivingPlayerCount} -> {instanceSOR.livingPlayers}");
-            Plugin.LogDebug($"[Client] Real Players Count: {AllRealPlayersCount}");
+            Plugin.LogInfo($"[Client] Old Num of Connected Players {oldPlayerCount} -> {instanceSOR.connectedPlayersAmount}");
+            Plugin.LogInfo($"[Client] Old Num of Living Players {oldLivingPlayerCount} -> {instanceSOR.livingPlayers}");
+            Plugin.LogInfo($"[Client] Real Players Count: {AllRealPlayersCount}");
         }
 
         #endregion
@@ -1575,6 +1589,7 @@ namespace LethalBots.Managers
 
             if (StartOfRound.Instance.inShipPhase)
             {
+                IsInverseTeleporterActive = false;
                 yield break;
             }
 
@@ -1620,7 +1635,7 @@ namespace LethalBots.Managers
                     teleportPos = RoundManager.Instance.GetRandomNavMeshPositionInBoxPredictable(nodePos, 10f, default(NavMeshHit), shipTeleporterSeed, -1);
 
                     // Now we check if we would spawn inside of an object!
-                    if (!Physics.CheckSphere(teleportPos + Vector3.up * 0.2f, radius: lethalBotAI.agent.radius, StartOfRound.Instance.collidersAndRoomMaskAndDefault))
+                    if (!Physics.CheckSphere(teleportPos + Vector3.up * 0.2f, radius: lethalBotAI.agent.radius, StartOfRound.Instance.allPlayersCollideWithMask))
                     {
                         foundTeleportPosition = true;
                         break;
@@ -1742,14 +1757,14 @@ namespace LethalBots.Managers
                 {
                     // Check if we can create a path there first!
                     Vector3 exitPosition = RoundManager.Instance.GetNavMeshPosition(entrance.entrancePoint.position, RoundManager.Instance.navHit, 2.7f);
-                    if (!IsValidPathToEntrance(startPosition, exitPosition, areaMask, ref path, entrance))
+                    if (IsValidPathToEntrance(startPosition, exitPosition, areaMask, ref path, entrance))
                     {
-                        return false;
+                        return true;
                     }
                 }
             }
 
-            return true;
+            return false;
         }
 
         /// <summary>
@@ -2847,6 +2862,40 @@ namespace LethalBots.Managers
             if (OPJosMod.ReviveCompany.GlobalVariables.RemainingRevives < 100)
             {
                 HUDManager.Instance.DisplayTip(identityName + " was revived", string.Format("{0} revives remain!", OPJosMod.ReviveCompany.GlobalVariables.RemainingRevives), false, false, "LC_Tip1");
+            }
+        }
+
+        /// <summary>
+        /// Bots spawn in after the mod sets the starting revives.
+        /// We call <c>setStartingRevives</c> to for it to consider the bots as well.
+        /// </summary>
+        private void SetStartingRevivesReviveCompany()
+        {
+            // This is not essental code, if it fails it fails!
+            try
+            {
+                var type = AccessTools.TypeByName("OPJosMod.ReviveCompany.Patches.StartOfRoundPatch");
+                if (type != null)
+                {
+                    var method = AccessTools.Method(type, "setStartingRevives");
+                    if (method != null)
+                    {
+                        method.Invoke(null, null);
+                        Plugin.LogDebug("Successfully invoked setStartingRevives via AccessTools.");
+                    }
+                    else
+                    {
+                        Plugin.LogWarning("Could not find setStartingRevives method.");
+                    }
+                }
+                else
+                {
+                    Plugin.LogWarning("Could not find StartOfRoundPatch type from ReviveCompany.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Plugin.LogError($"Error while invoking seting base available revives: {ex}");
             }
         }
 

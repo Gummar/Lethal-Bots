@@ -63,10 +63,11 @@ namespace LethalBots.Patches.ModPatches.ReviveCompany
                                                                 enumSpawnAnimation = EnumSpawnAnimation.OnlyPlayerSpawnAnimation,
                                                                 SpawnPosition = revivePos,
                                                                 YRot = yRot,
-                                                                IsOutside = !isInsideFactory
+                                                                IsOutside = !isInsideFactory,
+                                                                IndexNextPlayerObject = (int)ragdollGrabbableObjectToRevive.ragdoll.playerScript.playerClientId
                                                             });
             // Immediately change the number of living players
-            // The host will update the number of living players when the bot is spawned
+            // The host will update the number of living players when the bot is respawned
             StartOfRound.Instance.livingPlayers++;
             return false;
         }
