@@ -648,15 +648,11 @@ namespace LethalBots.AI.AIStates
                     }
 
                     // Now we test if the node is visible to an enemy!
-                    if ((enemyPos - nodePos).sqrMagnitude <= fearRange * fearRange)
+                    Vector3 simulatedHead = nodePos + Vector3.up * headOffset;
+                    if (!Physics.Linecast(viewPos + Vector3.up * 0.2f, simulatedHead, StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
                     {
-                        // Do the actual traceline check
-                        Vector3 simulatedHead = nodePos + Vector3.up * headOffset;
-                        if (!Physics.Linecast(viewPos + Vector3.up * 0.2f, simulatedHead, StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
-                        {
-                            nodeSafety.isNodeOutOfSight = false;
-                            break;
-                        }
+                        nodeSafety.isNodeOutOfSight = false;
+                        break;
                     }
                 }
 
