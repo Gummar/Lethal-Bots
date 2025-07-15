@@ -7389,14 +7389,6 @@ namespace LethalBots.AI
         /// </summary>
         private void EndGame(StartMatchLever startMatchLever)
         {
-            // Kinda hard to use the ship lever when dead
-            if (!NpcController.Npc.isPlayerControlled
-                || isEnemyDead
-                || NpcController.Npc.isPlayerDead)
-            {
-                return;
-            }
-
             Plugin.LogDebug($"Bot {NpcController.Npc.playerUsername} has successfuly pulled the ship lever to end the round!");
 
             StartOfRound playersManager = StartOfRound.Instance;
