@@ -332,6 +332,7 @@ namespace LethalBots.Patches.MapPatches
             {
                 lethalBotAI.agent.CompleteOffMeshLink();
             }
+            lethalBotAI?.useLadderCoroutine = null;
             ladder.currentCooldownValue = ladder.cooldownTime;
             ladder.onInteract.Invoke(null);
         }
@@ -387,6 +388,7 @@ namespace LethalBots.Patches.MapPatches
             if (lethalBot.useLadderCoroutine != null)
             {
                 ladder.StopCoroutine(lethalBot.useLadderCoroutine);
+                lethalBot.useLadderCoroutine = null;
             }
             ladder.onCancelAnimation.Invoke(playerController);
             playerController.currentTriggerInAnimationWith = null;
