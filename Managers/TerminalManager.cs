@@ -17,6 +17,19 @@ namespace LethalBots.Managers
 
         private void Awake()
         {
+            // Prevent multiple instances of TerminalManager
+            if (Instance != null && Instance != this)
+            {
+                if (Instance.IsSpawned && Instance.IsServer)
+                {
+                    Instance.NetworkObject.Despawn(destroy: true);
+                }
+                else
+                {
+                    Destroy(Instance.gameObject);
+                }
+            }
+
             Instance = this;
         }
 

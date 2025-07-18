@@ -24,6 +24,12 @@ namespace LethalBots.Managers
 
         private void Awake()
         {
+            // Prevent multiple instances of PluginManager
+            if (Instance != null && Instance != this)
+            {
+                Destroy(Instance.gameObject);
+            }
+
             Instance = this;
             DontDestroyOnLoad(gameObject);
         }

@@ -192,6 +192,19 @@ namespace LethalBots.Managers
         /// </summary>
         private void Awake()
         {
+            // Prevent multiple instances of the main bot manager
+            if (Instance != null && Instance != this)
+            {
+                if (Instance.IsSpawned && Instance.IsServer)
+                {
+                    Instance.NetworkObject.Despawn(destroy: true);
+                }
+                else
+                {
+                    Destroy(Instance.gameObject);
+                }
+            }
+
             Instance = this;
             Plugin.Config.InitialSyncCompleted += Config_InitialSyncCompleted;
             Plugin.LogDebug($"Client {NetworkManager.LocalClientId}, MaxBotsAllowedToSpawn before CSync {Plugin.Config.MaxBotsAllowedToSpawn.Value}");

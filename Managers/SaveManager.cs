@@ -25,6 +25,19 @@ namespace LethalBots.Managers
         /// </summary>
         private void Awake()
         {
+            // Prevent multiple instances of the SaveManager
+            if (Instance != null && Instance != this)
+            {
+                if (Instance.IsSpawned && Instance.IsServer)
+                {
+                    Instance.NetworkObject.Despawn(destroy: true);
+                }
+                else
+                {
+                    Destroy(Instance.gameObject);
+                }
+            }
+
             Instance = this;
             FetchSaveFile();
         }

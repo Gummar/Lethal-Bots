@@ -22,6 +22,12 @@ namespace LethalBots.Managers
 
         private void Awake()
         {
+            // Prevent multiple instances of AudioManager
+            if (Instance != null && Instance != this)
+            {
+                Destroy(Instance.gameObject);
+            }
+
             Instance = this;
             Plugin.LogDebug("=============== awake audio manager =====================");
 

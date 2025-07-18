@@ -18,6 +18,12 @@ namespace LethalBots.Managers
 
         private void Awake()
         {
+            // Prevent multiple instances of InputManager
+            if (Instance != null && Instance != this)
+            {
+                Destroy(Instance.gameObject);
+            }
+
             Instance = this;
             AddEventHandlers();
         }
