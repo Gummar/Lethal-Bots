@@ -136,6 +136,16 @@ namespace LethalBots.AI
         }
 
         /// <summary>
+        /// Executes when the bot leaves this state!
+        /// </summary>
+        /// <remarks>
+        /// By default, this is called when <see cref="LethalBotAI.State"/> is set to another state.<br/>
+        /// You should use this to save variables, or reset the bot, etc.<br/>
+        /// You can use <see cref="hasBeenStarted"/> to check if this state has been started before.<br/>
+        /// </remarks>
+        public virtual void OnExitState() { }
+
+        /// <summary>
         /// Apply the behaviour according to the type of state <see cref="Enums.EnumAIStates"><c>Enums.EnumAIStates</c></see>.<br/>
         /// </summary>
         public abstract void DoAI();

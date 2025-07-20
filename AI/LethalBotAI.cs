@@ -91,6 +91,7 @@ namespace LethalBots.AI
                 if (oldState != null)
                 {
                     Plugin.LogDebug($"LethalBot {NpcController.Npc.playerUsername} change from {oldState.GetAIState()} to {value.GetAIState()}!");
+                    oldState.OnExitState();
                     oldState.StopAllCoroutines();
                 }
 
