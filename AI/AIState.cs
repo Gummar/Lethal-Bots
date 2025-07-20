@@ -580,7 +580,7 @@ namespace LethalBots.AI
         /// its class related stuff exists in a function!
         /// </remarks>
         /// <returns>true: the meltdown has started. false: the meltdown hasn't started yet</returns>
-        protected bool HasMeltdownStarted()
+        protected static bool HasMeltdownStarted()
         {
             // Facility Meltdown Support!
             if (Plugin.IsModFacilityMeltdownLoaded)
