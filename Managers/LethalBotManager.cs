@@ -2135,7 +2135,7 @@ namespace LethalBots.Managers
                 return true;
             }
 
-            LethalBotAI? lethalBotAI = GetLethalBotAI((int)player.playerClientId);
+            LethalBotAI? lethalBotAI = GetLethalBotAI(player);
             return lethalBotAI != null;
         }
 
