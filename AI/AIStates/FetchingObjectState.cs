@@ -105,7 +105,8 @@ namespace LethalBots.AI.AIStates
             }
 
             // Sprint if far enough from the item
-            if (sqrMagDistanceItem > Const.DISTANCE_START_RUNNING * Const.DISTANCE_START_RUNNING)
+            if (sqrMagDistanceItem > Const.DISTANCE_START_RUNNING * Const.DISTANCE_START_RUNNING 
+                || this.TargetItem is CaveDwellerPhysicsProp)
             {
                 npcController.OrderToSprint();
             }
