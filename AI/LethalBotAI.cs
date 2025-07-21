@@ -4037,7 +4037,9 @@ namespace LethalBots.AI
             if (!AreHandsFree() && HeldItem.itemProperties.twoHanded)
             {
                 // If the item requires one hand then we can set down our large item and pick up the small one!
-                if (grabbableObject.itemProperties.twoHanded)
+                if (grabbableObject.itemProperties.twoHanded 
+                    && (grabbableObject is not CaveDwellerPhysicsProp caveDwellerGrabbableObject 
+                        || !caveDwellerGrabbableObject.caveDwellerScript.babyCrying))
                 {
                     return false;
                 }
