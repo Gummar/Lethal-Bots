@@ -400,7 +400,7 @@ namespace LethalBots.Managers
             RegisterThreat("MouthDog",
                 fq => fq.EnemyAI is MouthDogAI dog && dog.suspicionLevel >= 9 ? 20f : 5f,
                 fq => fq.EnemyAI is MouthDogAI dog && dog.suspicionLevel >= 9 ? 20f : null,
-                fq => fq.EnemyAI is MouthDogAI dog && dog.suspicionLevel > 1 ? 40f : 30f // Increase the danger range if they are angry!
+                fq => fq.EnemyAI is MouthDogAI dog && dog.suspicionLevel > 1 ? 30f : 20f // Increase the danger range if they are angry!
             );
 
             RegisterThreat("Centipede",
