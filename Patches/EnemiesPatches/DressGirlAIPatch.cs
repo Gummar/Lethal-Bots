@@ -19,7 +19,7 @@ namespace LethalBots.Patches.EnemiesPatches
     /// compatable with bots. For now this is not implemented!
     /// </remarks>
     [HarmonyPatch(typeof(DressGirlAI))]
-    class DressGirlAIPatch
+    public class DressGirlAIPatch
     {
         /// <summary>
         /// Patch Update to check for player and bot
