@@ -14,6 +14,7 @@ using Steamworks.ServerList;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -1016,16 +1017,26 @@ namespace LethalBots.Managers
                 lethalBotAI.HideShowModelReplacement(show: true);
             }
 
+            // Add the bot to the quick menu
+            // NOTE: Funnily enough, this doesn't actually add an entry to the list, but rather just updated the slot for that player index!
+            // This means we don't have to worry about duplicates or anything!
+            // Bots will automatically "disconnect" when they are despawned since the player slot is freed up!
+            lethalBotController.quickMenuManager.AddUserToPlayerList(0ul, lethalBotController.playerUsername, (int)lethalBotController.playerClientId);
+
             // Radar name update
-            foreach (var radarTarget in instance.mapScreen.radarTargets)
-            {
-                if (radarTarget != null
-                    && radarTarget.transform == lethalBotController.transform)
-                {
-                    radarTarget.name = lethalBotController.playerUsername;
-                    break;
-                }
-            }
+            //foreach (var radarTarget in instance.mapScreen.radarTargets)
+            //{
+            //    if (radarTarget != null
+            //        && radarTarget.transform == lethalBotController.transform)
+            //    {
+            //        radarTarget.name = lethalBotController.playerUsername;
+            //        break;
+            //    }
+            //}
+
+            // Direct access to avoid looping
+            // Exactly how the game does it in PlayerControllerB.SendNewPlayerValuesClientRpc!
+            instance.mapScreen.radarTargets[(int)lethalBotController.playerClientId].name = lethalBotController.playerUsername;
 
             // FIXME: This creates bugs for some reason, the cause is unknown!
             // HACKHACK: We raise the connected players amount and number of living players so enemies consider them!
@@ -1058,6 +1069,183 @@ namespace LethalBots.Managers
 
             Plugin.LogDebug($"++ Bot with body {lethalBotController.playerClientId} with identity spawned: {lethalBotIdentity.ToString()}");
             lethalBotAI.Init(spawnParamsNetworkSerializable.enumSpawnAnimation);
+        }
+
+        /// <summary>
+        /// Fired when a lethal bot is kicked
+        /// </summary>
+        /// <param name="lethalBotAI">The lethal bot being kicked</param>
+        public void OnLethalBotKicked(LethalBotAI lethalBotAI)
+        {
+            int indexLethalBotAI = Array.IndexOf(AllLethalBotAIs, lethalBotAI);
+            if (indexLethalBotAI < 0)
+            {
+                Plugin.LogError($"Fatal error : client #{NetworkManager.LocalClientId} lethal bot AI not found in AllLethalBotAIs array ! Please check for previous errors in the console");
+                return;
+            }
+            LethalBotKickedServerRpc(indexLethalBotAI);
+        }
+
+        /// <summary>
+        /// Called on all clients when a lethal bot is kicked.
+        /// This mimics the normal player kick process.
+        /// </summary>
+        /// <param name="lethalBotAI">The lethal bot being kicked</param>
+        public void HandleLethalBotKicked(LethalBotAI lethalBotAI)
+        {
+            PlayerControllerB? lethalBotController = lethalBotAI.NpcController?.Npc;
+            if (lethalBotController != null)
+            {
+                StartOfRound instanceSOR = StartOfRound.Instance;
+                if (!lethalBotController.isPlayerControlled && !lethalBotController.isPlayerDead)
+                {
+                    Plugin.LogWarning($"Lethal bot {lethalBotController.playerUsername} is being kicked but is not player controlled and is not dead!");
+                    return; // Bot with inactive controller? HOW DID THIS HAPPEN!?
+                }
+
+                // Mimic the normal player kick process
+                if (base.IsServer)
+                { 
+                    HUDManager.Instance.AddTextToChatOnServer($"[playerNum{lethalBotController.playerClientId}] was kicked."); 
+                }
+
+                // Actually kick the bot
+                // NOTE: We do NOT want to call the normal kick method since that would break the game since bots are NOT real clients!
+                // Instead, we use the same despawn logic as when the round ends!
+
+                // Mod support!!!!
+                if (Plugin.IsModModelReplacementAPILoaded)
+                {
+                    lethalBotAI.HideShowModelReplacement(show: false);
+                }
+
+                // Leave the terminal if we are using one!
+                if (lethalBotController.inTerminalMenu)
+                {
+                    lethalBotAI.LeaveTerminal();
+                }
+
+                // Stop Emoting
+                lethalBotAI.NpcController?.StopPreformingEmote(true);
+
+                // Drop our held items
+                lethalBotController.DropAllHeldItems(itemsFall: true, disconnecting: true);
+
+                // Mark the status as recently used so they are spawned in again!
+                lethalBotAI.LethalBotIdentity.Status = EnumStatusIdentity.ToSpawn;
+                lethalBotAI.LethalBotIdentity.DiedLastRound = true;
+                if (lethalBotAI.State != null
+                    && lethalBotAI.State.GetAIState() != EnumAIStates.BrainDead)
+                {
+                    // If the bot was not in the BrainDead state, we set it to it so it doesn't do anything after this!
+                    lethalBotAI.State = new BrainDeadState(lethalBotAI);
+                }
+
+                lethalBotController.TeleportPlayer(lethalBotController.playersManager.notSpawnedPosition.position);
+                lethalBotController.localVisor.position = lethalBotController.playersManager.notSpawnedPosition.position;
+                DisableLethalBotControllerModel(lethalBotController.gameObject, lethalBotController, enable: true, disableLocalArms: true);
+
+                // Reset the animator state
+                Animator lethalBotAnimator = lethalBotController.playerBodyAnimator;
+                if (lethalBotAnimator != null)
+                {
+                    lethalBotAnimator.Rebind(true);
+                    lethalBotAnimator.Update(0f);
+                }
+
+                lethalBotController.transform.position = lethalBotController.playersManager.notSpawnedPosition.position;
+                lethalBotController.thisController.enabled = false;
+                if (!NetworkManager.Singleton.ShutdownInProgress && base.IsServer)
+                {
+                    lethalBotController.gameObject.GetComponent<NetworkObject>().RemoveOwnership();
+                }
+
+                // Remove from quick menu
+                QuickMenuManager quickMenuManager = UnityEngine.Object.FindObjectOfType<QuickMenuManager>();
+                if (quickMenuManager != null)
+                {
+                    quickMenuManager.RemoveUserFromPlayerList((int)lethalBotController.playerClientId);
+                }
+
+                instanceSOR.allPlayerObjects[lethalBotController.playerClientId].SetActive(false);
+
+                // Finished kicking
+                // HACKHACK: If the bot being kicked was the last living player, the game would softlock since end of round only
+                // triggers on player death and the original kick method!
+                // Check if we should run end of round
+                if (!lethalBotController.isPlayerDead)
+                {
+                    instanceSOR.livingPlayers--; // Living bot was kicked, decrement living player count
+                }
+                instanceSOR.connectedPlayersAmount--; // Connected bot was kicked, decrement connected player count
+
+                lethalBotController.isPlayerControlled = false;
+                lethalBotController.isPlayerDead = false;
+                if (instanceSOR.livingPlayers == 0)
+                {
+                    instanceSOR.allPlayersDead = true;
+                    instanceSOR.ShipLeaveAutomatically();
+                }
+
+                // Mimic suit switch to default suit on kick
+                UnlockableSuit.SwitchSuitForPlayer(lethalBotController, 0, playAudio: false);
+
+                // Just like the normal kick process, update spectate UI if local player is dead
+                if (GameNetworkManager.Instance.localPlayerController.isPlayerDead)
+                {
+                    HUDManager.Instance.UpdateBoxesSpectateUI();
+                }
+
+                // Finally update player counts
+                // NEEDTOVALIDATE: This function already runs on all clients, do we need this function call here?
+                //SendNewPlayerCountServerRpc(instanceSOR.connectedPlayersAmount, instanceSOR.livingPlayers, AllRealPlayersCount);
+            }
+        }
+
+        /// <summary>
+        /// Simple server rpc to notify all clients that a lethal bot was kicked
+        /// </summary>
+        /// <param name="indexLethalBotAI">Index of the bot being kicked</param>
+        /// <param name="rpcParams"></param>
+        [ServerRpc(RequireOwnership = false)]
+        private void LethalBotKickedServerRpc(int indexLethalBotAI, ServerRpcParams rpcParams = default)
+        {
+            // Allow only the host to update these values
+            if (rpcParams.Receive.SenderClientId != NetworkManager.ServerClientId)
+            {
+                Plugin.LogWarning($"Unauthorized client {rpcParams.Receive.SenderClientId} attempted to kick bot!");
+                return;
+            }
+
+            if (AllLethalBotAIs == null || AllLethalBotAIs.Length == 0)
+            {
+                Plugin.LogError($"Fatal error : client #{NetworkManager.LocalClientId} no bots initialized ! Please check for previous errors in the console");
+                return;
+            }
+            LethalBotAI lethalBotAI = AllLethalBotAIs[indexLethalBotAI];
+            if (lethalBotAI != null)
+            {
+                LethalBotKickedClientRpc(indexLethalBotAI);
+            }
+        }
+
+        /// <summary>
+        /// Simple client rpc to notify all clients that a lethal bot was kicked
+        /// </summary>
+        /// <param name="indexLethalBotAI">Index of the bot being kicked</param>
+        [ClientRpc]
+        private void LethalBotKickedClientRpc(int indexLethalBotAI)
+        {
+            if (AllLethalBotAIs == null || AllLethalBotAIs.Length == 0)
+            {
+                Plugin.LogError($"Fatal error : client #{NetworkManager.LocalClientId} no bots initialized ! Please check for previous errors in the console");
+                return;
+            }
+            LethalBotAI lethalBotAI = AllLethalBotAIs[indexLethalBotAI];
+            if (lethalBotAI != null)
+            {
+                HandleLethalBotKicked(lethalBotAI);
+            }
         }
 
         /// <summary>
@@ -2430,9 +2618,7 @@ namespace LethalBots.Managers
                 {
                     lethalBotController.gameObject.GetComponent<NetworkObject>().RemoveOwnership();
                 }
-                // This exists just in case the bot got added to it somehow!
-                // TODO: Maybe I should allow adding the bot to it since I could allow the host to kick bots!
-                // We would still have to remove them here since they "leave" the server after every round!
+                // Remove from quick menu
                 QuickMenuManager quickMenuManager = UnityEngine.Object.FindObjectOfType<QuickMenuManager>();
                 if (quickMenuManager != null)
                 {

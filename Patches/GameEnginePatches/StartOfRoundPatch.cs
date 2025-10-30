@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using LethalBots.Constants;
 using LethalBots.Managers;
+using LethalBots.AI;
 using LethalBots.Patches.EnemiesPatches;
 using LethalBots.Utils;
 using System;
@@ -620,6 +621,25 @@ namespace LethalBots.Patches.GameEnginePatches
         static void OnDisable_Postfix()
         {
             InputManager.Instance.RemoveEventHandlers();
+        }
+
+        /// <summary>
+        /// Override for when a player is kick to check if it's a bot
+        /// since the base game does not handle that case.
+        /// </summary>
+        /// <param name="playerObjToKick"></param>
+        [HarmonyPatch("KickPlayer")]
+        [HarmonyPrefix]
+        static bool KickPlayer_Prefix(int playerObjToKick)
+        {
+            LethalBotAI? lethalBot = LethalBotManager.Instance.GetLethalBotAI(playerObjToKick);
+            if (lethalBot != null)
+            {
+                // It's a bot, handle the kick
+                LethalBotManager.Instance.OnLethalBotKicked(lethalBot);
+                return false; // Skip original method
+            }
+            return true; // Continue with original method
         }
 
         [HarmonyPatch("UpdatePlayerVoiceEffects")]

@@ -428,6 +428,16 @@ namespace LethalBots.AI
                 // Lethal Bot dead or
                 // Not controlled we do nothing
                 SetAgent(enabled: false);
+
+                // No logic if player controller is disabled!
+                if (NpcController == null
+                || !NpcController.Npc.gameObject.activeSelf
+                || (!NpcController.Npc.isPlayerControlled 
+                    && !NpcController.Npc.isPlayerDead))
+                {
+                    return;
+                }
+
                 if (State != null && State.GetAIState() == EnumAIStates.BrainDead)
                 {
                     // Do the AI calculation behaviour only if we are in the brain dead state
@@ -443,8 +453,7 @@ namespace LethalBots.AI
                         updateDestinationIntervalLethalBotAI = AIIntervalTime;
                     }
                 }
-                else if (NpcController != null 
-                    && NpcController.Npc.isPlayerDead)
+                else if (NpcController.Npc.isPlayerDead)
                 {
                     State = new BrainDeadState(this);
                 }
