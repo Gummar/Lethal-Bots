@@ -249,6 +249,12 @@ namespace LethalBots.AI
                 dictAvailableAudioClipPathsByState.Add(enumVoicesState, LoadAudioClipPathsByState(enumVoicesState).ToList());
             }
 
+            if (DidParametersChanged(parameters))
+            {
+                // Reset pool of audio path
+                availableAudioClipPaths[enumVoicesState].Clear();
+            }
+
             if (!availableAudioClipPaths.ContainsKey(enumVoicesState))
             {
                 availableAudioClipPaths.Add(enumVoicesState, FilterAudioClipPaths(dictAvailableAudioClipPathsByState[enumVoicesState], parameters).ToList());
@@ -270,16 +276,7 @@ namespace LethalBots.AI
             Random randomInstance = new Random();
             int index = randomInstance.Next(0, audioClipPaths.Count);
             audioClipPath = audioClipPaths[index];
-
-            if (DidParametersChanged(parameters))
-            {
-                // Reset pool of audio path
-                availableAudioClipPaths[enumVoicesState].Clear();
-            }
-            else
-            {
-                audioClipPaths.RemoveAt(index);
-            }
+            audioClipPaths.RemoveAt(index);
 
             return audioClipPath;
         }
