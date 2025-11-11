@@ -222,11 +222,13 @@ T-Rizzle: I have made multiple changes to this from the original addon, unlike L
 ## Things to add
 - More Orders, currently you can tell them to loot and follow you.
 - I hope to make them able to do more on the ship terminal in the future.
+- Add some kind of voice recognition software, so bots could respond to simple voice commands.
+- As stated earlier, add TTS to bots so they can be better at relaying information to players.
 
 ## Bugs to fix
-- Sand spider web trap not working for bots. Could potentially use a transpiler?
-- Snare Fleas ignore bots that walk under them. The cause is that they only check for the Local Client walks under them, a transpiler can fix this!
-- Nutcracker ignoring bots. The cause of this is known, but I still don't now how to fix it yet!
-- Ghost Girl spawns but does nothing if it picks a bot. Plans to fix this are currently in the works!
-- Compatibility with modded maps, for environmental hazards damages. The cause is due to most of the player code only running on the local player.
+- Sand spider web trap not working for bots. Transpiler or Postfix should work, just need to find out what would be the best option.
+- Snare Fleas ignore bots that walk under them. The cause is that they only check for the Local Client walks under them, a transpiler or postfix can fix this!
+- Nutcracker ignoring bots. The cause of this is known, but I still don't know a good way to fix it yet!
+- Ghost Girl spawns but does nothing if it picks a bot. Plans to fix this are currently in the works! Lets just say its a lot of transpiler work.......
+- Compatibility with modded maps, for environmental hazards damages. The cause is due to most of the player code only running on the local player, I think I can get some kill triggers to work using transpilers/postfixes.
 - Bots don't use ladders, I know this is a major issue, but fixing it is harder than it seems. For now they use the same movement as the masked!
