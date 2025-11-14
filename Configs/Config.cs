@@ -191,6 +191,7 @@ namespace LethalBots.Configs
             Plugin.Logger.LogDebug(debugLog);
         }
 
+        [Obsolete("This is handled by the Quick Menu in-game now.")]
         public float GetVolumeMultiplierLethalBots()
         {
             // https://stackoverflow.com/questions/29452263/make-tryparse-compatible-with-comma-or-dot-decimal-separator
