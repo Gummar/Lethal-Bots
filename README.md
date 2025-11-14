@@ -86,6 +86,7 @@ Also, the bot only checks for the keywords anywhere in the message, for example,
 </br>**request monitoring** - The bot who is currently on the terminal will monitor you rather than cycling through the players.
 </br>**request teleport** - The bot who is currently on the terminal will teleport you back to the ship.
 </br>**clear monitoring** - The bot who is currently on the terminal will stop monitoring you and return to the default behavior of cycling through players.
+</br>**man the ship** - Makes the bot you are looking at go to the ship terminal and start manning it.
 </br>Please note that you must be in chat range for the bot to hear you. If you are too far away, the bot will not respond to your command.
 If both you and the bot have a walkie-talkie, you can use the command in the chat and the bot will respond to it.
 

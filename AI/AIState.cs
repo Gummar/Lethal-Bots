@@ -278,7 +278,7 @@ namespace LethalBots.AI
                 // FIXMEUPDATE: Ok, using RaycastNonAlloc should help a bit with performance here, but its still not great!
                 RaycastHit[] raycastHits = new RaycastHit[3];
                 Ray interactRay = new Ray(playerWhoSentMessage.gameplayCamera.transform.position, playerWhoSentMessage.gameplayCamera.transform.forward);
-                int raycastResults = Physics.RaycastNonAlloc(interactRay, raycastHits, Const.MAX_CHAT_RANGE, Const.PLAYER_MASK);
+                int raycastResults = Physics.RaycastNonAlloc(interactRay, raycastHits, Const.MAX_CHAT_RANGE, StartOfRound.Instance.playersMask);
                 for (int i = 0; i < raycastResults; i++)
                 {
                     // Check if we hit a player!
@@ -299,6 +299,7 @@ namespace LethalBots.AI
                     // Okay, we found a player, is it a bot and are they following us?
                     LethalBotAI? lethalBot = LethalBotManager.Instance.GetLethalBotAIIfLocalIsOwner(player);
                     if (lethalBot == null
+                        || lethalBot != ai // Make sure its us!
                         || lethalBot.IsSpawningAnimationRunning())
                     {
                         continue;
@@ -307,8 +308,9 @@ namespace LethalBots.AI
                     // Yay, we found a vaild bot, make it the mission controller!
                     LethalBotManager.Instance.MissionControlPlayer = player;
                     ai.State = new MissionControlState(this); // Its fine to set the state here directly, if we are not on the ship, the state will handle moving to the ship!
-                    return;
+                    break;
                 }
+                return;
             }
         }
 
