@@ -90,8 +90,8 @@
     <PackageReference Include="Lost.Compat.NullabilityAttributes" Version="0.0.4" PrivateAssets="all" />
     <PackageReference Include="Mono.pdb2mdb" Version="0.1.0.20130128" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="Rune580.Mods.LethalCompany.InputUtils" Version="0.7.10" />
-    <PackageReference Include="UnityEngine.Modules" Version="6000.2.9" IncludeAssets="compile" />
+    <PackageReference Include="Rune580.Mods.LethalCompany.InputUtils" Version="0.7.12" />
+    <PackageReference Include="UnityEngine.Modules" Version="6000.2.12" IncludeAssets="compile" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
