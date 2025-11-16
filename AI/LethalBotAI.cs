@@ -2170,8 +2170,7 @@ namespace LethalBots.AI
             {
                 if (lethalBot.playerClientId == this.NpcController.Npc.playerClientId
                     || lethalBot.isPlayerDead
-                    || !lethalBot.isPlayerControlled
-                    || !LethalBotManager.Instance.IsPlayerLethalBot(lethalBot))
+                    || !lethalBot.isPlayerControlled)
                 {
                     continue;
                 }
