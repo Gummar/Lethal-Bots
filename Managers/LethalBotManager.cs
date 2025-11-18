@@ -208,7 +208,6 @@ namespace LethalBots.Managers
         private float timerAnimationCulling;
         private float timerNoAnimationAfterLag;
         private LethalBotAI[] lethalBotsInFOV = null!; // new LethalBotAI[50]
-        private float timerUpdatePlayerCount;
 
         private float timerRegisterAINoiseListener;
         private List<EnemyAI> ListEnemyAINonNoiseListeners = new List<EnemyAI>();
@@ -510,25 +509,20 @@ namespace LethalBots.Managers
         {
             UpdateAnimationsCulling();
 
-            timerUpdatePlayerCount += Time.deltaTime;
             StartOfRound instanceSOR = StartOfRound.Instance;
-            if (timerUpdatePlayerCount > 0.5f)
-            {
-                timerUpdatePlayerCount = 0f;
-                if (!isSpawningBots.Value && sendPlayerCountUpdate.Value 
+            if (!isSpawningBots.Value && sendPlayerCountUpdate.Value
                     && (IsServer || IsHost))
+            {
+                // Check and update the amount of dead and living players
+                int livingPlayerCount = 0;
+                foreach (PlayerControllerB playerControllerB in instanceSOR.allPlayerScripts)
                 {
-                    // Check and update the amount of dead and living players
-                    int livingPlayerCount = 0;
-                    foreach (PlayerControllerB playerControllerB in instanceSOR.allPlayerScripts)
+                    if (playerControllerB.isPlayerControlled && !playerControllerB.isPlayerDead)
                     {
-                        if (playerControllerB.isPlayerControlled && !playerControllerB.isPlayerDead)
-                        {
-                            livingPlayerCount++;
-                        }
+                        livingPlayerCount++;
                     }
-                    SendNewPlayerCountServerRpc(instanceSOR.connectedPlayersAmount, livingPlayerCount, AllRealPlayersCount);
                 }
+                SendNewPlayerCountServerRpc(instanceSOR.connectedPlayersAmount, livingPlayerCount, AllRealPlayersCount);
             }
 
             // Start checking for trapped player once the ship has landed
