@@ -2,7 +2,7 @@
 using LethalBots.Constants;
 using LethalBots.Enums;
 using LethalBots.Managers;
-using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
@@ -18,6 +18,7 @@ namespace LethalBots.AI.AIStates
     /// </summary>
     public class UseKeyOnLockedDoorState : AIState
     {
+        private Coroutine? lookingAroundCoroutine = null;
         private DoorLock? targetDoor = null;
         private Vector3? doorPos = null;
         private float attemptToUnlockTimer;
@@ -96,6 +97,7 @@ namespace LethalBots.AI.AIStates
                 // Wait for the lockpicker to be finished!
                 if (placedLockpicker && targetDoor != null && targetDoor.isPickingLock)
                 {
+                    StartLookingAroundCoroutine();
                     return;
                 }
                 ChangeBackToPreviousState();
@@ -185,15 +187,16 @@ namespace LethalBots.AI.AIStates
             // Look at door or not if hidden by stuff
             // NOTE: 2816 is the layer keys and lockpickers use in their raycast checks.
             Vector3 lockerPickerPos = GetClosestSideToDoor();
-            if (!Physics.Linecast(npcController.Npc.gameplayCamera.transform.position, lockerPickerPos, out RaycastHit hitInfo, 2816)
-                || hitInfo.transform.GetComponent<DoorLock>() == this.targetDoor 
-                || hitInfo.transform.GetComponent<TriggerPointToDoor>()?.pointToDoor == this.targetDoor)
+            if (attemptToUnlockTimer > 0.0f // If we are trying to unlock, always look at the door
+                || !Physics.Linecast(npcController.Npc.gameplayCamera.transform.position, lockerPickerPos, out RaycastHit hitInfo, 2816) // Can we see the door?
+                || hitInfo.transform.GetComponent<DoorLock>() == this.targetDoor  // Did we hit the door?
+                || hitInfo.transform.GetComponent<TriggerPointToDoor>()?.pointToDoor == this.targetDoor) // Did we hit the door trigger?
             {
-                npcController.OrderToLookAtPosition(lockerPickerPos);
+                npcController.OrderToLookAtPosition(lockerPickerPos); // Look at the door so we can use the key or lockpicker
             }
             else
             {
-                npcController.OrderToLookForward();
+                npcController.OrderToLookForward(); // Look where we were going
             }
 
             // Close enough to use item, attempt to use
@@ -285,9 +288,67 @@ namespace LethalBots.AI.AIStates
             return this.targetDoor.lockPickerPosition2.localPosition;
         }
 
+        public override void StopAllCoroutines()
+        {
+            base.StopAllCoroutines();
+            StopLookingAroundCoroutine();
+        }
+
         public override void TryPlayCurrentStateVoiceAudio()
         {
             return;
+        }
+
+        /// <summary>
+        /// Coroutine for making bot turn his body to look around him
+        /// </summary>
+        /// <returns></returns>
+        private IEnumerator LookingAround()
+        {
+            yield return null;
+            while (ai.State != null
+                    && ai.State == this)
+            {
+                float freezeTimeRandom = Random.Range(Const.MIN_TIME_SEARCH_LOOKING_AROUND, Const.MAX_TIME_SEARCH_LOOKING_AROUND);
+                float angleRandom = Random.Range(0f, 360f);
+
+                // Convert angle to world position for looking
+                // Convert to local space (relative to the bot's forward direction)
+                Vector3 lookDirection = Quaternion.Euler(0, angleRandom, 0) * Vector3.forward;
+                float minLookDistance = 2f; // TODO: Move these into the Const class!
+                float maxLookDistance = 8f;
+                float lookDistance = Random.Range(minLookDistance, maxLookDistance); // Hardcoded for now
+                Vector3 lookAtPoint = npcController.Npc.gameplayCamera.transform.position + lookDirection * lookDistance;
+
+                // Ensure bot doesn’t look at unreachable areas (optional raycast check)
+                if (Physics.Raycast(npcController.Npc.thisController.transform.position, lookDirection, out RaycastHit hit, lookDistance))
+                {
+                    lookAtPoint = hit.point; // Adjust to the first obstacle it hits
+                }
+
+                // Use OrderToLookAtPosition as SetTurnBodyTowardsDirection can be overriden!
+                npcController.OrderToLookAtPosition(lookAtPoint);
+                yield return new WaitForSeconds(freezeTimeRandom);
+            }
+
+            lookingAroundCoroutine = null;
+        }
+
+        private void StartLookingAroundCoroutine()
+        {
+            if (this.lookingAroundCoroutine == null)
+            {
+                this.lookingAroundCoroutine = ai.StartCoroutine(this.LookingAround());
+            }
+        }
+
+        private void StopLookingAroundCoroutine()
+        {
+            if (this.lookingAroundCoroutine != null)
+            {
+                ai.StopCoroutine(this.lookingAroundCoroutine);
+                this.lookingAroundCoroutine = null;
+            }
         }
 
         // We are unlocking a door, these messages should be queued!
