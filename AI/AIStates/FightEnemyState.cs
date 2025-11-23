@@ -105,36 +105,35 @@ namespace LethalBots.AI.AIStates
 
             // Alright, lets select out weapon!
             // We prefer a ranged weapon if possible!
+            // NOTE: This cannot use HasGrabbableObjectInInventory, since we are picking the best item out of the bot's entire inventory
             int weaponSlot = -1;
             for (int i = 0; i < npcController.Npc.ItemSlots.Length; i++)
             {
+                // Don't pick an empty weapon!
+                // FIXME: We should use a helper function and some enum variables rather
+                // than this hacky mess!
+                // NOTE: HasAmmoForWeapon, checks if the item is a weapon internally!
                 GrabbableObject? weapon = npcController.Npc.ItemSlots[i];
-                if (LethalBotAI.IsItemWeapon(weapon))
+                if (!ai.HasAmmoForWeapon(weapon))
                 {
-                    // Don't pick an empty weapon!
-                    // FIXME: We should use a helper function and some enum variables rather
-                    // than this hacky mess!
-                    if (!ai.HasAmmoForWeapon(weapon))
+                    continue;
+                }
+                weaponSlot = i;
+                if (this.currentEnemy is CentipedeAI)
+                {
+                    if (!LethalBotAI.IsItemRangedWeapon(weapon))
                     {
+                        break; // We want to use a melee weapon on the snare flea!
+                    }
+                    else
+                    {
+                        // We don't want to use a ranged weapon on the snare flea if possible!
                         continue;
                     }
-                    weaponSlot = i;
-                    if (this.currentEnemy is CentipedeAI)
-                    {
-                        if (!LethalBotAI.IsItemRangedWeapon(weapon))
-                        {
-                            break; // We want to use a melee weapon on the snare flea!
-                        }
-                        else
-                        {
-                            // We don't want to use a ranged weapon on the snare flea if possible!
-                            continue;
-                        }
-                    }
-                    else if (LethalBotAI.IsItemRangedWeapon(weapon))
-                    {
-                        break;
-                    }
+                }
+                else if (LethalBotAI.IsItemRangedWeapon(weapon))
+                {
+                    break;
                 }
             }
 

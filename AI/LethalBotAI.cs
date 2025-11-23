@@ -3401,15 +3401,13 @@ namespace LethalBots.AI
             }
             foreach (var weapon in NpcController.Npc.ItemSlots)
             {
-                if (IsItemWeapon(weapon))
+                // Do we need ammo in order to use this weapon?
+                // NOTE: HasAmmoForWeapon, checks if the item is a weapon internally!
+                if (!HasAmmoForWeapon(weapon))
                 {
-                    // Do we need ammo in order to use this weapon?
-                    if (!HasAmmoForWeapon(weapon))
-                    {
-                        continue;
-                    }
-                    return true;
+                    continue;
                 }
+                return true;
             }
             return false;
         }
@@ -3458,7 +3456,8 @@ namespace LethalBots.AI
         /// Is the given item a ranged weapon ?
         /// </summary>
         /// <remarks>
-        /// I will note that it only works on items derived off of the ShotgunItem class!
+        /// I will note that it only works on items derived off of the ShotgunItem class!</br>
+        /// Modders can once again override this as desired!
         /// </remarks>
         /// <returns>I mean come on</returns>
         public static bool IsItemRangedWeapon([NotNullWhen(true)] GrabbableObject? weapon)
@@ -3473,6 +3472,9 @@ namespace LethalBots.AI
         /// <summary>
         /// Is the given item a weapon ?
         /// </summary>
+        /// <remarks>
+        /// Modders can override this to add their own custom weapons for the bots to use!
+        /// </remarks>
         /// <returns>I mean come on</returns>
         public static bool IsItemWeapon([NotNullWhen(true)] GrabbableObject? weapon)
         {
