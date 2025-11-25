@@ -1553,7 +1553,7 @@ namespace LethalBots.AI
 
         /// <summary>
         /// Checks if the line segment is exposed to enemies.
-        /// Was specificaly made for use in <see cref="IsPathDangerousAsync(NavMeshPath, bool, bool, bool, CancellationToken)"/>
+        /// Was specificaly made for use in <see cref="IsPathDangerousAsync(NavMeshPath, bool, bool, bool, bool, CancellationToken)"/>
         /// </summary>
         /// <param name="from">The previous point on the path</param>
         /// <param name="to">The point on the path we are moving to</param>
@@ -1657,7 +1657,7 @@ namespace LethalBots.AI
 
         /// <summary>
         /// Checks if the line segment is dangerous.
-        /// Was specificaly made for use in <see cref="IsPathDangerousAsync(NavMeshPath, bool, bool, bool, CancellationToken)"/>
+        /// Was specificaly made for use in <see cref="IsPathDangerousAsync(NavMeshPath, bool, bool, bool, bool, CancellationToken)"/>
         /// </summary>
         /// <param name="from">The previous point on the path</param>
         /// <param name="to">The point on the path we are moving to</param>
