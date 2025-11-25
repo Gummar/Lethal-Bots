@@ -3491,7 +3491,7 @@ namespace LethalBots.AI
         /// </summary>
         /// <param name="weapon"></param>
         /// <returns></returns>
-        public bool HasAmmoForWeapon(GrabbableObject? weapon, bool spareOnly = false)
+        public bool HasAmmoForWeapon([NotNullWhen(true)] GrabbableObject? weapon, bool spareOnly = false)
         {
             if (!IsItemWeapon(weapon))
             {
@@ -3544,7 +3544,7 @@ namespace LethalBots.AI
         /// <param name="grabbableObject">The object to check if the bot has in its inventory</param>
         /// <param name="objectSlot">The slot of where the object was found at! Is set to -1 if item was not found!</param>
         /// <returns>true: the bot has the object in its inventory, false: the bot doesn't have the given object in its inventory</returns>
-        public bool HasGrabbableObjectInInventory(GrabbableObject? grabbableObject, out int objectSlot)
+        public bool HasGrabbableObjectInInventory([NotNullWhen(true)] GrabbableObject? grabbableObject, out int objectSlot)
         {
             objectSlot = -1;
             if (grabbableObject == null)
@@ -3637,6 +3637,40 @@ namespace LethalBots.AI
                 index++;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Check if the lethalBot has an object that fulfills the given filter in its inventory, and find the best one according to isBetter.
+        /// </summary>
+        /// <remarks>
+        /// NOTE: If you are comparing object references, you are better off using <see cref="HasGrabbableObjectInInventory(GrabbableObject?, out int)"/><br/>
+        /// NOTE: If you just want to know if the bot has an item that fulfills the filter, use <see cref="HasGrabbableObjectInInventory(Func{GrabbableObject?, bool}, out int)"/>
+        /// </remarks>
+        /// <param name="filter">The function to inspect the object in the inventory!</param>
+        /// <param name="isBetter">The function to determine if the found object is better than the current best one! First parameter is the current best item, second parameter is the new candidate item!</param>
+        /// <param name="objectSlot">The slot of where the object was found at! Is set to -1 if item was not found!</param>
+        /// <returns></returns>
+        public bool TryFindItemInInventory(Func<GrabbableObject?, bool> filter, Func<GrabbableObject?, GrabbableObject?, bool> isBetter, out int objectSlot)
+        {
+            // Unlike HasGrabbableObjectInInventory, we can't early out if the bot's held item matches the filter
+            objectSlot = -1;
+            GrabbableObject? bestItem = null;
+
+            // Assess all items in inventory
+            int index = 0;
+            foreach (var item in NpcController.Npc.ItemSlots)
+            {
+                if (filter(item))
+                {
+                    if (bestItem == null || isBetter(bestItem, item))
+                    {
+                        bestItem = item;
+                        objectSlot = index;
+                    }
+                }
+                index++;
+            }
+            return bestItem != null;
         }
 
         /// <summary>
