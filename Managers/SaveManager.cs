@@ -206,7 +206,7 @@ namespace LethalBots.Managers
                 {
                     IdIdentity = lethalBotIdentity.IdIdentity,
                     Hp = lethalBotIdentity.Hp,
-                    SuitID = lethalBotIdentity.SuitID.HasValue ? lethalBotIdentity.SuitID.Value : -1,
+                    SuitID = lethalBotIdentity.SuitID ?? -1,
                     XP = lethalBotIdentity.XP ?? -1,
                     Level = lethalBotIdentity.Level < 0 ? 0 : lethalBotIdentity.Level,
                     Status = (int)lethalBotIdentity.Status
