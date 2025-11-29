@@ -1397,7 +1397,7 @@ namespace LethalBots.Managers
 
                 // Just like text chat, there is a limited range, although, I need to find the actual voice range.
                 // Until then, its the same as using text chat!
-                bool flag = lethalBotAI.NpcController.Npc.holdingWalkieTalkie && playerWhoSaidMessage.holdingWalkieTalkie;
+                bool flag = lethalBotAI.NpcController.Npc.holdingWalkieTalkie && playerWhoSaidMessage.speakingToWalkieTalkie; // We have to check if the player is speakingToWalkieTalkie not holdingWalkieTalkie
                 if (flag || (lethalBotAI.NpcController.Npc.transform.position - playerWhoSaidMessage.transform.position).sqrMagnitude <= Const.MAX_CHAT_RANGE * Const.MAX_CHAT_RANGE)
                 {
                     Plugin.LogDebug($"Bot {lethalBotAI.NpcController.Npc.playerUsername} heard message {message} from {playerWhoSaidMessage.playerUsername}!");

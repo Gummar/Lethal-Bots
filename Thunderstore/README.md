@@ -74,8 +74,8 @@ It is also compatible with the emotes mod, emote in front of bot and they will c
 
 </br>![Lethal-Bots-Suits](https://github.com/T-Rizzle12/Lethal-Bots/blob/master/Assets/Images/bot_suits.gif?raw=true)</br>
 
-## Chat commands!
-The bots have a few chat commands that you can use to tell them to do certain things.
+## Chat and Voice commands!
+The bots have a few chat and voice commands that you can use to tell them to do certain things.
 Please note that these commands are not case sensitive, so you can use any combination of upper and lower case letters.
 Also, the bot only checks for the keywords anywhere in the message, for example, you can use "Jester is going to pop!" and the bot will still respond to it.
 </br>**jester** - The bot will check to see if there is an active jester, if there is, they will try to escape the facility immediately.
@@ -88,6 +88,7 @@ Also, the bot only checks for the keywords anywhere in the message, for example,
 </br>**transmit (desired message)** - The bot who is currently on the terminal will send the given message on the signal translator.
 </br>Please note that you must be in chat range for the bot to hear you. If you are too far away, the bot will not respond to your command.
 If both you and the bot have a walkie-talkie, you can use the command in the chat and the bot will respond to it.
+</br>Please note that these are also voice commands, but they require you to only say the word unlike how they work as said in the chat.
 
 Note: The bot will also respond to commands on the signal translator, but there is a seperate list of commands for that.
 </br>**return** - The bot will return to the ship immediately.
@@ -224,14 +225,15 @@ These bots are to be more player like and this includes advantages such as count
 ## Things to add
 - More Orders, currently you can tell them to loot and follow you. There are a decent amount of chat commands at least?
 - I hope to make them able to do more on the ship terminal in the future. Like purchasing items and who knows what else!
-- Add some kind of voice recognition software, so bots could respond to simple voice commands. (DEVNOTE: Looks like there are some librarys on thunderstore that could help me with this endeavor!)
+- ~~Add some kind of voice recognition software, so bots could respond to simple voice commands. (DEVNOTE: Looks like there are some librarys on thunderstore that could help me with this endeavor!)~~ DONE! :)
 - As stated earlier, add TTS to bots so they can be better at relaying information to players. (DEVNOTE: TTS would be perfect for helping the bots declare enemies on the terminal!)
 
 ## Bugs to fix
-- The game will lag during the inital landing sequence after the bots spawn. I have no idea what causes this, but it fixes itself after the ship lands. This only seems to happen with about 8 or more bots. If you play with the default lobby size of 4 players, you won't see this issue. (DEVUPATE: Found out it might have something to do with collsion, have a few ideas on how to aleviate it!)
+- The game will lag during the inital landing sequence after the bots spawn. I have no idea what causes this, but it fixes itself after the ship lands. This only seems to happen with about 21 or more bots. If you play with the default lobby size of 4 players, you won't see this issue. (DEVUPATE: Found out it might have something to do with collsion, have a few ideas on how to aleviate it!)
 - Sand spider web trap not working for bots. Transpiler or Postfix should work, just need to find out what would be the best option.
 - Snare Fleas ignore bots that walk under them. The cause is that they only check for the Local Client walks under them, a transpiler or postfix can fix this!
 - Nutcracker ignoring bots. The cause of this is known, but I still don't know a good way to fix it yet!
 - Ghost Girl spawns but does nothing if it picks a bot. Plans to fix this are currently in the works! Lets just say its a lot of transpiler work.......
 - Compatibility with modded maps, for environmental hazards damages. The cause is due to most of the player code only running on the local player, I think I can get some kill triggers to work using transpilers/postfixes.
 - Bots don't use ladders, I know this is a major issue, but fixing it is harder than it seems. For now they use the same movement as the masked!
+- Bots can hear you speak if you have push to talk set. The cause of this is how PySpeech works, since it runs a separate application that listens to your microphone. I may be able to fix this......
