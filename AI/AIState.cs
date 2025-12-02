@@ -799,10 +799,10 @@ namespace LethalBots.AI
         /// <returns></returns>
         private IEnumerator findSafePathToTarget()
         {
+            yield return null;
+
             while (ai.State != null)
             {
-                yield return null;
-
                 // Grab the desired position we want to make a safe path to!
                 Vector3? targetDestination = GetDesiredSafePathPosition();
                 if (!targetDestination.HasValue)
