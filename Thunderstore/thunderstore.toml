@@ -5,7 +5,7 @@ schemaVersion = "0.0.1"
 repository = "https://thunderstore.io"
 
 [package]
-description = "An edit of the mod Lethal Interns with the intent of making the Interns more like player bots"
+description = "A Lethal Company Mod that adds bot players to the game. Based off of the code of the mod Lethal Internship."
 websiteUrl = "https://github.com/T-Rizzle12/Lethal-Bots"
 containsNsfwContent = false
 [package.dependencies]
