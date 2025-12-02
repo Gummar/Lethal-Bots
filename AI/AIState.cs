@@ -912,9 +912,8 @@ namespace LethalBots.AI
 
                     // We are still exposed, find cover now!
                     // NEEDTOVALIDATE: Should this be the local vector instead of just the height?
-                    Vector3 ourPos = npcController.Npc.transform.position;
                     bool ourWeOutside = ai.isOutside;
-                    float headOffset = npcController.Npc.gameplayCamera.transform.position.y - ourPos.y;
+                    float headOffset = npcController.Npc.gameplayCamera.transform.position.y - npcController.Npc.transform.position.y;
                     for (var i = 0; i < nodes.Length; i++)
                     {
                         Transform nodeTransform = nodes[i].transform;
@@ -926,14 +925,15 @@ namespace LethalBots.AI
                         }
 
                         // Can we path to the node and is it safe?
-                        if (!ai.IsValidPathToTarget(nodeTransform.position))
+                        Vector3 nodePos = nodeTransform.position;
+                        if (!ai.IsValidPathToTarget(nodePos))
                         {
                             continue;
                         }
 
                         // Check if the node is exposed to enemies
                         bool isNodeSafe = true;
-                        Vector3 simulatedHead = nodeTransform.position + Vector3.up * headOffset;
+                        Vector3 simulatedHead = nodePos + Vector3.up * headOffset;
                         RoundManager instanceRM = RoundManager.Instance;
                         for (int j = 0; j < instanceRM.SpawnedEnemies.Count; j++)
                         {
@@ -952,7 +952,7 @@ namespace LethalBots.AI
                             // Check if the target is a threat!
                             float? dangerRange = ai.GetFearRangeForEnemies(checkLOSToTarget, EnumFearQueryType.PathfindingAvoid);
                             Vector3 enemyPos = checkLOSToTarget.transform.position;
-                            if (dangerRange.HasValue && (enemyPos - ourPos).sqrMagnitude <= dangerRange * dangerRange)
+                            if (dangerRange.HasValue && (enemyPos - nodePos).sqrMagnitude <= dangerRange * dangerRange)
                             {
                                 // Do the actual traceline check
                                 Vector3 viewPos = checkLOSToTarget.eye?.position ?? enemyPos;
