@@ -5,14 +5,15 @@ using LethalBots.Enums;
 using LethalBots.Managers;
 using LethalLib.Modules;
 using Steamworks;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using static UnityEngine.GraphicsBuffer;
+using Object = UnityEngine.Object;
+using Random = UnityEngine.Random;
 
 namespace LethalBots.AI.AIStates
 {
@@ -39,7 +40,7 @@ namespace LethalBots.AI.AIStates
         private static Landmine[] landmines = null!;
         private static SpikeRoofTrap[] spikeRoofTraps = null!;
         private Dictionary<string, float> calledOutEnemies = new Dictionary<string, float>(); // Should this be an enemy name rather than the AI itself?
-        private Queue<string> messageQueue = new Queue<string>(); // TODO: Change this to a priority queue later down the line. Sadly C# doesn't have one built-in :( I will have to implement one later!
+        private PriorityMessageQueue messageQueue = new PriorityMessageQueue();
         private static readonly FieldInfo isDoorOpen = AccessTools.Field(typeof(TerminalAccessibleObject), "isDoorOpen");
         private static readonly FieldInfo inCooldown = AccessTools.Field(typeof(TerminalAccessibleObject), "inCooldown");
         private static ShipTeleporter? _shipTeleporter;
@@ -668,11 +669,12 @@ namespace LethalBots.AI.AIStates
                     string enemyName = GetEnemyName(spawnedEnemy);
                     if (!spawnedEnemy.isEnemyDead && (!calledOutEnemies.TryGetValue(enemyName, out var lastCalledTime) || Time.timeSinceLevelLoad - lastCalledTime > Const.TIMER_NEXT_ENEMY_CALL))
                     {
-                        float? fearRange = ai.GetFearRangeForEnemies(spawnedEnemy); // NOTE: This is what the bot perceves as dangerous!
+                        float? fearRange = ai.GetFearRangeForEnemies(spawnedEnemy); // NOTE: This is what the bot perceives as dangerous!
                         if ((fearRange.HasValue || IsEnemy(spawnedEnemy)) && (spawnedEnemy.transform.position - playerPos).sqrMagnitude < 40f * 40f)
                         {
                             calledOutEnemies[enemyName] = Time.timeSinceLevelLoad;
-                            SendMessageUsingSignalTranslator(enemyName);
+                            MessagePriority messagePriority = spawnedEnemy is JesterAI ? MessagePriority.Critical : MessagePriority.Low; // If we see a jester, that is an immediate callout!
+                            SendMessageUsingSignalTranslator(enemyName, messagePriority);
                         }
                     }
                     yield return null;
@@ -686,7 +688,7 @@ namespace LethalBots.AI.AIStates
                     if (LethalBotManager.lastReportedTimeOfDay != newDayMode)
                     {
                         LethalBotManager.Instance.SetLastReportedTimeOfDayAndSync(newDayMode);
-                        SendMessageUsingSignalTranslator(GetCurrentTime(timeOfDay.normalizedTimeOfDay, timeOfDay.numberOfHours, createNewLine: false));
+                        SendMessageUsingSignalTranslator(GetCurrentTime(timeOfDay.normalizedTimeOfDay, timeOfDay.numberOfHours, createNewLine: false), MessagePriority.Normal);
                     }
                 }
                 yield return null;
@@ -700,11 +702,11 @@ namespace LethalBots.AI.AIStates
         /// This queues a message to be sent by the bot using the signal translator!
         /// </summary>
         /// <param name="message"></param>
-        private void SendMessageUsingSignalTranslator(string message)
+        private void SendMessageUsingSignalTranslator(string message, MessagePriority priority = MessagePriority.Low)
         {
             if (!string.IsNullOrWhiteSpace(message))
             {
-                messageQueue.Enqueue(message);
+                messageQueue.Enqueue(message, priority);
             }
         }
 
@@ -1223,7 +1225,7 @@ namespace LethalBots.AI.AIStates
                     string messageToTransmit = message.Substring(transmitIndex).Trim();
 
                     // Queue the message to be sent!
-                    SendMessageUsingSignalTranslator(messageToTransmit);
+                    SendMessageUsingSignalTranslator(messageToTransmit, MessagePriority.High);
                 }
             }
         }
@@ -1233,6 +1235,76 @@ namespace LethalBots.AI.AIStates
         public override void OnSignalTranslatorMessageReceived(string message)
         {
             return;
+        }
+
+        /// <summary>
+        /// This is basicially <see cref="Queue{T}"/>, but its designed to allow me to set the priority of messages!
+        /// </summary>
+        private sealed class PriorityMessageQueue
+        {
+            private readonly Dictionary<MessagePriority, Queue<string>> _queues;
+            public PriorityMessageQueue()
+            {
+                _queues = new Dictionary<MessagePriority, Queue<string>>()
+                {
+                    { MessagePriority.Critical, new Queue<string>() },
+                    { MessagePriority.High, new Queue<string>() },
+                    { MessagePriority.Normal, new Queue<string>() },
+                    { MessagePriority.Low, new Queue<string>() }
+                };
+            }
+
+            /// <inheritdoc cref="Queue{T}.Enqueue(T)"/>
+            public void Enqueue(string message, MessagePriority priority = MessagePriority.Low)
+            {
+                _queues[priority].Enqueue(message);
+            }
+
+            /// <inheritdoc cref="Queue{T}.TryDequeue(out T)"/>
+            public bool TryDequeue(out string message)
+            {
+                for (var priority = MessagePriority.Critical; priority <= MessagePriority.Low; priority++)
+                {
+                    var q = _queues[priority];
+                    if (q.TryDequeue(out message))
+                    {
+                        return true;
+                    }
+                }
+
+                message = string.Empty;
+                return false;
+            }
+
+            /// <inheritdoc cref="Queue{T}.TryPeek(out T)"/>
+            public bool TryPeek(out string message)
+            {
+                for (var priority = MessagePriority.Critical; priority <= MessagePriority.Low; priority++)
+                {
+                    var q = _queues[priority];
+                    if (q.TryPeek(out message))
+                    {
+                        return true;
+                    }
+                }
+
+                message = string.Empty;
+                return false;
+            }
+
+            /// <inheritdoc cref="Queue{T}.Count"/>
+            public int Count
+            {
+                get
+                {
+                    int total = 0;
+                    foreach (var q in _queues.Values)
+                    {
+                        total += q.Count;
+                    }
+                    return total;
+                }
+            }
         }
     }
 }
