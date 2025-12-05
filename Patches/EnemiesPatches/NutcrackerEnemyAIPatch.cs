@@ -94,7 +94,7 @@ namespace LethalBots.Patches.EnemiesPatches
 
                     // TODO: I should use a transpiler to fix the nutcracker firing part of the code, the current method is really hacky!
                     PlayerControllerB targetPlayer = StartOfRound.Instance.allPlayerScripts[__instance.lastPlayerSeenMoving];
-                    if (LethalBotManager.Instance.IsPlayerLethalBotOwnerLocal(targetPlayer) && ___timeSinceSeeingTarget < 8f)
+                    if (LethalBotManager.Instance.IsPlayerLethalBotOwnerLocal(targetPlayer) && __instance.CheckLineOfSightForPosition(targetPlayer.gameplayCamera.transform.position, 70f, 60, 1f) && ___timeSinceSeeingTarget < 8f)
                     {
                         if (___timeSinceFiringGun > 0.75f && !___reloadingGun && !___aimingGun && ___timeSinceHittingPlayer > 1f && Vector3.Angle(__instance.gun.shotgunRayPoint.forward, targetPlayer.gameplayCamera.transform.position - __instance.gun.shotgunRayPoint.position) < 30f)
 				        {
