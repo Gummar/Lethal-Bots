@@ -121,7 +121,6 @@ namespace LethalBots.AI
         private float currentAnimationSpeed;
         private float previousAnimationSpeed;
 
-        private float timerShowName;
         private float timerPlayFootstep;
 
         public NpcController(PlayerControllerB npc)
@@ -1626,21 +1625,20 @@ namespace LethalBots.AI
                 Npc.usernameBillboardText.text = string.Empty;
             }
 
-
-            if (timerShowName >= 0f)
+            if (instanceGNM.localPlayerController != null && Npc.usernameAlpha.alpha >= 0f)
             {
-                timerShowName -= Time.deltaTime;
                 Npc.usernameBillboardText.text += $"\n{Npc.playerUsername}";
-
                 if (LethalBotAIController.IsClientOwnerOfLethalBot())
                 {
                     Npc.usernameBillboardText.text += $"\nv";
                 }
-            }
 
-            if (instanceGNM.localPlayerController != null)
-            {
+                Npc.usernameAlpha.alpha -= Time.deltaTime;
                 UpdateBillBoardLookAtTimedCheck.UpdateBillboardLookAt(Npc, SqrDistanceWithLocalPlayerTimedCheck.GetSqrDistanceWithLocalPlayer(Npc.transform.position) < 10f * 10f);
+            }
+            else if (Npc.usernameCanvas.gameObject.activeSelf)
+            {
+                Npc.usernameCanvas.gameObject.SetActive(value: false);
             }
 
             // Physics regions
@@ -2531,11 +2529,6 @@ namespace LethalBots.AI
             }
 
             dictAnimationBoolPerItem[animationString] = value;
-        }
-
-        public void ShowFullNameBillboard()
-        {
-            timerShowName = 1f;
         }
 
         /// <summary>
