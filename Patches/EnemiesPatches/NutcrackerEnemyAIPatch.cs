@@ -184,24 +184,6 @@ namespace LethalBots.Patches.EnemiesPatches
             }
             return false;
         }
-
-        /// <summary>
-        /// Patch to clean up <see cref="UpdateLimiter"/>'s that are no longer needed.
-        /// </summary>
-        /// <remarks>
-        /// Although <see cref="ConditionalWeakTable{TKey, TValue}"/> can clean this for us,
-        /// it will only clean the table if nothing refrences the key anymore.
-        /// </remarks>
-        /// <param name="__instance"></param>
-        [HarmonyPatch("OnDestroy")]
-        [HarmonyPostfix]
-        private static void OnDestroy_Postfix(NutcrackerEnemyAI __instance)
-        {
-            if (nextUpdateList.TryGetValue(__instance, out _))
-            {
-                nextUpdateList.Remove(__instance);
-            }
-        }
     }
 
     /// <summary>
