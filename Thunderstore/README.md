@@ -232,7 +232,7 @@ These bots are to be more player like and this includes advantages such as count
 - The game will lag during the inital landing sequence after the bots spawn. I have no idea what causes this, but it fixes itself after the ship lands. This only seems to happen with about 21 or more bots. If you play with the default lobby size of 4 players, you won't see this issue. (DEVUPATE: Found out it might have something to do with collsion, have a few ideas on how to aleviate it!)
 - Sand spider web trap not working for bots. Transpiler or Postfix should work, just need to find out what would be the best option.
 - Snare Fleas ignore bots that walk under them. The cause is that they only check for the Local Client walks under them, a transpiler or postfix can fix this!
-- Nutcracker ignoring bots. The cause of this is known, but I still don't know a good way to fix it yet!
+- ~~Nutcracker ignoring bots. The cause of this is known, but I still don't know a good way to fix it yet!~~ Fixed!
 - Ghost Girl spawns but does nothing if it picks a bot. Plans to fix this are currently in the works! Lets just say its a lot of transpiler work.......
 - Compatibility with modded maps, for environmental hazards damages. The cause is due to most of the player code only running on the local player, I think I can get some kill triggers to work using transpilers/postfixes.
 - Bots don't use ladders, I know this is a major issue, but fixing it is harder than it seems. For now they use the same movement as the masked!
