@@ -1201,7 +1201,11 @@ namespace LethalBots.AI.AIStates
                 // This player wants to be teleported back to the ship
                 else if (message.Contains("request teleport"))
                 {
-                    playersRequstedTeleport.Enqueue(playerWhoSentMessage);
+                    // Only add new requests!
+                    if (!playersRequstedTeleport.Contains(playerWhoSentMessage))
+                    { 
+                        playersRequstedTeleport.Enqueue(playerWhoSentMessage); 
+                    }
                 }
                 // A player is asking us to get off the terminal,
                 // probably so they can use it.
