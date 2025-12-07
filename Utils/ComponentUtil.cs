@@ -17,11 +17,27 @@ namespace LethalBots.Utils
             }
 
             Plugin.LogDebug(" ");
-            Plugin.LogDebug(" List of components :");
-            Component[] components = gameObject.GetComponentsInChildren(typeof(Component));
+            Plugin.LogDebug("List of components :");
+            Component[] components = gameObject.GetComponents(typeof(Component));
             foreach (Component component in components)
             {
                 if(component == null) continue;
+                Plugin.LogDebug(component.ToString());
+            }
+
+            Plugin.LogDebug("Child components :");
+            components = gameObject.GetComponentsInChildren(typeof(Component));
+            foreach (Component component in components)
+            {
+                if (component == null) continue;
+                Plugin.LogDebug(component.ToString());
+            }
+
+            Plugin.LogDebug("Parent components :");
+            components = gameObject.GetComponentsInParent(typeof(Component));
+            foreach (Component component in components)
+            {
+                if (component == null) continue;
                 Plugin.LogDebug(component.ToString());
             }
         }

@@ -30,6 +30,7 @@ namespace LethalBots.AI.AIStates
         private float waitForTerminalTime; // This is used to wait for the terminal to be free
         private bool targetPlayerUpdated; // This tells the signal translator coroutine the targeted player has updated!
         private WalkieTalkie? walkieTalkie; // This is the walkie-talkie we want to have in our inventory
+        private GrabbableObject? weapon; // This is the weapon we want to have in our inventory
         private PlayerControllerB? targetedPlayer; // This is the current player on the monitor based on last vision update
         private PlayerControllerB? monitoredPlayer; // This is the player we want to be monitoring
         private Queue<PlayerControllerB> playersRequstedTeleport = new Queue<PlayerControllerB>();
@@ -106,6 +107,7 @@ namespace LethalBots.AI.AIStates
                 landmines = UnityEngine.Object.FindObjectsOfType<Landmine>();
                 spikeRoofTraps = UnityEngine.Object.FindObjectsOfType<SpikeRoofTrap>();
                 FindWalkieTalkie();
+                FindWeapon();
             }
             base.OnEnterState();
         }
@@ -252,6 +254,42 @@ namespace LethalBots.AI.AIStates
                 {
                     leavePlanetTimer = 0f;
                 }
+
+                // If we have a weapon, we should fight any enemies that invaded the ship
+                if (weapon != null)
+                {
+                    // If we don't have our weapon, we should pick it up!
+                    if (!ai.HasGrabbableObjectInInventory(weapon, out _))
+                    {
+                        if (!weapon.isInShipRoom || weapon.isHeld)
+                        {
+                            FindWeapon();
+                            return;
+                        }
+                        LethalBotAI.DictJustDroppedItems.Remove(weapon);
+                        ai.State = new FetchingObjectState(this, weapon);
+                        return;
+                    }
+                    // If our weapon uses batteries and its low on battery, we should charge it!
+                    else if (weapon.itemProperties.requiresBattery 
+                        && (weapon.insertedBattery == null || weapon.insertedBattery.empty))
+                    {
+                        // We should charge our weapon if we can!
+                        ai.State = new ChargeHeldItemState(this, weapon);
+                        return;
+                    }
+                    else
+                    {
+                        // Check if one of them are killable!
+                        EnemyAI? newEnemyAI = CheckForInvadingEnemy();
+                        if (newEnemyAI != null)
+                        {
+                            // ATTACK!
+                            ai.State = new FightEnemyState(this, newEnemyAI);
+                            return;
+                        }
+                    }
+                }
             }
 
             // Terminal is invalid for some reason, just wait for now!
@@ -267,6 +305,11 @@ namespace LethalBots.AI.AIStates
                 // We don't have the walkie-talkie, so we should pick it up!
                 if (!ai.HasGrabbableObjectInInventory(walkieTalkie, out int walkieSlot))
                 { 
+                    if (!walkieTalkie.isInShipRoom || walkieTalkie.isHeld)
+                    {
+                        FindWalkieTalkie();
+                        return;
+                    }
                     LethalBotAI.DictJustDroppedItems.Remove(walkieTalkie); // HACKHACK: Since the walkie-talkie is on the ship, we clear the just dropped item timer!
                     ai.State = new FetchingObjectState(this, walkieTalkie);
                     return;
@@ -1066,7 +1109,7 @@ namespace LethalBots.AI.AIStates
         /// <param name="numberOfHours"></param>
         /// <param name="createNewLine"></param>
         /// <returns></returns>
-        private string GetCurrentTime(float timeNormalized, float numberOfHours, bool createNewLine = true)
+        private static string GetCurrentTime(float timeNormalized, float numberOfHours, bool createNewLine = true)
         {
             int num = (int)(timeNormalized * (60f * numberOfHours)) + 360;
             int num2 = (int)Mathf.Floor(num / 60);
@@ -1111,6 +1154,7 @@ namespace LethalBots.AI.AIStates
         private void FindWalkieTalkie()
         {
             // First, we need to check if we have a walkie-talkie in our inventory
+            walkieTalkie = null;
             foreach (var walkieTalkie in npcController.Npc.ItemSlots)
             {
                 if (walkieTalkie != null && walkieTalkie is WalkieTalkie walkieTalkieObj)
@@ -1145,6 +1189,102 @@ namespace LethalBots.AI.AIStates
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Helper function to find a weapon in our inventory or on the ship!
+        /// </summary>
+        private void FindWeapon()
+        {
+            // First, we need to check if we have a walkie-talkie in our inventory
+            weapon = null;
+            foreach (var weapon in npcController.Npc.ItemSlots)
+            {
+                // NOTE: HasAmmoForWeapon, checks if the item is a weapon internally!
+                if (ai.HasAmmoForWeapon(weapon))
+                {
+                    this.weapon = weapon;
+                    return;
+                }
+            }
+
+            // So, we don't have a walkie-talkie in our inventory, lets check the ship!
+            float closestWeaponSqr = float.MaxValue;
+            for (int i = 0; i < LethalBotManager.grabbableObjectsInMap.Count; i++)
+            {
+                GameObject gameObject = LethalBotManager.grabbableObjectsInMap[i];
+                if (gameObject == null)
+                {
+                    LethalBotManager.grabbableObjectsInMap.TrimExcess();
+                    continue;
+                }
+
+                GrabbableObject? weapon = gameObject.GetComponent<GrabbableObject>();
+                if (ai.HasAmmoForWeapon(weapon)
+                    && weapon.isInShipRoom)
+                {
+                    float walkieSqr = (weapon.transform.position - npcController.Npc.transform.position).sqrMagnitude;
+                    if (walkieSqr < closestWeaponSqr
+                        && ai.IsGrabbableObjectGrabbable(weapon)) // NOTE: IsGrabbableObjectGrabbable has a pathfinding check, so we run it last since it can be expensive!
+                    {
+                        closestWeaponSqr = walkieSqr;
+                        this.weapon = weapon;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Helper function that checks if an enemy is invading the ship!
+        /// </summary>
+        /// <returns></returns>
+        private EnemyAI? CheckForInvadingEnemy()
+        {
+            RoundManager instanceRM = RoundManager.Instance;
+            Transform thisLethalBotCamera = this.npcController.Npc.gameplayCamera.transform;
+            Bounds shipBounds = StartOfRound.Instance.shipInnerRoomBounds.bounds;
+            EnemyAI? closestEnemy = null;
+            float closestEnemyDistSqr = float.MaxValue;
+            foreach (EnemyAI spawnedEnemy in instanceRM.SpawnedEnemies)
+            {
+                // Only check for alive and invading enemies!
+                if (spawnedEnemy.isEnemyDead 
+                    || !ai.CanEnemyBeKilled(spawnedEnemy))
+                {
+                    continue;
+                }
+
+                // HACKHACK: isInsidePlayerShip can be unreliable, YAY, so we have to check the shipInnerRoomBounds as well.....
+                if (!spawnedEnemy.isInsidePlayerShip 
+                    && !shipBounds.Contains(spawnedEnemy.transform.position))
+                {
+                    continue;
+                }
+
+                // Fear range
+                float? fearRange = ai.GetFearRangeForEnemies(spawnedEnemy);
+                if (!fearRange.HasValue)
+                {
+                    continue;
+                }
+
+                // Alright, mark masked players since we are now aware of their EVIL presence!
+                if (spawnedEnemy is MaskedPlayerEnemy masked)
+                {
+                    ai.DictKnownMasked[masked] = true;
+                }
+
+                Vector3 positionEnemy = spawnedEnemy.transform.position;
+                Vector3 directionEnemyFromCamera = positionEnemy - thisLethalBotCamera.position;
+                float sqrDistanceToEnemy = directionEnemyFromCamera.sqrMagnitude;
+                if (sqrDistanceToEnemy < closestEnemyDistSqr)
+                {
+                    closestEnemyDistSqr = sqrDistanceToEnemy;
+                    closestEnemy = spawnedEnemy;
+                }
+            }
+
+            return closestEnemy;
         }
 
         public override bool CheckAllowsTerminalUse() => true;

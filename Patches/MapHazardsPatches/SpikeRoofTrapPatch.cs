@@ -2,6 +2,7 @@
 using HarmonyLib;
 using LethalBots.AI;
 using LethalBots.Managers;
+using LethalBots.Utils;
 using UnityEngine;
 
 namespace LethalBots.Patches.MapHazardsPatches
@@ -33,43 +34,46 @@ namespace LethalBots.Patches.MapHazardsPatches
         }
 
         // A function we use to find that dang TerminalAccessibleObject
-        [HarmonyPatch("Start")]
-        [HarmonyPostfix]
-        static void Start_PostFix(SpikeRoofTrap __instance)
-        {
-            // Ok, so I already know that GetComponent, GetComponentInChildren, and GetComponentInParent on the trap itself doesnt work, could it be on the animator or something?
-            // LIST OF FIELDS TESTED:
-            // Instance: FAILED
-            // spikeTrapAnimator: FAILED
-            // laserEye: FAILED
-            // stickingPointsContainer:
-            HUDManager.Instance?.DisplayTip("Spike Roof Trap Spawned", "Check the logs!!!!!!");
-            TerminalAccessibleObject terminalAccessibleObject = __instance.stickingPointsContainer.GetComponent<TerminalAccessibleObject>();
-            if (terminalAccessibleObject == null)
-            {
-                terminalAccessibleObject = __instance.stickingPointsContainer.GetComponentInParent<TerminalAccessibleObject>();
-                if (terminalAccessibleObject == null)
-                {
-                    terminalAccessibleObject = __instance.stickingPointsContainer.GetComponentInChildren<TerminalAccessibleObject>();
-                    if (terminalAccessibleObject == null)
-                    {
-                        Plugin.LogDebug("Failed to find TerminalAccessibleObject in SpikeRoofTrap! :(");
-                        return;
-                    }
-                    else
-                    {
-                        Plugin.LogDebug("SpikeRoofTrap had TerminalAccessibleObject in animator under GetComponentInChildren.");
-                    }
-                }
-                else
-                {
-                    Plugin.LogDebug("SpikeRoofTrap had TerminalAccessibleObject in animator under GetComponentInParent.");
-                }
-            }
-            else
-            {
-                Plugin.LogDebug("SpikeRoofTrap had TerminalAccessibleObject in animator under GetComponent.");
-            }
-        }
+        //[HarmonyPatch("Start")]
+        //[HarmonyPostfix]
+        //static void Start_PostFix(SpikeRoofTrap __instance)
+        //{
+        //    // Ok, so I already know that GetComponent, GetComponentInChildren, and GetComponentInParent on the trap itself doesnt work, could it be on the animator or something?
+        //    // LIST OF FIELDS TESTED:
+        //    // Instance: FAILED
+        //    // spikeTrapAnimator: FAILED
+        //    // laserEye: FAILED
+        //    // stickingPointsContainer: FAILED
+        //    // spikeTrapAudio:
+        //    HUDManager.Instance?.DisplayTip("Spike Roof Trap Spawned", "Check the logs!!!!!!");
+        //    TerminalAccessibleObject terminalAccessibleObject = __instance.spikeTrapAudio.GetComponent<TerminalAccessibleObject>();
+        //    if (terminalAccessibleObject == null)
+        //    {
+        //        terminalAccessibleObject = __instance.spikeTrapAudio.GetComponentInParent<TerminalAccessibleObject>();
+        //        if (terminalAccessibleObject == null)
+        //        {
+        //            terminalAccessibleObject = __instance.spikeTrapAudio.GetComponentInChildren<TerminalAccessibleObject>();
+        //            if (terminalAccessibleObject == null)
+        //            {
+        //                Plugin.LogDebug("Failed to find TerminalAccessibleObject in SpikeRoofTrap! :(");
+        //            }
+        //            else
+        //            {
+        //                Plugin.LogDebug("SpikeRoofTrap had TerminalAccessibleObject in animator under GetComponentInChildren.");
+        //            }
+        //        }
+        //        else
+        //        {
+        //            Plugin.LogDebug("SpikeRoofTrap had TerminalAccessibleObject in animator under GetComponentInParent.");
+        //        }
+        //    }
+        //    else
+        //    {
+        //        Plugin.LogDebug("SpikeRoofTrap had TerminalAccessibleObject in animator under GetComponent.");
+        //    }
+
+        //    Plugin.LogDebug($"Listing all components in {__instance}");
+        //    ComponentUtil.ListAllComponents(__instance.gameObject);
+        //}
     }
 }

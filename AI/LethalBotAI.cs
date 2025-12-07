@@ -3513,6 +3513,9 @@ namespace LethalBots.AI
         /// <summary>
         /// Checks if the current weapon has ammo.
         /// </summary>
+        /// <remarks>
+        /// This also checks if the item is a weapon internally!
+        /// </remarks>
         /// <param name="weapon"></param>
         /// <returns></returns>
         public bool HasAmmoForWeapon([NotNullWhen(true)] GrabbableObject? weapon, bool spareOnly = false)

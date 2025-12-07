@@ -370,7 +370,7 @@ namespace LethalBots.AI.AIStates
                     Vector3 lookAtPoint = npcController.Npc.gameplayCamera.transform.position + lookDirection * lookDistance;
 
                     // Ensure bot doesn’t look at unreachable areas (optional raycast check)
-                    if (Physics.Raycast(npcController.Npc.thisController.transform.position, lookDirection, out RaycastHit hit, lookDistance))
+                    if (Physics.Raycast(npcController.Npc.thisController.transform.position, lookDirection, out RaycastHit hit, lookDistance, StartOfRound.Instance.collidersAndRoomMaskAndDefault))
                     {
                         lookAtPoint = hit.point; // Adjust to the first obstacle it hits
                     }
