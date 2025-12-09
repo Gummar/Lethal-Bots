@@ -10,19 +10,19 @@ namespace LethalBots.AI
     {
         public LethalBotThreat(EnemyAI enemyAI, Func<LethalBotFearQuery, float?> pankFunc, Func<LethalBotFearQuery, float?> missionControlFunc, Func<LethalBotFearQuery, float?> pathfindFunc)
         {
-            ThreatName = enemyAI.enemyType.enemyName;
+            ThreatType = enemyAI.GetType();
             panikFearRange = pankFunc;
             missionControlFearRange = missionControlFunc;
             pathfindingFearRange = pathfindFunc;
         }
-        public LethalBotThreat(string threatName, Func<LethalBotFearQuery, float?> pankFunc, Func<LethalBotFearQuery, float?> missionControlFunc, Func<LethalBotFearQuery, float?> pathfindFunc)
+        public LethalBotThreat(Type threatType, Func<LethalBotFearQuery, float?> pankFunc, Func<LethalBotFearQuery, float?> missionControlFunc, Func<LethalBotFearQuery, float?> pathfindFunc)
         {
-            ThreatName = threatName;
+            ThreatType = threatType;
             panikFearRange = pankFunc;
             missionControlFearRange = missionControlFunc;
             pathfindingFearRange = pathfindFunc;
         }
-        public string ThreatName { get; private set; }
+        public Type ThreatType { get; private set; }
         private readonly Func<LethalBotFearQuery, float?> panikFearRange;
         private readonly Func<LethalBotFearQuery, float?> missionControlFearRange;
         private readonly Func<LethalBotFearQuery, float?> pathfindingFearRange;

@@ -140,7 +140,7 @@ namespace LethalBots.AI
             {
                 if (_inverseTeleporter == null)
                 {
-                    _inverseTeleporter = FindInverseTeleporter();
+                    _inverseTeleporter = FindTeleporter(true);
                 }
                 return _inverseTeleporter;
             }
@@ -2792,7 +2792,7 @@ namespace LethalBots.AI
             return $"<size={sizePercentage}%>{indicator}</size>";
         }
 
-        private static ShipTeleporter? FindInverseTeleporter()
+        internal static ShipTeleporter? FindTeleporter(bool inverseTeleporter = false)
         {
             ShipTeleporter[] shipTeleporters = Object.FindObjectsOfType<ShipTeleporter>(includeInactive: false);
             foreach (var teleporter in shipTeleporters)
@@ -2802,7 +2802,7 @@ namespace LethalBots.AI
                     continue;
                 }
 
-                if (teleporter.isInverseTeleporter)
+                if (teleporter.isInverseTeleporter == inverseTeleporter)
                 {
                     return teleporter;
                 }

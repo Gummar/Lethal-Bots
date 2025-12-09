@@ -227,7 +227,7 @@ namespace LethalBots.Managers
 
         private float timerRegisterAINoiseListener;
         private List<EnemyAI> ListEnemyAINonNoiseListeners = new List<EnemyAI>();
-        private static Dictionary<string, LethalBotThreat> DictionaryLethalBotThreats = new Dictionary<string, LethalBotThreat>();
+        private static Dictionary<Type, LethalBotThreat> DictionaryLethalBotThreats = new Dictionary<Type, LethalBotThreat>();
         public static List<GameObject> grabbableObjectsInMap = new List<GameObject>();
         public Dictionary<string, int> DictTagSurfaceIndex = new Dictionary<string, int>();
 
@@ -404,160 +404,7 @@ namespace LethalBots.Managers
 
             // Register default threats
             DictionaryLethalBotThreats.Clear();
-
-            // Static value threats
-            RegisterThreat("Crawler", 20f, 10f, 20f);
-            RegisterThreat("ForestGiant", 30f, 10f, 40f);
-            RegisterThreat("Earth Leviathan", 10f, null, 15f);
-            RegisterThreat("ImmortalSnail", 10f, null, 10f);
-            RegisterThreat("Clay Surgeon", 15f, null, 10f);
-            RegisterThreat("Flowerman", 10f, null, 5f);
-            RegisterThreat("Bush Wolf", 15f, 10f, 15f);
-            RegisterThreat("Puffer", 2f, null, 2f);
-            RegisterThreat("Red Locust Bees", 10f, null, 15f);
-            RegisterThreat("Butler Bees", 20f, null, 15f);
-            RegisterThreat("Blob", 10f, null, 10f);
-            RegisterThreat("Baboon hawk", 10f, 5f, 10f);
-
-            // Dynamic behavior threats
-            RegisterThreat("RadMech",
-                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 30f : null,
-                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 20f : null,
-                fq => 40f // Always 40 for pathfinding
-            );
-
-            RegisterThreat("T-rex",
-                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 30f : null,
-                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 30f : null,
-                fq => 40f // Always 40 for pathfinding
-            );
-
-            RegisterThreat("Maneater",
-                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 30f : null,
-                fq => fq.EnemyAI.currentBehaviourStateIndex > 2 ? 30f : null,
-                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 30f : null
-            );
-
-            RegisterThreat("Jester",
-                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? float.MaxValue : null,
-                fq => fq.EnemyAI.currentBehaviourStateIndex == 2 && (fq.PlayerToCheck == null || fq.PlayerToCheck.isInsideFactory) ? float.MaxValue : null,
-                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? null : 20f // Always 20 for pathfinding, unless they are winding up, then we need to move NOW!
-            );
-
-            RegisterThreat("MouthDog",
-                fq => fq.EnemyAI is MouthDogAI dog && dog.suspicionLevel >= 9 ? 20f : 5f,
-                fq => fq.EnemyAI is MouthDogAI dog && dog.suspicionLevel >= 9 ? 20f : null,
-                fq => fq.EnemyAI is MouthDogAI dog && dog.suspicionLevel > 1 ? 30f : 20f // Increase the danger range if they are angry!
-            );
-
-            RegisterThreat("Centipede",
-                fq => 
-                {
-                    if (fq.EnemyAI is CentipedeAI c && c.clingingToPlayer != null)
-                    {
-                        return c.clingingToPlayer == fq.Bot ? 1f : 15f;
-                    }
-                    return fq.EnemyAI.currentBehaviourStateIndex > 1 ? 15f : 1f;
-                },
-                fq => fq.EnemyAI is CentipedeAI c && c.clingingToPlayer == fq.PlayerToCheck ? float.MaxValue : null,
-                fq => fq.EnemyAI.currentBehaviourStateIndex > 1 ||
-                      (fq.EnemyAI is CentipedeAI c && c.clingingToPlayer != null) ? 15f : 1f
-            );
-
-            RegisterThreat("Spring",
-                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 20f : null,
-                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 10f : null,
-                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 20f : null
-            );
-
-            RegisterThreat("Butler",
-                fq => fq.EnemyAI.currentBehaviourStateIndex == 2 ? 20f : null,
-                fq => fq.EnemyAI.currentBehaviourStateIndex == 2 ? 10f : null,
-                fq => fq.EnemyAI.currentBehaviourStateIndex == 2 ? 20f : null
-            );
-
-            RegisterThreat("Hoarding bug",
-                fq => fq.EnemyAI.currentBehaviourStateIndex == 2 ? 20f : null,
-                fq => fq.EnemyAI.currentBehaviourStateIndex == 2 ? 5f : null,
-                fq => fq.EnemyAI.currentBehaviourStateIndex == 2 ? 20f : null
-            );
-
-            RegisterThreat("Masked",
-                fq =>
-                {
-                    bool aware = fq.EnemyAI is MaskedPlayerEnemy masked && fq.Bot is LethalBotAI lethalBotAI && lethalBotAI.DictKnownMasked.TryGetValue(masked, out bool known) && known;
-                    return (aware || fq.EnemyAI.creatureAnimator.GetBool("HandsOut")) ? 30f : 15f;
-                },
-                _ => 8f, // Always 8 for mission control
-                fq =>
-                {
-                    bool aware = fq.EnemyAI is MaskedPlayerEnemy masked && fq.Bot is LethalBotAI lethalBotAI && lethalBotAI.DictKnownMasked.TryGetValue(masked, out bool known) && known;
-                    return (aware || fq.EnemyAI.creatureAnimator.GetBool("HandsOut")) ? 30f : 15f;
-                }
-            );
-
-            RegisterThreat("Bunker Spider", 
-                fq => fq.EnemyAI.currentBehaviourStateIndex == 2 ? 20f : null, // Sigh, i may or may not of added this after a particular experience where bots got stuck in a loop of running away and coming back despite the spider not actually chasing them!
-                fq => fq.EnemyAI.currentBehaviourStateIndex == 2 ? 10f : null, 
-                _ => 20f // Always 20 for pathfinding
-            );
-
-            // Register threat is compatable with functions!
-            // This makes it really easy to add advanced logic for when the bot should be afraid!
-            float? NutcrackerPanikFunc(LethalBotFearQuery fearQuery)
-            {
-                // Ok, there are three state indexes to date!
-                // 0. Patroling
-                // 1. Scanning
-                // 2. Hunting/Attacking
-                int stateIndex = fearQuery.EnemyAI.currentBehaviourStateIndex;
-                if (stateIndex == 1 
-                    || (stateIndex == 2 && fearQuery.EnemyAI is NutcrackerEnemyAI nutcracker && fearQuery.Bot is LethalBotAI lethalBotAI && nutcracker.lastPlayerSeenMoving == (int)lethalBotAI.NpcController.Npc.playerClientId))
-                {
-                    return 60f; // Got from the Nutcracker source code, 60f is the maximum range it can see moving players!
-                }
-                else if (stateIndex == 2)
-                {
-                    return 30f; // Also got from Nutcracker source code. The maximum vision range is, 25f, for moving players when chasing someone else or its 60f for the player being chased!
-                }
-                return 15f; // Let's make sure not to walk into them, of course!
-            }
-
-            float? NutcrackerMissionFunc(LethalBotFearQuery fearQuery)
-            {
-                // TODO: Add a check for if the player is holding a weapon, they may be attempting to fight it,
-                // and teleporting them is not a good idea!
-                //int stateIndex = fearQuery.EnemyAI.currentBehaviourStateIndex;
-                //if (stateIndex == 1
-                //    || (stateIndex == 2 && fearQuery.EnemyAI is NutcrackerEnemyAI nutcracker && fearQuery.PlayerToCheck is PlayerControllerB playerToCheck && nutcracker.lastPlayerSeenMoving == (int)playerToCheck.playerClientId))
-                //{
-                //    return stateIndex == 2 ? 30f : 10f; // We care about the player being chased, not any bystanders!
-                //}
-                return 10f;
-            }
-
-            RegisterThreat("Nutcracker",
-                NutcrackerPanikFunc,
-                NutcrackerMissionFunc,
-                NutcrackerPanikFunc // Just use panik func, better for not triggering them in the first place!
-            );
-
-            // TODO: Improve this as I study the AI!
-            RegisterThreat("GiantKiwi", 
-                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 30f : null, 
-                _ => null,
-                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 30f : 15f
-            );
-
-            // Girl behavior (currently commented out for fixing bugs)
-            // DictionaryLethalBotThreats["Girl"] = new LethalBotThreat("Girl",
-            //     fq => fq.EnemyAI is DressGirlAI ghostGirl && ghostGirl.hauntingPlayer == NpcController.Npc && false && ghostGirl.currentBehaviourStateIndex > 0 ? 30f : null,
-            //     _ => null,  // No value for mission control
-            //     _ => null   // No value for pathfinding
-            // );
-
-            // Girl aka Ghost Girl is always ignored (for now), so skip or:
-            RegisterThreat("Girl", (float?)null, (float?)null, (float?)null);
+            RegisterDefaultThreats();
         }
 
         private void Update()
@@ -717,8 +564,8 @@ namespace LethalBots.Managers
                 Plugin.LogWarning($"GetFearRangeForEnemy: EnemyAI is null");
                 return null;
             }
-            string threatName = fearQuery.EnemyAI.enemyType.enemyName;
-            if (DictionaryLethalBotThreats.TryGetValue(threatName, out LethalBotThreat threatInfo))
+            Type threatType = fearQuery.EnemyAI.GetType();
+            if (DictionaryLethalBotThreats.TryGetValue(threatType, out LethalBotThreat threatInfo))
             {
                 return threatInfo.GetFearRangeForEnemy(fearQuery);
             }
@@ -728,47 +575,227 @@ namespace LethalBots.Managers
         /// <summary>
         /// Helper function for registering threats that don't need any special logic
         /// </summary>
-        /// <param name="name">Name of the threat this should the same as the one in <see cref="EnemyAI.enemyType"/></param>
+        /// <param name="threatType">Type of the threat this should the same as the one in <see cref="EnemyAI.enemyType"/></param>
         /// <param name="panik">Bot panik range</param>
         /// <param name="mission">Bot teleport player range</param>
         /// <param name="path">Bot Avoid LOS range</param>
-        public static void RegisterThreat(string name, float? panik, float? mission, float? path)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void RegisterThreat(Type threatType, float? panik, float? mission, float? path)
         {
-            DictionaryLethalBotThreats.Add(name, new LethalBotThreat(
-                name,
+            RegisterThreat(
+                threatType,
                 _ => panik,
                 _ => mission,
                 _ => path
-            ));
+            );
         }
 
         /// <summary>
         /// Helper function for registering threats that need special logic
         /// </summary>
-        /// <param name="name">Name of the threat this should the same as the one in <see cref="EnemyAI.enemyType"/></param>
+        /// <param name="threatType">Type of the threat this should the same as the one in <see cref="EnemyAI.enemyType"/></param>
         /// <param name="panik">Bot panik function</param>
         /// <param name="mission">Bot teleport player function</param>
         /// <param name="path">Bot Avoid LOS function</param>
-        public static void RegisterThreat(string name, Func<LethalBotFearQuery, float?> panik, Func<LethalBotFearQuery, float?> mission, Func<LethalBotFearQuery, float?> path)
+        public static void RegisterThreat(Type threatType, Func<LethalBotFearQuery, float?> panik, Func<LethalBotFearQuery, float?> mission, Func<LethalBotFearQuery, float?> path)
         {
-            DictionaryLethalBotThreats.Add(name, new LethalBotThreat(
-                name,
+            if (DictionaryLethalBotThreats.ContainsKey(threatType))
+            {
+                Plugin.LogWarning($"Threat '{threatType.Name}' was already registered. Overwriting!");
+            }
+            DictionaryLethalBotThreats[threatType] = new LethalBotThreat(
+                threatType,
                 panik,
                 mission,
                 path
-            ));
+            );
+            Plugin.LogInfo($"Registered {threatType.Name} as a threat to LethalBots!");
         }
 
         /// <summary>
         /// Unregisters a threat by its name.
         /// </summary>
-        /// <param name="name">The name of the threat to unregister.</param>
-        public static void UnRegisterThreat(string name)
+        /// <param name="theatType">The type of the threat to unregister.</param>
+        public static void UnRegisterThreat(Type theatType)
         {
-            if (DictionaryLethalBotThreats.ContainsKey(name))
+            if (DictionaryLethalBotThreats.ContainsKey(theatType))
             {
-                DictionaryLethalBotThreats.Remove(name);
+                DictionaryLethalBotThreats.Remove(theatType);
             }
+        }
+
+        /// <summary>
+        /// Helper function that registers the default enemies that are in the game!
+        /// </summary>
+        private static void RegisterDefaultThreats()
+        {
+            // Static value threats
+            RegisterThreat(typeof(CrawlerAI), 20f, 10f, 20f); // Thumper
+            RegisterThreat(typeof(ForestGiantAI), 30f, 10f, 40f); // Forest Giants
+            RegisterThreat(typeof(SandWormAI), 10f, null, 15f); // Earth Leviathans
+            //RegisterThreat("ImmortalSnail", 10f, null, 10f);
+            RegisterThreat(typeof(ClaySurgeonAI), 15f, null, 10f); // Barber
+            RegisterThreat(typeof(FlowermanAI), 10f, null, 5f); // Bracken
+            RegisterThreat(typeof(BushWolfEnemy), 15f, 10f, 15f); // Kidnapper Fox
+            RegisterThreat(typeof(PufferAI), 2f, null, 2f); // Spore Lizard
+            RegisterThreat(typeof(RedLocustBees), 10f, null, 15f); // BEEEEEEESSS!
+            RegisterThreat(typeof(ButlerBeesEnemyAI), 20f, null, 15f); // Butler Bees
+            RegisterThreat(typeof(BlobAI), 10f, null, 10f); // Blob
+            RegisterThreat(typeof(BaboonBirdAI), 10f, 5f, 10f); // Annoying, Baboon Hawks......
+
+            // Dynamic behavior threats
+            // Old Birds!
+            RegisterThreat(typeof(RadMechAI),
+                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 30f : null,
+                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 20f : null,
+                fq => 40f // Always 40 for pathfinding
+            );
+
+            // Modded Enemy, Broken until I add a dll reference.
+            // This should probably be in its own mod......
+            //RegisterThreat("T-rex",
+            //    fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 30f : null,
+            //    fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 30f : null,
+            //    fq => 40f // Always 40 for pathfinding
+            //);
+
+            // Maneater
+            RegisterThreat(typeof(CaveDwellerAI),
+                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 30f : null,
+                fq => fq.EnemyAI.currentBehaviourStateIndex > 2 ? 30f : null,
+                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 30f : null
+            );
+
+            // Jester
+            RegisterThreat(typeof(JesterAI),
+                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? float.MaxValue : null,
+                fq => fq.EnemyAI.currentBehaviourStateIndex == 2 && (fq.PlayerToCheck == null || fq.PlayerToCheck.isInsideFactory) ? float.MaxValue : null,
+                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? null : 20f // Always 20 for pathfinding, unless they are winding up, then we need to move NOW!
+            );
+
+            // Eyeless dog
+            RegisterThreat(typeof(MouthDogAI),
+                fq => fq.EnemyAI is MouthDogAI dog && dog.suspicionLevel >= 9 ? 20f : 5f,
+                fq => fq.EnemyAI is MouthDogAI dog && dog.suspicionLevel >= 9 ? 20f : null,
+                fq => fq.EnemyAI is MouthDogAI dog && dog.suspicionLevel > 1 ? 30f : 20f // Increase the danger range if they are angry!
+            );
+
+            // Snare Flea
+            RegisterThreat(typeof(CentipedeAI),
+                fq =>
+                {
+                    if (fq.EnemyAI is CentipedeAI c && c.clingingToPlayer != null)
+                    {
+                        return c.clingingToPlayer == fq.Bot ? 1f : 15f;
+                    }
+                    return fq.EnemyAI.currentBehaviourStateIndex > 1 ? 15f : 1f;
+                },
+                fq => fq.EnemyAI is CentipedeAI c && c.clingingToPlayer == fq.PlayerToCheck ? float.MaxValue : null,
+                fq => fq.EnemyAI.currentBehaviourStateIndex > 1 ||
+                      (fq.EnemyAI is CentipedeAI c && c.clingingToPlayer != null) ? 15f : 1f
+            );
+
+            // Coil Head
+            RegisterThreat(typeof(SpringManAI),
+                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 20f : null,
+                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 10f : null,
+                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 20f : null
+            );
+
+            // Butler
+            RegisterThreat(typeof(ButlerEnemyAI),
+                fq => fq.EnemyAI.currentBehaviourStateIndex == 2 ? 20f : null,
+                fq => fq.EnemyAI.currentBehaviourStateIndex == 2 ? 10f : null,
+                fq => fq.EnemyAI.currentBehaviourStateIndex == 2 ? 20f : null
+            );
+
+            // Loot Bugs
+            RegisterThreat(typeof(HoarderBugAI),
+                fq => fq.EnemyAI.currentBehaviourStateIndex == 2 ? 20f : null,
+                fq => fq.EnemyAI.currentBehaviourStateIndex == 2 ? 5f : null,
+                fq => fq.EnemyAI.currentBehaviourStateIndex == 2 ? 20f : null
+            );
+
+            // Masked
+            RegisterThreat(typeof(MaskedPlayerEnemy),
+                fq =>
+                {
+                    bool aware = fq.EnemyAI is MaskedPlayerEnemy masked && fq.Bot is LethalBotAI lethalBotAI && lethalBotAI.DictKnownMasked.TryGetValue(masked, out bool known) && known;
+                    return (aware || fq.EnemyAI.creatureAnimator.GetBool("HandsOut")) ? 30f : 15f;
+                },
+                _ => 8f, // Always 8 for mission control
+                fq =>
+                {
+                    bool aware = fq.EnemyAI is MaskedPlayerEnemy masked && fq.Bot is LethalBotAI lethalBotAI && lethalBotAI.DictKnownMasked.TryGetValue(masked, out bool known) && known;
+                    return (aware || fq.EnemyAI.creatureAnimator.GetBool("HandsOut")) ? 30f : 15f;
+                }
+            );
+
+            // Spider!
+            RegisterThreat(typeof(SandSpiderAI),
+                fq => fq.EnemyAI.currentBehaviourStateIndex == 2 ? 20f : null, // Sigh, i may or may not of added this after a particular experience where bots got stuck in a loop of running away and coming back despite the spider not actually chasing them!
+                fq => fq.EnemyAI.currentBehaviourStateIndex == 2 ? 10f : null,
+                _ => 20f // Always 20 for pathfinding
+            );
+
+            // Register threat is compatable with functions!
+            // This makes it really easy to add advanced logic for when the bot should be afraid!
+            float? NutcrackerPanikFunc(LethalBotFearQuery fearQuery)
+            {
+                // Ok, there are three state indexes to date!
+                // 0. Patroling
+                // 1. Scanning
+                // 2. Hunting/Attacking
+                int stateIndex = fearQuery.EnemyAI.currentBehaviourStateIndex;
+                if (stateIndex == 1
+                    || (stateIndex == 2 && fearQuery.EnemyAI is NutcrackerEnemyAI nutcracker && fearQuery.Bot is LethalBotAI lethalBotAI && nutcracker.lastPlayerSeenMoving == (int)lethalBotAI.NpcController.Npc.playerClientId))
+                {
+                    return 60f; // Got from the Nutcracker source code, 60f is the maximum range it can see moving players!
+                }
+                else if (stateIndex == 2)
+                {
+                    return 30f; // Also got from Nutcracker source code. The maximum vision range is, 25f, for moving players when chasing someone else or its 60f for the player being chased!
+                }
+                return 15f; // Let's make sure not to walk into them, of course!
+            }
+
+            float? NutcrackerMissionFunc(LethalBotFearQuery fearQuery)
+            {
+                // TODO: Add a check for if the player is holding a weapon, they may be attempting to fight it,
+                // and teleporting them is not a good idea!
+                //int stateIndex = fearQuery.EnemyAI.currentBehaviourStateIndex;
+                //if (stateIndex == 1
+                //    || (stateIndex == 2 && fearQuery.EnemyAI is NutcrackerEnemyAI nutcracker && fearQuery.PlayerToCheck is PlayerControllerB playerToCheck && nutcracker.lastPlayerSeenMoving == (int)playerToCheck.playerClientId))
+                //{
+                //    return stateIndex == 2 ? 30f : 10f; // We care about the player being chased, not any bystanders!
+                //}
+                return 10f;
+            }
+
+            // Nutcracker, with a gun
+            RegisterThreat(typeof(NutcrackerEnemyAI),
+                NutcrackerPanikFunc,
+                NutcrackerMissionFunc,
+                NutcrackerPanikFunc // Just use panik func, better for not triggering them in the first place!
+            );
+
+            // TODO: Improve this as I study the AI!
+            // Giant Sapsucker
+            RegisterThreat(typeof(GiantKiwiAI),
+                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 30f : null,
+                _ => null,
+                fq => fq.EnemyAI.currentBehaviourStateIndex > 0 ? 30f : 15f
+            );
+
+            // Girl behavior (currently commented out for fixing bugs)
+            // DictionaryLethalBotThreats["Girl"] = new LethalBotThreat("Girl",
+            //     fq => fq.EnemyAI is DressGirlAI ghostGirl && ghostGirl.hauntingPlayer == NpcController.Npc && false && ghostGirl.currentBehaviourStateIndex > 0 ? 30f : null,
+            //     _ => null,  // No value for mission control
+            //     _ => null   // No value for pathfinding
+            // );
+
+            // Girl aka Ghost Girl is always ignored (for now), so skip or:
+            RegisterThreat(typeof(DressGirlAI), (float?)null, (float?)null, (float?)null);
         }
 
         #endregion

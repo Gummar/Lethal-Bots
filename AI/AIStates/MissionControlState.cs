@@ -51,7 +51,7 @@ namespace LethalBots.AI.AIStates
             {
                 if (_shipTeleporter == null)
                 {
-                    _shipTeleporter = FindTeleporter();
+                    _shipTeleporter = LethalBotAI.FindTeleporter();
                 }
                 return _shipTeleporter;
             }
@@ -423,24 +423,6 @@ namespace LethalBots.AI.AIStates
             base.StopAllCoroutines();
             StopMonitoringCrew();
             StopUsingSignalTranslator();
-        }
-
-        private static ShipTeleporter? FindTeleporter()
-        {
-            ShipTeleporter[] shipTeleporters = Object.FindObjectsOfType<ShipTeleporter>(includeInactive: false);
-            foreach (var teleporter in shipTeleporters)
-            {
-                if (teleporter == null)
-                {
-                    continue;
-                }
-
-                if (!teleporter.isInverseTeleporter)
-                {
-                    return teleporter;
-                }
-            }
-            return null;
         }
 
         private IEnumerator MissionSurveillanceRoutine()
