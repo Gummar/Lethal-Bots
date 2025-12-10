@@ -37,9 +37,9 @@ namespace LethalBots.AI.AIStates
         private Coroutine? monitorCrew;
         private Coroutine? useSignalTranslator;
         private float leavePlanetTimer;
-        private static Turret[] turrets = null!;
-        private static Landmine[] landmines = null!;
-        private static SpikeRoofTrap[] spikeRoofTraps = null!;
+        private static Dictionary<Turret, TerminalAccessibleObject> turrets = new Dictionary<Turret, TerminalAccessibleObject>();
+        private static Dictionary<Landmine, TerminalAccessibleObject> landmines = new Dictionary<Landmine, TerminalAccessibleObject>();
+        private static Dictionary<SpikeRoofTrap, TerminalAccessibleObject> spikeRoofTraps = new Dictionary<SpikeRoofTrap, TerminalAccessibleObject>();
         private Dictionary<string, float> calledOutEnemies = new Dictionary<string, float>(); // Should this be an enemy name rather than the AI itself?
         private PriorityMessageQueue messageQueue = new PriorityMessageQueue();
         private static readonly FieldInfo isDoorOpen = AccessTools.Field(typeof(TerminalAccessibleObject), "isDoorOpen");
@@ -103,9 +103,7 @@ namespace LethalBots.AI.AIStates
                     LethalBotManager.lastReportedTimeOfDay = dayMode;
                     LethalBotManager.Instance.SetLastReportedTimeOfDayAndSync(dayMode);
                 }*/
-                turrets = UnityEngine.Object.FindObjectsOfType<Turret>();
-                landmines = UnityEngine.Object.FindObjectsOfType<Landmine>();
-                spikeRoofTraps = UnityEngine.Object.FindObjectsOfType<SpikeRoofTrap>();
+                SetupTerminalAccessibleObjects();
                 FindWalkieTalkie();
                 FindWeapon();
             }
@@ -1006,8 +1004,9 @@ namespace LethalBots.AI.AIStates
             {
                 playerPos = player.deadBody.transform.position;
             }
-            foreach (var turret in turrets)
+            foreach (var turretInfo in turrets)
             {
+                Turret turret = turretInfo.Key;
                 if (turret != null)
                 {
                     // Only use objects in terminal view range!
@@ -1015,7 +1014,7 @@ namespace LethalBots.AI.AIStates
                     if (turret.targetPlayerWithRotation == player 
                         || (turret.transform.position - playerPos).sqrMagnitude < 40f * 40f)
                     {
-                        TerminalAccessibleObject accessibleObject = turret.GetComponent<TerminalAccessibleObject>();
+                        TerminalAccessibleObject accessibleObject = turretInfo.Value;
                         if (accessibleObject != null && !(bool)inCooldown.GetValue(accessibleObject))
                         { 
                             objectsToUse.Add(accessibleObject); 
@@ -1025,15 +1024,16 @@ namespace LethalBots.AI.AIStates
             }
 
             // Landmines
-            foreach (var landmine in landmines)
+            foreach (var landmineInfo in landmines)
             {
+                Landmine landmine = landmineInfo.Key;
                 if (landmine != null && !landmine.hasExploded)
                 {
                     // Only use objects in terminal view range!
                     // NEEDTOVALIDATE: Is this too high or too low?
                     if ((landmine.transform.position - playerPos).sqrMagnitude < 40f * 40f)
                     {
-                        TerminalAccessibleObject accessibleObject = landmine.GetComponent<TerminalAccessibleObject>();
+                        TerminalAccessibleObject accessibleObject = landmineInfo.Value;
                         if (accessibleObject != null && !(bool)inCooldown.GetValue(accessibleObject))
                         {
                             objectsToUse.Add(accessibleObject);
@@ -1043,17 +1043,16 @@ namespace LethalBots.AI.AIStates
             }
 
             // Spike Roof Traps
-            // FIXME: This is COMPLETELY BROKEN, for some reason, the TERMINAL ACCESSIBLE OBJECT is not a component of the SpikeRoofTrap???
-            // I have no idea how to fix this, as even the parent and children don't have it!
-            foreach (var spikeRoofTrap in spikeRoofTraps)
+            foreach (var spikeRoofTrapInfo in spikeRoofTraps)
             {
+                SpikeRoofTrap spikeRoofTrap = spikeRoofTrapInfo.Key;
                 if (spikeRoofTrap != null)
                 {
                     // Only use objects in terminal view range!
                     // NEEDTOVALIDATE: Is this too high or too low?
                     if ((spikeRoofTrap.spikeTrapAudio.transform.position - playerPos).sqrMagnitude < 40f * 40f)
                     {
-                        TerminalAccessibleObject accessibleObject = spikeRoofTrap.GetComponentInChildren<TerminalAccessibleObject>() ?? spikeRoofTrap.GetComponentInParent<TerminalAccessibleObject>();
+                        TerminalAccessibleObject accessibleObject = spikeRoofTrapInfo.Value;
                         if (accessibleObject != null && !(bool)inCooldown.GetValue(accessibleObject))
                         {
                             objectsToUse.Add(accessibleObject);
@@ -1212,6 +1211,90 @@ namespace LethalBots.AI.AIStates
                         closestWeaponSqr = walkieSqr;
                         this.weapon = weapon;
                     }
+                }
+            }
+        }
+
+        private void SetupTerminalAccessibleObjects()
+        {
+            // Remove all previous entries
+            MissionControlState.turrets.Clear();
+            MissionControlState.landmines.Clear();
+            MissionControlState.spikeRoofTraps.Clear();
+
+            // Fill dictionaries with new information
+            Turret[] turrets = UnityEngine.Object.FindObjectsOfType<Turret>();
+            Landmine[] landmines = UnityEngine.Object.FindObjectsOfType<Landmine>();
+            SpikeRoofTrap[] spikeRoofTraps = UnityEngine.Object.FindObjectsOfType<SpikeRoofTrap>();
+            foreach (var turret in turrets)
+            {
+                if (turret == null) continue;
+
+                TerminalAccessibleObject terminalAccessibleObject = turret.GetComponent<TerminalAccessibleObject>();
+                if (terminalAccessibleObject == null)
+                {
+                    Plugin.LogWarning($"Turret object {turret}, had no TerminalAccessableObject!? This should not happen!");
+                    continue;
+                }
+
+                if (!MissionControlState.turrets.TryAdd(turret, terminalAccessibleObject))
+                {
+                    Plugin.LogWarning($"Turret object {turret} was already added to turrets table, skipping!");
+                }
+            }
+
+            foreach (var landmine in landmines)
+            {
+                if (landmine == null) continue;
+
+                TerminalAccessibleObject terminalAccessibleObject = landmine.GetComponent<TerminalAccessibleObject>();
+                if (terminalAccessibleObject == null)
+                {
+                    Plugin.LogWarning($"Landmine object {landmine}, had no TerminalAccessableObject!? This should not happen!");
+                    continue;
+                }
+
+                if (!MissionControlState.landmines.TryAdd(landmine, terminalAccessibleObject))
+                {
+                    Plugin.LogWarning($"Landmine object {landmine} was already added to landmines table, skipping!");
+                }
+            }
+
+            foreach (var spikeRoofTrap in spikeRoofTraps)
+            {
+                if (spikeRoofTrap == null) continue;
+
+                // This works, but is a lot slower!
+                //Component[] components = spikeRoofTrap.gameObject.GetComponentsInParent<Component>();
+                //foreach (Component component in components)
+                //{
+                //    if (component == null) continue;
+                //    // Based on my research, GetComponentInChildren also calls GetComponent internally!
+                //    //Plugin.LogDebug($"Checking if {component} has TerminalAccessableObject");
+                //    //TerminalAccessibleObject terminalAccessible = component.GetComponent<TerminalAccessibleObject>();
+                //    //Plugin.LogDebug($"{component} {(terminalAccessible != null ? "did" : "did not")} have a terminal accessable object!\n");
+
+                //    // Aliright, second look at the log file shows the TerminalAccessableObject as a child component
+                //    // Time to find it!
+                //    terminalAccessibleObject = component.GetComponentInChildren<TerminalAccessibleObject>();
+                //    if (terminalAccessibleObject != null)
+                //    {
+                //        break;
+                //    }
+
+                //}
+
+                // Much more efficent method!
+                TerminalAccessibleObject? terminalAccessibleObject = spikeRoofTrap.transform?.root?.GetComponentInChildren<TerminalAccessibleObject>();
+                if (terminalAccessibleObject == null)
+                {
+                    Plugin.LogWarning($"Spike Roof Trap object {spikeRoofTrap}, had no TerminalAccessableObject!? This should not happen!");
+                    continue;
+                }
+
+                if (!MissionControlState.spikeRoofTraps.TryAdd(spikeRoofTrap, terminalAccessibleObject))
+                {
+                    Plugin.LogWarning($"Spike Roof Trap object {spikeRoofTrap} was already added to Spike Roof Traps table, skipping!");
                 }
             }
         }
