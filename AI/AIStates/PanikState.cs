@@ -494,13 +494,15 @@ namespace LethalBots.AI.AIStates
             public GameObject node;
             public bool isPathOutOfSight;
             public bool isNodeOutOfSight;
-            public int SafetyScore => (isPathOutOfSight ? 2 : 0) + (isNodeOutOfSight ? 1 : 0);
+            public bool isEnemyCloser;
+            public int SafetyScore => (isPathOutOfSight ? 2 : 0) + (isNodeOutOfSight ? 1 : 0) - (isEnemyCloser ? 3 : 0);
 
-            public NodeSafety(GameObject node, bool isPathOutOfSight, bool isNodeOutOfSight)
+            public NodeSafety(GameObject node, bool isPathOutOfSight, bool isNodeOutOfSight, bool isEnemyCloser)
             {
                 this.node = node ?? throw new ArgumentNullException(nameof(node));
                 this.isPathOutOfSight = isPathOutOfSight;
                 this.isNodeOutOfSight = isNodeOutOfSight;
+                this.isEnemyCloser = isEnemyCloser;
             }
 
             /// <summary>
@@ -515,7 +517,7 @@ namespace LethalBots.AI.AIStates
 
             public override string ToString()
             {
-                return $"GameObject {node}, IsPathOutOfSight {isPathOutOfSight}, IsNodeOutOfSight {isNodeOutOfSight}";
+                return $"GameObject {node}, IsPathOutOfSight {isPathOutOfSight}, IsNodeOutOfSight {isNodeOutOfSight}, IsEnemyCloser {isEnemyCloser}";
             }
 
             public int CompareTo(NodeSafety? other)
@@ -526,7 +528,10 @@ namespace LethalBots.AI.AIStates
                     return 1;
                 }
 
-                // Priority: path out of sight > node out of sight
+                // Priority: enemy is further > path out of sight > node out of sight
+                if (isEnemyCloser != other.isEnemyCloser)
+                    return isEnemyCloser ? -1 : 1;
+
                 if (isPathOutOfSight != other.isPathOutOfSight)
                     return isPathOutOfSight ? 1 : -1;
 
@@ -544,7 +549,8 @@ namespace LethalBots.AI.AIStates
                 }
                 return node == other.node 
                     && isPathOutOfSight == other.isPathOutOfSight 
-                    && isNodeOutOfSight == other.isNodeOutOfSight;
+                    && isNodeOutOfSight == other.isNodeOutOfSight 
+                    && isEnemyCloser == other.isEnemyCloser;
             }
 
             public override bool Equals(object obj)
@@ -554,7 +560,7 @@ namespace LethalBots.AI.AIStates
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(node, isPathOutOfSight, isNodeOutOfSight);
+                return HashCode.Combine(node, isPathOutOfSight, isNodeOutOfSight, isEnemyCloser);
             }
 
             public static bool operator <(NodeSafety? left, NodeSafety? right) 
@@ -672,7 +678,7 @@ namespace LethalBots.AI.AIStates
                 // NEEDTOVALIDATE: Should I use the enemyAI and have it calculate a path to the node?
                 // This would be more accurate since the enemy may not be able to path to the node!
                 // And it would allow us to make much more accurate decisions!
-                NodeSafety nodeSafety = new NodeSafety(node, true, true);
+                NodeSafety nodeSafety = new NodeSafety(node, true, true, false);
                 Vector3 nodePos = nodeSafety.GetNodePosition();
                 float sqrDistToEnemy = (nodePos - enemyPos).sqrMagnitude;
 
@@ -680,6 +686,21 @@ namespace LethalBots.AI.AIStates
                 if (sqrDistToEnemy < fearRange * fearRange)
                 {
                     continue;
+                }
+
+                // Check the enemy's distance from the node!
+                float nodeDistToEnemy = 0f;
+                if (enemy != null)
+                {
+                    // Check if they can even path there!
+                    if (enemy.PathIsIntersectedByLineOfSight(nodePos, calculatePathDistance: true, false, false))
+                    {
+                        nodeDistToEnemy = -1f; // No path, thats REALLY good!
+                    }
+                    else
+                    {
+                        nodeDistToEnemy = enemy.pathDistance; // Alright, how far....
+                    }
                 }
 
                 // Check if the node is in line of sight of the enemy
@@ -708,6 +729,10 @@ namespace LethalBots.AI.AIStates
                 // It only really happens when the bot is out in the open though.
                 //float pathDistance = ai.pathDistance - Mathf.Sqrt(sqrDistToEnemy);
                 float pathDistance = ai.pathDistance;
+                if (nodeDistToEnemy != -1 && pathDistance > nodeDistToEnemy)
+                {
+                    nodeSafety.isEnemyCloser = true; // We don't want to flee here, enemy is closer!
+                }
 
                 // Check if the node is a better candidate
                 if (nodeSafety > bestNode || (nodeSafety >= bestNode && pathDistance < bestNodeDistance))
