@@ -160,9 +160,16 @@ namespace LethalBots.Patches.MapHazardsPatches
             foreach (Component component in components)
             {
                 if (component == null) continue;
-                Plugin.LogDebug($"Checking if {component} has TerminalAccessableObject");
-                TerminalAccessibleObject terminalAccessible = component.GetComponent<TerminalAccessibleObject>();
-                Plugin.LogDebug($"{component} {(terminalAccessible != null ? "did" : "did not")} have a terminal accessable object!");
+                // Based on my research, GetComponentInChildren also calls GetComponent internally!
+                //Plugin.LogDebug($"Checking if {component} has TerminalAccessableObject");
+                //TerminalAccessibleObject terminalAccessible = component.GetComponent<TerminalAccessibleObject>();
+                //Plugin.LogDebug($"{component} {(terminalAccessible != null ? "did" : "did not")} have a terminal accessable object!\n");
+
+                // Aliright, second look at the log file shows the TerminalAccessableObject as a child component
+                // Time to find it!
+                Plugin.LogDebug($"Checking if {component} has TerminalAccessableObject in child side");
+                TerminalAccessibleObject terminalAccessible = component.GetComponentInChildren<TerminalAccessibleObject>();
+                Plugin.LogDebug($"{component} {(terminalAccessible != null ? "did" : "did not")} have a terminal accessable object!\n");
             }
 
             //Plugin.LogDebug($"Listing all components in {__instance}");

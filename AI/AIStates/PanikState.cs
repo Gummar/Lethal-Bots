@@ -22,6 +22,7 @@ namespace LethalBots.AI.AIStates
         private float calmDownTimer;
         private float breakLOSTimer;
         private float lastDeclaredJesterTimer;
+        private bool wasFleeingJester;
         private Vector3? _retreatPos = null;
         private Vector3? RetreatPos
         {
@@ -76,10 +77,14 @@ namespace LethalBots.AI.AIStates
                     // Find the closest entrance and mark our last pos for stuck checking!
                     targetEntrance = FindClosestEntrance();
                     StartPanikCoroutine(this.currentEnemy, fearRange.Value);
-                    if (this.currentEnemy is JesterAI && (Time.timeSinceLevelLoad - lastDeclaredJesterTimer) > 30f)
+                    if (this.currentEnemy is JesterAI)
                     {
-                        lastDeclaredJesterTimer = Time.timeSinceLevelLoad;
-                        ai.SendChatMessage("JESTER!!! RUN!!!");
+                        wasFleeingJester = true;
+                        if ((Time.timeSinceLevelLoad - lastDeclaredJesterTimer) > 30f)
+                        {
+                            lastDeclaredJesterTimer = Time.timeSinceLevelLoad;
+                            ai.SendChatMessage("JESTER!!! RUN!!!");
+                        }
                     }
                 }
                 else
@@ -98,6 +103,14 @@ namespace LethalBots.AI.AIStates
         {
             if (currentEnemy == null || currentEnemy.isEnemyDead)
             {
+                if (wasFleeingJester)
+                {
+                    this.currentEnemy = FindNearbyJester();
+                    if (this.currentEnemy != null && !this.currentEnemy.isEnemyDead)
+                    {
+                        return;
+                    }
+                }
                 ChangeBackToPreviousState();
                 return;
             }
@@ -105,6 +118,11 @@ namespace LethalBots.AI.AIStates
             float? fearRange = ai.GetFearRangeForEnemies(this.currentEnemy);
             if (!fearRange.HasValue)
             {
+                if (wasFleeingJester)
+                {
+                    this.currentEnemy = FindNearbyJester();
+                    return;
+                }
                 ChangeBackToPreviousState();
                 return;
             }
@@ -120,10 +138,14 @@ namespace LethalBots.AI.AIStates
                     fearRange = newFearRange.Value;
                     calmDownTimer = 0f;
                     RestartPanikCoroutine(this.currentEnemy, fearRange.Value);
-                    if (this.currentEnemy is JesterAI && (Time.timeSinceLevelLoad - lastDeclaredJesterTimer) > 30f)
+                    if (this.currentEnemy is JesterAI)
                     {
-                        lastDeclaredJesterTimer = Time.timeSinceLevelLoad;
-                        ai.SendChatMessage("JESTER!!! RUN!!!");
+                        wasFleeingJester = true;
+                        if ((Time.timeSinceLevelLoad - lastDeclaredJesterTimer) > 30f)
+                        {
+                            lastDeclaredJesterTimer = Time.timeSinceLevelLoad;
+                            ai.SendChatMessage("JESTER!!! RUN!!!");
+                        }
                     }
                 }
                 // else no fear range, ignore this enemy, already ignored by CheckLOSForEnemy but hey better be safe
@@ -176,6 +198,12 @@ namespace LethalBots.AI.AIStates
                 // and the bot is far enough when the enemy can not see him
                 if (breakLOSTimer > Const.FLEEING_BREAK_LOS_TIME)
                 {
+                    // Don't forget we still need to get out of there!
+                    if (wasFleeingJester)
+                    {
+                        this.currentEnemy = FindNearbyJester();
+                        return;
+                    }
                     ChangeBackToPreviousState();
                     return;
                 }
@@ -336,7 +364,7 @@ namespace LethalBots.AI.AIStates
                 CanTalkIfOtherLethalBotTalk = true,
                 WaitForCooldown = false,
                 CutCurrentVoiceStateToTalk = true,
-                CanRepeatVoiceState = true,
+                CanRepeatVoiceState = this.currentEnemy is not NutcrackerEnemyAI || this.currentEnemy.currentBehaviourStateIndex != 1, // Yeah, its a bit weird for them to keep screaming while standing in place....
 
                 ShouldSync = true,
                 IsLethalBotInside = npcController.Npc.isInsideFactory,
@@ -355,7 +383,7 @@ namespace LethalBots.AI.AIStates
             base.OnBotStuck();
             if (this.currentEnemy != null)
             { 
-                RestartPanikCoroutine(this.currentEnemy, ai.GetFearRangeForEnemies(this.currentEnemy) ?? Const.DISTANCE_FLEEING_NO_LOS); 
+                RestartPanikCoroutine(this.currentEnemy, ai.GetFearRangeForEnemies(this.currentEnemy) ?? Const.DISTANCE_FLEEING); 
             }
         }
 
@@ -381,6 +409,7 @@ namespace LethalBots.AI.AIStates
                 {
                     return;
                 }
+                wasFleeingJester = true;
                 this.currentEnemy = enemyAI;
                 calmDownTimer = 0f;
                 float? fearRange = ai.GetFearRangeForEnemies(this.currentEnemy);
@@ -407,6 +436,7 @@ namespace LethalBots.AI.AIStates
                 {
                     return;
                 }
+                wasFleeingJester = true;
                 this.currentEnemy = enemyAI;
                 calmDownTimer = 0f;
                 float? fearRange = ai.GetFearRangeForEnemies(this.currentEnemy);
