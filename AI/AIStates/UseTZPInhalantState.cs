@@ -145,14 +145,13 @@ namespace LethalBots.AI.AIStates
         /// Helper function to check if the given <paramref name="item"/> is a usable <see cref="TetraChemicalItem"/>!
         /// </summary>
         /// <remarks>
-        /// This was designed for use in <see cref="LethalBotAI.HasGrabbableObjectInInventory(Func{GrabbableObject?, bool}, out int)"/> calls.
+        /// This was designed for use in <see cref="LethalBotAI.HasGrabbableObjectInInventory(Func{GrabbableObject, bool}, out int)"/> calls.
         /// </remarks>
         /// <param name="item"></param>
         /// <returns></returns>
-        private bool IsUsableTZPItem(GrabbableObject? item)
+        private static bool IsUsableTZPItem(GrabbableObject item)
         {
-            if (item != null
-                && item is TetraChemicalItem tempTZP
+            if (item is TetraChemicalItem tempTZP
                 && !tempTZP.itemUsedUp)
             {
                 return true;

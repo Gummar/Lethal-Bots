@@ -3651,11 +3651,11 @@ namespace LethalBots.AI
         /// <param name="objectPredicate">The function to inspect the object in the inventory!</param>
         /// <param name="objectSlot">The slot of where the object was found at! Is set to -1 if item was not found!</param>
         /// <returns>true: the bot has the object in its inventory, false: the bot doesn't have the given object in its inventory</returns>
-        public bool HasGrabbableObjectInInventory(Func<GrabbableObject?, bool> objectPredicate, out int objectSlot)
+        public bool HasGrabbableObjectInInventory(Func<GrabbableObject, bool> objectPredicate, out int objectSlot)
         {
             // Check if the lethalBot is holding the object
             objectSlot = -1;
-            if (objectPredicate(HeldItem))
+            if (HeldItem != null && objectPredicate(HeldItem))
             {
                 objectSlot = NpcController.Npc.currentItemSlot;
                 return true;
@@ -3665,7 +3665,7 @@ namespace LethalBots.AI
             int index = 0;
             foreach (var item in NpcController.Npc.ItemSlots)
             {
-                if (objectPredicate(item))
+                if (item != null && objectPredicate(item))
                 {
                     objectSlot = index;
                     return true;
@@ -3686,7 +3686,7 @@ namespace LethalBots.AI
         /// <param name="isBetter">The function to determine if the found object is better than the current best one! First parameter is the current best item, second parameter is the new candidate item!</param>
         /// <param name="objectSlot">The slot of where the object was found at! Is set to -1 if item was not found!</param>
         /// <returns></returns>
-        public bool TryFindItemInInventory(Func<GrabbableObject?, bool> filter, Func<GrabbableObject, GrabbableObject?, bool> isBetter, out int objectSlot)
+        public bool TryFindItemInInventory(Func<GrabbableObject, bool> filter, Func<GrabbableObject, GrabbableObject, bool> isBetter, out int objectSlot)
         {
             // Unlike HasGrabbableObjectInInventory, we can't early out if the bot's held item matches the filter
             objectSlot = -1;
@@ -3696,7 +3696,7 @@ namespace LethalBots.AI
             int index = 0;
             foreach (var item in NpcController.Npc.ItemSlots)
             {
-                if (filter(item))
+                if (item != null && filter(item))
                 {
                     if (bestItem == null || isBetter(bestItem, item))
                     {

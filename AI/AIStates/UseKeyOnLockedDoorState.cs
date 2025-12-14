@@ -295,11 +295,11 @@ namespace LethalBots.AI.AIStates
         /// Helper function to check if the given <paramref name="item"/> is a key or lockpicker!
         /// </summary>
         /// <remarks>
-        /// This was designed for use in <see cref="LethalBotAI.TryFindItemInInventory(System.Func{GrabbableObject?, bool}, System.Func{GrabbableObject, GrabbableObject?, bool}, out int)"/> calls.
+        /// This was designed for use in <see cref="LethalBotAI.TryFindItemInInventory(System.Func{GrabbableObject, bool}, System.Func{GrabbableObject, GrabbableObject, bool}, out int)"/> calls.
         /// </remarks>
         /// <param name="item"></param>
         /// <returns></returns>
-        private static bool IsKeyItem(GrabbableObject? item)
+        private static bool IsKeyItem(GrabbableObject item)
         {
             return item is KeyItem || item is LockPicker;
         }
@@ -308,7 +308,7 @@ namespace LethalBots.AI.AIStates
         /// Helper function to check if the <paramref name="canidate"/> is better than our <paramref name="currentBest"/>!
         /// </summary>
         /// <remarks>
-        /// This was designed for use in <see cref="LethalBotAI.TryFindItemInInventory(System.Func{GrabbableObject?, bool}, System.Func{GrabbableObject, GrabbableObject?, bool}, out int)"/> calls.
+        /// This was designed for use in <see cref="LethalBotAI.TryFindItemInInventory(System.Func{GrabbableObject, bool}, System.Func{GrabbableObject, GrabbableObject, bool}, out int)"/> calls.
         /// </remarks>
         /// <param name="currentBest">The best grabbable object we have found so far.</param>
         /// <param name="canidate">The next object that past the filter earlier in the function.</param>
@@ -316,11 +316,7 @@ namespace LethalBots.AI.AIStates
         private static bool IsBetterKey(GrabbableObject currentBest, GrabbableObject? canidate)
         {
             // We prefer the key over the lockpick if possible!
-            if (canidate == null)
-            {
-                return false;
-            }
-            else if (currentBest is not KeyItem && canidate is KeyItem)
+            if (currentBest is not KeyItem && canidate is KeyItem)
             {
                 return true;
             }

@@ -61,6 +61,7 @@ namespace LethalBots.AI.AIStates
             }
 
             // If we are holding anything we should drop it
+            bool canInverseTeleport = true;
             if (npcController.Npc.isInHangarShipRoom)
             {
                 // Bot drop item
@@ -68,19 +69,14 @@ namespace LethalBots.AI.AIStates
                 if (!ai.AreHandsFree())
                 {
                     ai.DropItem();
+                    canInverseTeleport = false;
                 }
                 // If we still have stuff in our inventory,
                 // we should swap to it and drop it!
-                else if (ai.HasSomethingInInventory())
+                else if (ai.HasGrabbableObjectInInventory(FindObjectToDrop, out int objectSlot))
                 {
-                    for (int i = 0; i < npcController.Npc.ItemSlots.Length; i++)
-                    {
-                        if (npcController.Npc.ItemSlots[i] != null)
-                        {
-                            ai.SwitchItemSlotsAndSync(i);
-                            break;
-                        }
-                    }
+                    ai.SwitchItemSlotsAndSync(objectSlot);
+                    canInverseTeleport = false;
                 }
                 else if (missionController == npcController.Npc)
                 {
@@ -92,22 +88,24 @@ namespace LethalBots.AI.AIStates
                     if (missionController == null || !missionController.isPlayerControlled || missionController.isPlayerDead)
                     {
                         LethalBotManager.Instance.MissionControlPlayer = npcController.Npc;
+                        canInverseTeleport = false;
                     }
                 }
             }
 
             // Is the inverse teleporter on, we should use it!
             if (LethalBotManager.IsInverseTeleporterActive 
-                && !ai.HasSomethingInInventory())
+                && canInverseTeleport)
             {
                 ai.State = new UseInverseTeleporterState(this);
                 return;
             }
 
-            if (chillAtShipTimer > Const.TIMER_CHILL_AT_SHIP)
+            bool areWeAtTheCompany = LethalBotManager.AreWeAtTheCompanyBuilding();
+            if (chillAtShipTimer > Const.TIMER_CHILL_AT_SHIP || areWeAtTheCompany)
             {
                 // If we are at the company building, we should sell!
-                if (LethalBotManager.AreWeAtTheCompanyBuilding())
+                if (areWeAtTheCompany)
                 {
                     if(ai.LookingForObjectsToSell(true) != null || LethalBotManager.AreThereItemsOnDesk())
                     {
@@ -274,6 +272,19 @@ namespace LethalBots.AI.AIStates
                 return;
             }
             base.OnSignalTranslatorMessageReceived(message);
+        }
+
+        /// <summary>
+        /// Simple function that checks if the give <paramref name="item"/> is null or not
+        /// </summary>
+        /// <remarks>
+        /// This was designed for use in <see cref="LethalBotAI.HasGrabbableObjectInInventory(System.Func{GrabbableObject, bool}, out int)"/> calls.
+        /// </remarks>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private static bool FindObjectToDrop(GrabbableObject item)
+        {
+            return true; // Found an item, great, we want to drop it!
         }
 
         /// <summary>

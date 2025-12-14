@@ -203,13 +203,12 @@ namespace LethalBots.AI.AIStates
         /// Helper function to check if the given <paramref name="item"/> is a object we can sell!
         /// </summary>
         /// <remarks>
-        /// This was designed for use in <see cref="LethalBotAI.HasGrabbableObjectInInventory(Func{GrabbableObject?, bool}, out int)"/> calls.
+        /// This was designed for use in <see cref="LethalBotAI.HasGrabbableObjectInInventory(Func{GrabbableObject, bool}, out int)"/> calls.
         /// </remarks>
         /// <param name="item"></param>
         /// <returns></returns>
-        private bool FindNextSellableObject(GrabbableObject? item)
+        private bool FindNextSellableObject(GrabbableObject item)
         {
-            if (item == null) return false;
             return ai.IsGrabbableObjectSellable(item, true, true);
         }
 
