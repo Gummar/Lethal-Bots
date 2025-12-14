@@ -69,7 +69,7 @@
     <None Remove="Assets\Images\folder_config_user.png" />
     <None Remove="Assets\Images\bots_example.png" />
     <None Remove="Assets\Images\bot_suits.gif" />
-    <None Remove="Assets\Images\Lethal-internship-logo.png" />
+    <None Remove="Assets\Images\Lethal-Bots-temp-logo.png" />
     <None Remove="Configs\ConfigIdentities.json" />
   </ItemGroup>
   <ItemGroup>
@@ -78,7 +78,7 @@
     <EmbeddedResource Include="Assets\Images\folder_config_user.png" />
     <EmbeddedResource Include="Assets\Images\bots_example.png" />
     <EmbeddedResource Include="Assets\Images\bot_suits.gif" />
-    <EmbeddedResource Include="Assets\Images\Lethal-internship-logo.png" />
+    <EmbeddedResource Include="Assets\Images\Lethal-Bots-temp-logo.png" />
     <EmbeddedResource Include="Configs\ConfigIdentities.json" />
   </ItemGroup>
 
