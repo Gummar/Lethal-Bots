@@ -1424,7 +1424,7 @@ namespace LethalBots.Managers
                     //Plugin.LogDebug($"Bot {(botController.holdingWalkieTalkie ? "does" : "doesn't")} have a walkie-talkie!");
                     //Plugin.LogDebug($"Player who sent message {(playerWhoSentMessage.holdingWalkieTalkie ? "does" : "doesn't")} have a walkie-talkie!");
                     //Plugin.LogDebug($"Ignoring range: {flag}");
-                    lethalBotAI.State.OnPlayerChatMessageReceived(message, playerWhoSentMessage);
+                    lethalBotAI.State.OnPlayerChatMessageReceived(message, playerWhoSentMessage, false);
                 }
             }
         }
@@ -1476,7 +1476,7 @@ namespace LethalBots.Managers
                     //Plugin.LogDebug($"Bot {(botController.holdingWalkieTalkie ? "does" : "doesn't")} have a walkie-talkie!");
                     //Plugin.LogDebug($"Player who said message {(playerWhoSaidMessage.holdingWalkieTalkie ? "does" : "doesn't")} have a walkie-talkie!");
                     //Plugin.LogDebug($"Ignoring range: {flag}");
-                    lethalBotAI.State.OnPlayerChatMessageReceived(message, playerWhoSaidMessage);
+                    lethalBotAI.State.OnPlayerChatMessageReceived(message, playerWhoSaidMessage, true);
                 }
             }
         }

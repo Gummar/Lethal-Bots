@@ -1397,7 +1397,7 @@ namespace LethalBots.AI.AIStates
         }
 
         // Allow players to request specific monitoring from the bot
-        public override void OnPlayerChatMessageReceived(string message, PlayerControllerB playerWhoSentMessage)
+        public override void OnPlayerChatMessageReceived(string message, PlayerControllerB playerWhoSentMessage, bool isVoice)
         {
             if (playerWhoSentMessage != null)
             {

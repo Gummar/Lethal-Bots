@@ -251,12 +251,13 @@ namespace LethalBots.AI
         /// You can use <see cref="Managers.LethalBotManager.IsPlayerLethalBot(PlayerControllerB)"/> to check who is a bot or not!
         /// </summary>
         /// <remarks>
-        /// WARNING: All messages are forced into lower case!</br>
+        /// WARNING: All messages are forced into lower case!<br/>
         /// NOTE: This is not called for messages sent by the bot itself!
         /// </remarks>
         /// <param name="message">The message we received</param>
         /// <param name="playerWhoSentMessage">The player who sent the message!</param>
-        public virtual void OnPlayerChatMessageReceived(string message, PlayerControllerB playerWhoSentMessage) 
+        /// <param name="isVoice">Was the message spoken or was typed out in the chat?</param>
+        public virtual void OnPlayerChatMessageReceived(string message, PlayerControllerB playerWhoSentMessage, bool isVoice) 
         {
             if (message.Contains("jester"))
             {
