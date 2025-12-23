@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2 - 2025-22-12
+- Fixed an logic error where ListModelReplacement was never initialized. This caused the ModelReplacementApi support to not work! (Reported on GitHub)
+- Update README files to remove any refrences to AI voices as they were copied over from when I forked Lethal Internship and do not reflect my interests for this mod.
+
 ## 1.0.1 - 2025-14-12
 - Fixed a logic error in the ChillInShipState which caused the bot to not properly initalize the state while at the Company Building.
 
