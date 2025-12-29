@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.5 - 2025-28-12
+Changed EnableDebugLog default to true to help with debugging.
+
 ## 1.0.4 - 2025-28-12
 Another day, another bug fix! Special thanks to everyone on the mod's discord who helped test this update.
 

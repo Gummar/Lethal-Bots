@@ -179,7 +179,7 @@ namespace LethalBots.Configs
             // Debug
             EnableDebugLog = cfg.Bind(ConfigConst.ConfigSectionDebug,
                                       "EnableDebugLog  (Client only)",
-                                      defaultValue: false,
+                                      defaultValue: true,
                                       "Enable the debug logs used for this mod.");
 
             ClearUnusedEntries(cfg);
