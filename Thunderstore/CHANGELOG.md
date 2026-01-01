@@ -1,6 +1,8 @@
 # Changelog
 
 ## 1.0.6 - 2026-1-1
+I don't know when, but apparently a bug got introduced that caused bots to not properly clean up their model replacements when they disconnected from the server. This update fixes that bug. Oh, and added a few other things too:
+
 - Bots will change their suit back to the default suit when they "disconnect." This mimics base game logic and fixes a memory leak with model replacements.
 - Bots will now have a joined ship message the first time they spawn. To mimic how the base game does it.
 - Fixed BodyReplacementBasePatch not calling OnDeath function and not calling the avatar update function on dead bodies
