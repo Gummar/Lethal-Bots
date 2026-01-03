@@ -2842,11 +2842,11 @@ namespace LethalBots.Managers
                 }*/
 
                 // Mod support!!!!
-                //if (Plugin.IsModModelReplacementAPILoaded)
-                //{
-                //    //lethalBotController.GetComponent<ModelReplacement.BodyReplacementBase>()?.SetAvatarRenderers(enabled: false);
-                //    RemovePlayerModelReplacement(lethalBotController);
-                //}
+                if (Plugin.IsModModelReplacementAPILoaded)
+                {
+                    //lethalBotController.GetComponent<ModelReplacement.BodyReplacementBase>()?.SetAvatarRenderers(enabled: false);
+                    RemovePlayerModelReplacement(lethalBotController);
+                }
 
                 lethalBotController.isPlayerControlled = false;
                 lethalBotController.TeleportPlayer(lethalBotController.playersManager.notSpawnedPosition.position);
@@ -2857,7 +2857,7 @@ namespace LethalBots.Managers
                 // we have to mimic what the base game does and switch back to the default suit here!
                 // NOTE: Normally, I wounldn't do this so the suit equip sounds don't play, but since the ModelReplacementAPI
                 // forces a body replacement recreation, we have to do this to avoid visual bugs and memory leaks!
-                UnlockableSuit.SwitchSuitForPlayer(lethalBotController, 0, false);
+                //UnlockableSuit.SwitchSuitForPlayer(lethalBotController, 0, false);
 
                 // Reset the animator state
                 Animator lethalBotAnimator = lethalBotController.playerBodyAnimator;
