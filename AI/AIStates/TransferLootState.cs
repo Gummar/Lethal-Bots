@@ -133,6 +133,17 @@ namespace LethalBots.AI.AIStates
             {
                 // Alright lets go transfer some loot!
                 ai.SetDestinationToPositionLethalBotAI(safePathPos);
+
+                // Sprint if far enough from the ship
+                if (!npcController.WaitForFullStamina && sqrMagDistanceToSafePos > Const.DISTANCE_START_RUNNING * Const.DISTANCE_START_RUNNING)
+                {
+                    npcController.OrderToSprint();
+                }
+                else
+                {
+                    npcController.OrderToStopSprint();
+                }
+
                 ai.OrderMoveToDestination();
                 waitTimer = Mathf.Max(waitTimer - ai.AIIntervalTime, 0f); // Slowly decrease wait timer in case we got shoved away from entrance
             }
