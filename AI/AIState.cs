@@ -291,7 +291,7 @@ namespace LethalBots.AI
                 if (IsBotBeingAddressed(playerWhoSentMessage, out _))
                 {
                     // Yay, we found a vaild bot, make it transfer loot!
-                    ai.SendChatMessage("On it! I'll start transferring loot to the ship right away!");
+                    ai.SendChatMessage("I'll start transferring loot to the ship right away!");
                     ai.State = new TransferLootState(this);
                 }
                 return;

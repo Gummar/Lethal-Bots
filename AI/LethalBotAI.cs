@@ -6500,19 +6500,42 @@ namespace LethalBots.AI
 			grabbableObject.ChargeBatteries();
 		}
 
-		#endregion
+        #endregion
 
-		#region Bot Chat
+        #region Bot Chat
 
-		/// <summary>
-		/// Helper function for sending chat messages to all players!
-		/// </summary>
-		/// <param name="message"></param>
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public void SendChatMessage(string message)
+        /// <summary>
+        /// Helper function for sending chat messages to all players!
+        /// </summary>
+        /// <remarks>
+        /// Currently, bots send messages instantly, we will work on adding a "typing" delay later on.
+        /// </remarks>
+        /// <param name="message"></param>
+        public void SendChatMessage(string message)
 		{
-			HUDManagerPatch.AddPlayerChatMessageServerRpc_ReversePatch(HUDManager.Instance, message, (int)NpcController.Npc.playerClientId);
-		}
+            // OK, there is a 50 character limit for chat messages, so we need to split them up!
+			List<string> splitMessages = new List<string>();
+			int charLimit = 50;
+			for (int i = 0; i < message.Length; i += charLimit)
+			{
+                // If we have more characters to go, we need to substring it!
+                if (i + charLimit < message.Length)
+				{
+					splitMessages.Add(message.Substring(i, charLimit));
+				}
+				else
+				{
+					splitMessages.Add(message.Substring(i));
+                }
+            }
+
+            // Now send each message separately
+            foreach (string msg in splitMessages)
+			{
+                HUDManagerPatch.AddPlayerChatMessageServerRpc_ReversePatch(HUDManager.Instance, msg, (int)NpcController.Npc.playerClientId);
+            }
+
+        }
 
 		#endregion
 
