@@ -20,7 +20,6 @@ namespace LethalBots.AI.AIStates
     public class SearchingForScrapState : AIState
     {
         private Coroutine? searchingWanderCoroutine = null;
-        private Coroutine? lookingAroundCoroutine = null;
         private float scrapTimer;
         private float waitForSafePathTimer; // This is how long we have been waiting for a safe path to our target entrance.
         private int entranceAttempts; // This is how many times we spent going into the same entrance!
@@ -257,7 +256,6 @@ namespace LethalBots.AI.AIStates
         {
             base.StopAllCoroutines();
             StopSearchingWanderCoroutine();
-            StopLookingAroundCoroutine();
         }
 
         public override void TryPlayCurrentStateVoiceAudio()
@@ -344,62 +342,6 @@ namespace LethalBots.AI.AIStates
             {
                 ai.StopCoroutine(this.searchingWanderCoroutine);
                 this.searchingWanderCoroutine = null;
-            }
-        }
-
-        /// <summary>
-        /// Coroutine for making bot turn his body to look around him
-        /// </summary>
-        /// <returns></returns>
-        private IEnumerator LookingAround()
-        {
-            yield return null;
-            while (ai.State != null
-                    && ai.State == this)
-            {
-                float freezeTimeRandom = Random.Range(Const.MIN_TIME_SEARCH_LOOKING_AROUND, Const.MAX_TIME_SEARCH_LOOKING_AROUND);
-                float angleRandom = Random.Range(0f, 360f);
-
-                // Only look around if we are already not doing so!
-                if (npcController.LookAtTarget.IsLookingForward())
-                {
-                    // Convert angle to world position for looking
-                    // Convert to local space (relative to the bot's forward direction)
-                    Vector3 lookDirection = Quaternion.Euler(0, angleRandom, 0) * Vector3.forward;
-                    float minLookDistance = 2f; // TODO: Move these into the Const class!
-                    float maxLookDistance = 8f;
-                    float lookDistance = Random.Range(minLookDistance, maxLookDistance); // Hardcoded for now
-                    Vector3 lookAtPoint = npcController.Npc.gameplayCamera.transform.position + lookDirection * lookDistance;
-
-                    // Ensure bot doesn’t look at unreachable areas (optional raycast check)
-                    if (Physics.Raycast(npcController.Npc.thisController.transform.position, lookDirection, out RaycastHit hit, lookDistance, StartOfRound.Instance.collidersAndRoomMaskAndDefault))
-                    {
-                        lookAtPoint = hit.point; // Adjust to the first obstacle it hits
-                    }
-
-                    // Use OrderToLookAtPosition as SetTurnBodyTowardsDirection can be overriden!
-                    npcController.OrderToLookAtPosition(lookAtPoint);
-                }
-                yield return new WaitForSeconds(freezeTimeRandom);
-            }
-
-            lookingAroundCoroutine = null;
-        }
-
-        private void StartLookingAroundCoroutine()
-        {
-            if (this.lookingAroundCoroutine == null)
-            {
-                this.lookingAroundCoroutine = ai.StartCoroutine(this.LookingAround());
-            }
-        }
-
-        private void StopLookingAroundCoroutine()
-        {
-            if (this.lookingAroundCoroutine != null)
-            {
-                ai.StopCoroutine(this.lookingAroundCoroutine);
-                this.lookingAroundCoroutine = null;
             }
         }
     }

@@ -24,6 +24,7 @@
         FightEnemy,
         ChargeHeldItem,
         UseTZPInhalant,
-        LostInFacility
+        LostInFacility,
+        TransferLoot
     }
 }

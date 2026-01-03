@@ -1,0 +1,171 @@
+﻿using LethalBots.Constants;
+using LethalBots.Enums;
+using System;
+using UnityEngine;
+
+namespace LethalBots.AI.AIStates
+{
+    /// <summary>
+    /// A state where the bot is assigned to transfer loot from the entrances of the facility back to the players' ship.
+    /// </summary>
+    public class TransferLootState : AIState
+    {
+        private float waitTimer;
+        public TransferLootState(AIState oldState) : base(oldState)
+        {
+            CurrentState = EnumAIStates.TransferLoot;
+        }
+
+        public TransferLootState(LethalBotAI ai) : base(ai)
+        {
+            CurrentState = EnumAIStates.TransferLoot;
+        }
+
+        public override void OnEnterState()
+        {
+            targetEntrance = FindClosestEntrance();
+            waitTimer = 0f;
+            base.OnEnterState();
+        }
+
+        public override void DoAI()
+        {
+            // Check for enemies
+            EnemyAI? enemyAI = ai.CheckLOSForEnemy(Const.LETHAL_BOT_FOV, Const.LETHAL_BOT_ENTITIES_RANGE, (int)Const.DISTANCE_CLOSE_ENOUGH_HOR);
+            if (enemyAI != null)
+            {
+                ai.State = new PanikState(this, enemyAI);
+                return;
+            }
+
+            // Return to the ship if needed!
+            if (ShouldReturnToShip())
+            {
+                ai.State = new ReturnToShipState(this);
+                return;
+            }
+
+            // Check for object to grab
+            if (ai.HasSpaceInInventory())
+            {
+                GrabbableObject? grabbableObject = ai.LookingForObjectToGrab();
+                if (grabbableObject != null)
+                {
+                    ai.State = new FetchingObjectState(this, grabbableObject);
+                    return;
+                }
+            }
+            else
+            {
+                // If our inventory is full, return to the ship to drop our stuff off
+                ai.State = new ReturnToShipState(this);
+                return;
+            }
+
+            // If we are inside, make the bot go outside so we can transfer loot to the ship
+            if (!ai.isOutside)
+            {
+                ai.State = new ReturnToShipState(this, true); // Tell the state to end if outside
+                return;
+            }
+
+            // Alright, we are outside, lets head over to the entrance to transfer loot
+            if (targetEntrance == null || !targetEntrance.isEntranceToBuilding)
+            {
+                targetEntrance = FindClosestEntrance();
+                if (targetEntrance == null || !targetEntrance.isEntranceToBuilding)
+                {
+                    ai.State = new ReturnToShipState(this); // No entrance found, return to ship
+                    return;
+                }
+            }
+
+            // Find a safe path to the entrance
+            StartSafePathCoroutine();
+
+            // Look around for loot and potential enemies
+            StartLookingAroundCoroutine();
+
+            // Move towards our target entrance via safe path
+            // NOTE: Unlike other states, we rely entirely on the safe path system to avoid danger here.
+            // Since we normally wait outside near the entrance, we need to be able to react to danger that may pass by.
+            // Safe path system will handle this while we wait for more loot to transfer.
+            float sqrMagDistanceToSafePos = (this.safePathPos - npcController.Npc.transform.position).sqrMagnitude;
+            if (sqrMagDistanceToSafePos >= Const.DISTANCE_CLOSE_ENOUGH_TO_DESTINATION * Const.DISTANCE_CLOSE_ENOUGH_TO_DESTINATION)
+            {
+                // Alright lets go transfer some loot!
+                ai.SetDestinationToPositionLethalBotAI(safePathPos);
+                ai.OrderMoveToDestination();
+                waitTimer = 0f;
+            }
+            else
+            {
+                // Wait here until its safe to move
+                // If we arrived at our target entrance, we will wait until someone drops off more loot
+                ai.StopMoving();
+                npcController.OrderToStopSprint();
+
+                float sqrMagDistanceToEntrance = (targetEntrance.entrancePoint.position - npcController.Npc.transform.position).sqrMagnitude;
+                if (sqrMagDistanceToEntrance <= Const.DISTANCE_CLOSE_ENOUGH_TO_DESTINATION * Const.DISTANCE_CLOSE_ENOUGH_TO_DESTINATION)
+                {
+                    // We are at the entrance, wait for loot to arrive
+                    waitTimer += ai.AIIntervalTime;
+                    if (waitTimer >= Const.TRANSFER_LOOT_MAX_WAIT_TIME)
+                    {
+                        // No loot at our target entrance, lets check the other entrances
+                        // FIXME: Bots will just alternate between the two closest entrances, which is fine for most maps, but
+                        // some maps and we need the bot to cycle through all entrances before returning to ship.
+                        waitTimer = 0f;
+                        EntranceTeleport? currentEntrance = targetEntrance;
+                        targetEntrance = FindClosestEntrance(entranceToAvoid: currentEntrance);
+                        if (targetEntrance != null && targetEntrance != currentEntrance)
+                        {
+                            // Found another entrance to check out, head over there
+                            return;
+                        }
+
+                        // No other entrance found, return to ship
+                        ai.State = new ReturnToShipState(this);
+                        return;
+                    }
+                }
+                else
+                {
+                    // We are not at the entrance yet, reset wait timer
+                    waitTimer = 0f;
+                }
+            }
+        }
+
+        public override void TryPlayCurrentStateVoiceAudio()
+        {
+            // Default states, wait for cooldown and if no one is talking close
+            ai.LethalBotIdentity.Voice.TryPlayVoiceAudio(new PlayVoiceParameters()
+            {
+                VoiceState = EnumVoicesState.FollowingPlayer,
+                CanTalkIfOtherLethalBotTalk = false,
+                WaitForCooldown = true,
+                CutCurrentVoiceStateToTalk = false,
+                CanRepeatVoiceState = true,
+
+                ShouldSync = true,
+                IsLethalBotInside = npcController.Npc.isInsideFactory,
+                AllowSwearing = Plugin.Config.AllowSwearing.Value
+            });
+        }
+
+        /// <remarks>
+        /// We give the position of the entrance we want a safe path to!<br/>
+        /// We return null if we are not outside or our target entrance is null!
+        /// </remarks>
+        /// <inheritdoc cref="AIState.GetDesiredSafePathPosition"></inheritdoc>
+        protected override Vector3? GetDesiredSafePathPosition()
+        {
+            if (this.targetEntrance == null || !ai.isOutside)
+            {
+                return null;
+            }
+            return this.targetEntrance.entrancePoint.position;
+        }
+    }
+}

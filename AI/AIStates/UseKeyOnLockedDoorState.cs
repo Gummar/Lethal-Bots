@@ -18,7 +18,6 @@ namespace LethalBots.AI.AIStates
     /// </summary>
     public class UseKeyOnLockedDoorState : AIState
     {
-        private Coroutine? lookingAroundCoroutine = null;
         private DoorLock? targetDoor = null;
         private Vector3? doorPos = null;
         private float attemptToUnlockTimer;
@@ -280,12 +279,6 @@ namespace LethalBots.AI.AIStates
             return this.targetDoor.lockPickerPosition2.position; // Was local position, but was causing issues.
         }
 
-        public override void StopAllCoroutines()
-        {
-            base.StopAllCoroutines();
-            StopLookingAroundCoroutine();
-        }
-
         public override void TryPlayCurrentStateVoiceAudio()
         {
             return;
@@ -328,7 +321,7 @@ namespace LethalBots.AI.AIStates
         /// Coroutine for making bot turn his body to look around him
         /// </summary>
         /// <returns></returns>
-        private IEnumerator LookingAround()
+        protected override IEnumerator LookingAround()
         {
             yield return null;
             while (ai.State != null
@@ -357,23 +350,6 @@ namespace LethalBots.AI.AIStates
             }
 
             lookingAroundCoroutine = null;
-        }
-
-        private void StartLookingAroundCoroutine()
-        {
-            if (this.lookingAroundCoroutine == null)
-            {
-                this.lookingAroundCoroutine = ai.StartCoroutine(this.LookingAround());
-            }
-        }
-
-        private void StopLookingAroundCoroutine()
-        {
-            if (this.lookingAroundCoroutine != null)
-            {
-                ai.StopCoroutine(this.lookingAroundCoroutine);
-                this.lookingAroundCoroutine = null;
-            }
         }
 
         // We are unlocking a door, these messages should be queued!
