@@ -182,7 +182,6 @@ namespace LethalBots.Managers
             }
         }
         public VehicleController? VehicleController;
-        public List<IBodyReplacementBase> ListBodyReplacementOnDeadBodies { private set; get; } = new List<IBodyReplacementBase>();
 
         public Dictionary<EnemyAI, INoiseListener> DictEnemyAINoiseListeners = new Dictionary<EnemyAI, INoiseListener>();
 
@@ -541,57 +540,6 @@ namespace LethalBots.Managers
         private void RemovePlayerModelReplacement(object bodyReplacementBase)
         {
             Object.DestroyImmediate((ModelReplacement.BodyReplacementBase)bodyReplacementBase);
-        }
-
-        private void CleanListBodyReplacementOnDeadBodies()
-        {
-            StartOfRound instanceSOR = StartOfRound.Instance;
-            for (int i = 0; i < ListBodyReplacementOnDeadBodies.Count; i++)
-            {
-                IBodyReplacementBase bodyReplacementBase = ListBodyReplacementOnDeadBodies[i];
-                if (bodyReplacementBase == null
-                    || bodyReplacementBase.DeadBody == null)
-                {
-                    continue;
-                }
-
-                if (!instanceSOR.shipBounds.bounds.Contains(bodyReplacementBase.DeadBody.transform.position))
-                {
-                    bodyReplacementBase.IsActive = false;
-                    UnityEngine.Object.Destroy((Object)bodyReplacementBase.BodyReplacementBase);
-                    ListBodyReplacementOnDeadBodies[i] = null!;
-                }
-            }
-            ListBodyReplacementOnDeadBodies = ListBodyReplacementOnDeadBodies.Where(x => x != null 
-                                                                                      && x.DeadBody != null).ToList();
-        }
-
-        public void RemoveLethalBotModelReplacement(PlayerControllerB player, bool forceRemove = false)
-        {
-            LethalBotAI? lethalBotAI = GetLethalBotAI(player);
-            if (lethalBotAI == null)
-            {
-                return;
-            }
-
-            RemoveLethalBotModelReplacement(lethalBotAI, forceRemove);
-        }
-
-        public void RemoveLethalBotModelReplacement(LethalBotAI lethalBotAI, bool forceRemove = false)
-        {
-            IBodyReplacementBase[] bodiesReplacementBase = lethalBotAI.ListModelReplacement.ToArray();
-            //Plugin.LogDebug($"RemovePlayerModelReplacement bodiesReplacementBase.Length {bodiesReplacementBase.Length}");
-            foreach (IBodyReplacementBase bodyReplacementBase in bodiesReplacementBase)
-            {
-                if (!forceRemove && ListBodyReplacementOnDeadBodies.Contains(bodyReplacementBase))
-                {
-                    continue;
-                }
-
-                lethalBotAI.ListModelReplacement.Remove(bodyReplacementBase);
-                bodyReplacementBase.IsActive = false;
-                UnityEngine.Object.Destroy((Object)bodyReplacementBase.BodyReplacementBase);
-            }
         }
 
         private void RemoveCosmetics(PlayerControllerB lethalBotController)
@@ -1265,12 +1213,6 @@ namespace LethalBots.Managers
                 // Actually kick the bot
                 // NOTE: We do NOT want to call the normal kick method since that would break the game since bots are NOT real clients!
                 // Instead, we use the same despawn logic as when the round ends!
-
-                // Mod support!!!!
-                if (Plugin.IsModModelReplacementAPILoaded)
-                {
-                    RemoveLethalBotModelReplacement(lethalBotAI, forceRemove: false); // Should forceRemove be true?
-                }
 
                 // Leave the terminal if we are using one!
                 if (lethalBotController.inTerminalMenu)
@@ -2978,14 +2920,6 @@ namespace LethalBots.Managers
                     continue;
                 }
 
-                // Mod support!!!!
-                if (Plugin.IsModModelReplacementAPILoaded)
-                {
-                    // Clean up the model replacement lists for this bot
-                    // In the second CountAliveAndDisableLethalBots, we will will change the suit back to default
-                    RemoveLethalBotModelReplacement(lethalBotAI, forceRemove: true);
-                }
-
                 PlayerControllerB lethalBotController = lethalBotAI.NpcController.Npc;
                 if (lethalBotController.isPlayerControlled && !lethalBotController.isPlayerDead)
                 {
@@ -3073,12 +3007,6 @@ namespace LethalBots.Managers
                 // Mark the index as used so the post revive function understands what it needs to deactivate!
                 // This is done on purpose so the bots count for the dead body penalties!
                 AllBotPlayerIndexs.Add((int)lethalBotAI.NpcController.Npc.playerClientId);
-            }
-
-            // Mod support!!!!
-            if (Plugin.IsModModelReplacementAPILoaded)
-            {
-                CleanListBodyReplacementOnDeadBodies();
             }
         }
 
