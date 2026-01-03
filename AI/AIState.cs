@@ -340,6 +340,25 @@ namespace LethalBots.AI
             return null;
         }
 
+        /// <remarks>
+        /// Helper function that only avoids a single entrance!<br/>
+        /// <inheritdoc cref="FindClosestEntrance(Vector3?, List{EntranceTeleport}?)"></inheritdoc>
+        /// </remarks>
+        /// <inheritdoc cref="FindClosestEntrance(Vector3?, List{EntranceTeleport}?)"></inheritdoc>
+        protected virtual EntranceTeleport? FindClosestEntrance(EntranceTeleport? entranceToAvoid, Vector3? shipPos = null)
+        {
+            List<EntranceTeleport>? entrancesToAvoid;
+            if (entranceToAvoid != null)
+            {
+                entrancesToAvoid = new List<EntranceTeleport>() { entranceToAvoid };
+            }
+            else
+            {
+                entrancesToAvoid = null;
+            }
+            return FindClosestEntrance(shipPos, entrancesToAvoid);
+        }
+
         /// <summary>
         /// Find an entrance we can path to so we can enter or exit the main building!
         /// </summary>
@@ -348,7 +367,7 @@ namespace LethalBots.AI
         /// We also have to check if the exit position lets the bot reach the ship. Offence is a good example where the bots can't path down the fire exit!
         /// </remarks>
         /// <returns>The closest entrance or else null</returns>
-        protected virtual EntranceTeleport? FindClosestEntrance(Vector3? shipPos = null, EntranceTeleport? entranceToAvoid = null)
+        protected virtual EntranceTeleport? FindClosestEntrance(Vector3? shipPos = null, List<EntranceTeleport>? entrancesToAvoid = null)
         {
             bool shouldOnlyUseFrontEntrance = ShouldOnlyUseFrontEntrance();
             bool isClosestEntranceFront = false;
@@ -358,8 +377,8 @@ namespace LethalBots.AI
             shipPos ??= RoundManager.Instance.GetNavMeshPosition(StartOfRound.Instance.middleOfShipNode.position);
             foreach (var entrance in LethalBotAI.EntrancesTeleportArray)
             {
-                // If we are avoiding a specific entrance, we should skip it!
-                if (entranceToAvoid != null && entranceToAvoid == entrance)
+                // If we are avoiding a specific entrances, we should skip it!
+                if (entrancesToAvoid != null && entrancesToAvoid.Contains(entrance))
                 {
                     continue;
                 }
