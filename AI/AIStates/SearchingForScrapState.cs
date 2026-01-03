@@ -128,7 +128,8 @@ namespace LethalBots.AI.AIStates
                     bool shouldWalkLootToShip = true;
                     if (LethalBotManager.Instance.LootTransferPlayers.Count > 0
                         && targetEntrance != null
-                        && (targetEntrance.entrancePoint.position - npcController.Npc.transform.position).sqrMagnitude < Const.DISTANCE_ITEMS_TO_ENTRANCE * Const.DISTANCE_ITEMS_TO_ENTRANCE)
+                        && targetEntrance.FindExitPoint()
+                        && (targetEntrance.exitPoint.position - npcController.Npc.transform.position).sqrMagnitude < Const.DISTANCE_ITEMS_TO_ENTRANCE * Const.DISTANCE_ITEMS_TO_ENTRANCE)
                     {
                         // Stop moving while we drop our items
                         ai.StopMoving();
