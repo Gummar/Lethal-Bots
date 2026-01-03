@@ -317,41 +317,6 @@ namespace LethalBots.AI.AIStates
             return false;
         }
 
-        /// <summary>
-        /// Coroutine for making bot turn his body to look around him
-        /// </summary>
-        /// <returns></returns>
-        protected override IEnumerator LookingAround()
-        {
-            yield return null;
-            while (ai.State != null
-                    && ai.State == this)
-            {
-                float freezeTimeRandom = Random.Range(Const.MIN_TIME_SEARCH_LOOKING_AROUND, Const.MAX_TIME_SEARCH_LOOKING_AROUND);
-                float angleRandom = Random.Range(0f, 360f);
-
-                // Convert angle to world position for looking
-                // Convert to local space (relative to the bot's forward direction)
-                Vector3 lookDirection = Quaternion.Euler(0, angleRandom, 0) * Vector3.forward;
-                float minLookDistance = 2f; // TODO: Move these into the Const class!
-                float maxLookDistance = 8f;
-                float lookDistance = Random.Range(minLookDistance, maxLookDistance); // Hardcoded for now
-                Vector3 lookAtPoint = npcController.Npc.gameplayCamera.transform.position + lookDirection * lookDistance;
-
-                // Ensure bot doesn’t look at unreachable areas (optional raycast check)
-                if (Physics.Raycast(npcController.Npc.thisController.transform.position, lookDirection, out RaycastHit hit, lookDistance, StartOfRound.Instance.collidersAndRoomMaskAndDefault))
-                {
-                    lookAtPoint = hit.point; // Adjust to the first obstacle it hits
-                }
-
-                // Use OrderToLookAtPosition as SetTurnBodyTowardsDirection can be overriden!
-                npcController.OrderToLookAtPosition(lookAtPoint);
-                yield return new WaitForSeconds(freezeTimeRandom);
-            }
-
-            lookingAroundCoroutine = null;
-        }
-
         // We are unlocking a door, these messages should be queued!
         public override void OnSignalTranslatorMessageReceived(string message)
         {

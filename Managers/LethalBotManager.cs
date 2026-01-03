@@ -61,10 +61,12 @@ namespace LethalBots.Managers
         /// Size of allPlayerScripts, AllPlayerObjects, for all player controllers
         /// </summary>
         public int AllEntitiesCount;
+
         /// <summary>
         /// Number of actually connected players, used for the DepositItemDeskPatch!
         /// </summary>
         public int AllRealPlayersCount { private set; get; }
+
         /// <summary>
         /// Integer corresponding to the first player controller associated with an <see cref="LethalInternship.AI.InternAI"/> in StartOfRound.Instance.allPlayerScripts
         /// </summary>
@@ -79,19 +81,24 @@ namespace LethalBots.Managers
                 return LethalInternship.Managers.InternManager.Instance?.IndexBeginOfInterns ?? int.MaxValue;
             }
         }
+
         /// <summary>
         /// BotSpawnState used to check when a bot spawns, so living and connected players can update!
         /// </summary>
         public NetworkVariable<EnumBotSpawnState> botSpawned = new NetworkVariable<EnumBotSpawnState>(EnumBotSpawnState.Unknown);
+
         /// <summary>
         /// Bool used to check when a bot has died or been revived, so living and connected players can update!
         /// </summary>
         public NetworkVariable<bool> sendPlayerCountUpdate = new NetworkVariable<bool>(false);
+
         /// <summary>
         /// Bool used when the inital bot spawn happens so we don't spam the clients with updates!
         /// </summary>
         public NetworkVariable<bool> isSpawningBots = new NetworkVariable<bool>(false);
+
         private static PlayerControllerB? _hostPlayerScript;
+
         /// <summary>
         /// Public property used to return the host player object!
         /// </summary>
@@ -113,6 +120,7 @@ namespace LethalBots.Managers
                 return _hostPlayerScript;
             }
         }
+
         /// <summary>
         /// This is the human player or bot who is set to stay and monitor the others on the ship!
         /// </summary>
@@ -146,12 +154,24 @@ namespace LethalBots.Managers
                 }
             }
         }
+
         private NetworkVariable<NetworkBehaviourReference> _missionControlPlayer = new NetworkVariable<NetworkBehaviourReference>(writePerm: NetworkVariableWritePermission.Server);
+
+        /// <summary>
+        /// Gets the list of bots moving loot from the facility to the ship.
+        /// </summary>
+        /// <remarks>
+        /// Only the server can modify this list.
+        /// </remarks>
+        public NetworkList<NetworkBehaviourReference> LootTransferPlayers = new NetworkList<NetworkBehaviourReference>(writePerm: NetworkVariableWritePermission.Server);
+
         /// <summary>
         /// This is the last reported time of day from the last <see cref="MissionControlPlayer"/>.
         /// </summary>
         public static DayMode lastReportedTimeOfDay = DayMode.Dawn;
+
         public static DepositItemsDesk? _companyDesk;
+
         /// <summary>
         /// Returns the <see cref="DepositItemsDesk"/> instance in the scene, if it exists.<br/>
         /// </summary>
@@ -166,7 +186,9 @@ namespace LethalBots.Managers
                 return _companyDesk;
             }
         }
+
         private static HangarShipDoor? _shipDoor;
+
         /// <summary>
         /// Returns the <see cref="HangarShipDoor"/> instance in the scene, if it exists.<br/>
         /// </summary>
@@ -181,6 +203,7 @@ namespace LethalBots.Managers
                 return _shipDoor;
             }
         }
+
         public VehicleController? VehicleController;
 
         public Dictionary<EnemyAI, INoiseListener> DictEnemyAINoiseListeners = new Dictionary<EnemyAI, INoiseListener>();
@@ -3434,6 +3457,68 @@ namespace LethalBots.Managers
             // Sync the mission control player across clients
             // NOTE: We should be the server here!
             SetMissionControllerAndSync(playerToSync);
+        }
+
+        #endregion
+
+        #region Loot Transfer RPC
+
+        /// <summary>
+        /// Adds a player to the loot transfer list and syncs it across server and clients
+        /// </summary>
+        /// <param name="playerToAdd"></param>
+        public void AddPlayerToLootTransferListAndSync(NetworkBehaviourReference playerToAdd)
+        {
+            if (base.IsServer)
+            {
+                if (!LootTransferPlayers.Contains(playerToAdd))
+                { 
+                    LootTransferPlayers.Add(playerToAdd); 
+                }
+            }
+            else
+            {
+                AddPlayerToLootTransferListServerRpc(playerToAdd);
+            }
+        }
+
+        /// <summary>
+        /// Removes a player from the loot transfer list and syncs it across server and clients
+        /// </summary>
+        /// <param name="playerToRemove"></param>
+        public void RemovePlayerFromLootTransferListAndSync(NetworkBehaviourReference playerToRemove)
+        {
+            if (base.IsServer)
+            {
+                if (LootTransferPlayers.Contains(playerToRemove))
+                {
+                    LootTransferPlayers.Remove(playerToRemove);
+                }
+            }
+            else
+            {
+                RemovePlayerFromLootTransferListServerRpc(playerToRemove);
+            }
+        }
+
+        /// <summary>
+        /// Helper server RPC to allow other clients to add players to the loot transfer list
+        /// </summary>
+        /// <param name="playerToAdd"></param>
+        [ServerRpc(RequireOwnership = false)]
+        private void AddPlayerToLootTransferListServerRpc(NetworkBehaviourReference playerToAdd)
+        {
+            AddPlayerToLootTransferListAndSync(playerToAdd);
+        }
+
+        /// <summary>
+        /// Helper server RPC to allow other clients to remove players to the loot transfer list
+        /// </summary>
+        /// <param name="playerToRemove"></param>
+        [ServerRpc(RequireOwnership = false)]
+        private void RemovePlayerFromLootTransferListServerRpc(NetworkBehaviourReference playerToRemove)
+        {
+            RemovePlayerFromLootTransferListAndSync(playerToRemove);
         }
 
         #endregion

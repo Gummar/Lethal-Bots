@@ -78,11 +78,27 @@ namespace LethalBots.AI.AIStates
                     ai.SwitchItemSlotsAndSync(objectSlot);
                     canInverseTeleport = false;
                 }
+                // If we are transferring loot, go back to that state
+                else if (LethalBotManager.Instance.LootTransferPlayers.Contains(npcController.Npc))
+                {
+                    // We finished dropping our stuff off, go back to transferring loot!
+                    if (previousAIState is TransferLootState)
+                    {
+                        ChangeBackToPreviousState(); // We were transferring loot before, go back to it
+                    }
+                    else
+                    {
+                        ai.State = new TransferLootState(this); // Go to transferring loot state
+                    }
+                    return;
+                }
+                // If we are the mission controller, go to that state
                 else if (missionController == npcController.Npc)
                 {
                     ai.State = new MissionControlState(this);
                     return;
                 }
+                // If there is no mission controller, or its dead, we should be it!
                 else if (!StartOfRound.Instance.shipIsLeaving)
                 {
                     if (missionController == null || !missionController.isPlayerControlled || missionController.isPlayerDead)

@@ -288,10 +288,14 @@ namespace LethalBots.AI
             // One of us was asked to transfer loot!
             else if (message.Contains("transfer loot"))
             {
-                if (IsBotBeingAddressed(playerWhoSentMessage, out _))
+                if (IsBotBeingAddressed(playerWhoSentMessage, out var lethalBotController))
                 {
                     // Yay, we found a vaild bot, make it transfer loot!
                     ai.SendChatMessage("I'll start transferring loot to the ship right away!");
+                    if (!LethalBotManager.Instance.LootTransferPlayers.Contains(lethalBotController))
+                    {
+                        LethalBotManager.Instance.AddPlayerToLootTransferListAndSync(lethalBotController);
+                    }
                     ai.State = new TransferLootState(this);
                 }
                 return;
@@ -1147,26 +1151,22 @@ namespace LethalBots.AI
                 float freezeTimeRandom = Random.Range(Const.MIN_TIME_SEARCH_LOOKING_AROUND, Const.MAX_TIME_SEARCH_LOOKING_AROUND);
                 float angleRandom = Random.Range(0f, 360f);
 
-                // Only look around if we are already not doing so!
-                if (npcController.LookAtTarget.IsLookingForward())
+                // Convert angle to world position for looking
+                // Convert to local space (relative to the bot's forward direction)
+                Vector3 lookDirection = Quaternion.Euler(0, angleRandom, 0) * Vector3.forward;
+                float minLookDistance = 2f; // TODO: Move these into the Const class!
+                float maxLookDistance = 8f;
+                float lookDistance = Random.Range(minLookDistance, maxLookDistance); // Hardcoded for now
+                Vector3 lookAtPoint = npcController.Npc.gameplayCamera.transform.position + lookDirection * lookDistance;
+
+                // Ensure bot doesn’t look at unreachable areas (optional raycast check)
+                if (Physics.Raycast(npcController.Npc.thisController.transform.position, lookDirection, out RaycastHit hit, lookDistance, StartOfRound.Instance.collidersAndRoomMaskAndDefault))
                 {
-                    // Convert angle to world position for looking
-                    // Convert to local space (relative to the bot's forward direction)
-                    Vector3 lookDirection = Quaternion.Euler(0, angleRandom, 0) * Vector3.forward;
-                    float minLookDistance = 2f; // TODO: Move these into the Const class!
-                    float maxLookDistance = 8f;
-                    float lookDistance = Random.Range(minLookDistance, maxLookDistance); // Hardcoded for now
-                    Vector3 lookAtPoint = npcController.Npc.gameplayCamera.transform.position + lookDirection * lookDistance;
-
-                    // Ensure bot doesn’t look at unreachable areas (optional raycast check)
-                    if (Physics.Raycast(npcController.Npc.thisController.transform.position, lookDirection, out RaycastHit hit, lookDistance, StartOfRound.Instance.collidersAndRoomMaskAndDefault))
-                    {
-                        lookAtPoint = hit.point; // Adjust to the first obstacle it hits
-                    }
-
-                    // Use OrderToLookAtPosition as SetTurnBodyTowardsDirection can be overriden!
-                    npcController.OrderToLookAtPosition(lookAtPoint);
+                    lookAtPoint = hit.point; // Adjust to the first obstacle it hits
                 }
+
+                // Use OrderToLookAtPosition as SetTurnBodyTowardsDirection can be overriden!
+                npcController.OrderToLookAtPosition(lookAtPoint);
                 yield return new WaitForSeconds(freezeTimeRandom);
             }
 

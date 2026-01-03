@@ -814,7 +814,10 @@ namespace LethalBots.AI.AIStates
         protected override void ChangeBackToPreviousState()
         {
             if (previousState == EnumAIStates.SearchingForScrap
-                    || (previousState == EnumAIStates.FetchingObject && !ai.IsFollowingTargetPlayer()))
+                    || (previousState == EnumAIStates.FetchingObject 
+                        && (ai.targetPlayer == null
+                        || !ai.targetPlayer.isPlayerControlled
+                        || ai.targetPlayer.isPlayerDead)))
             {
                 // If we have some scrap, it might be a good time to bring it back,
                 // just in case.....

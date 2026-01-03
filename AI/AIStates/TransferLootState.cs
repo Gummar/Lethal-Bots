@@ -1,6 +1,7 @@
 ﻿using GameNetcodeStuff;
 using LethalBots.Constants;
 using LethalBots.Enums;
+using LethalBots.Managers;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -29,6 +30,13 @@ namespace LethalBots.AI.AIStates
 
         public override void OnEnterState()
         {
+            if (!hasBeenStarted)
+            {
+                if (!LethalBotManager.Instance.LootTransferPlayers.Contains(npcController.Npc))
+                {
+                    LethalBotManager.Instance.AddPlayerToLootTransferListAndSync(npcController.Npc);
+                }
+            }
             targetEntrance = FindClosestEntrance(entrancesToAvoid: checkedEntrances);
             waitTimer = 0f;
             base.OnEnterState();
@@ -47,6 +55,7 @@ namespace LethalBots.AI.AIStates
             // Return to the ship if needed!
             if (ShouldReturnToShip())
             {
+                LethalBotManager.Instance.RemovePlayerFromLootTransferListAndSync(npcController.Npc); // Remove from loot transfer list, we are done for the day!
                 ai.State = new ReturnToShipState(this);
                 return;
             }
