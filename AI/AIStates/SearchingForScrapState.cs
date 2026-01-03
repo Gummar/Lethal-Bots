@@ -112,7 +112,14 @@ namespace LethalBots.AI.AIStates
             else
             {
                 // If our inventory is full, return to the ship to drop our stuff off
-                ai.State = new ReturnToShipState(this);
+                // Now, lets check if someone is assigned to transfer loot
+                bool shouldWalkLootToShip = true;
+                if (!ai.isOutside && LethalBotManager.Instance.LootTransferPlayers.Count > 0)
+                {
+                    shouldWalkLootToShip = false;
+                }
+
+                ai.State = new ReturnToShipState(this, !shouldWalkLootToShip);
                 return;
             }
 
@@ -149,6 +156,7 @@ namespace LethalBots.AI.AIStates
                             if (heldItem != null && heldItem.itemProperties.isScrap)
                             {
                                 ai.DropItem();
+                                LethalBotAI.DictJustDroppedItems.Remove(heldItem); //HACKHACK: Since DropItem set the just dropped item timer, we clear it here!
                                 shouldWalkLootToShip = false;
                             }
                             else if (ai.HasGrabbableObjectInInventory(FindObjectToDrop, out int objectSlot))
