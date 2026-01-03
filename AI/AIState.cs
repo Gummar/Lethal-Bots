@@ -377,7 +377,7 @@ namespace LethalBots.AI
             shipPos ??= RoundManager.Instance.GetNavMeshPosition(StartOfRound.Instance.middleOfShipNode.position);
             foreach (var entrance in LethalBotAI.EntrancesTeleportArray)
             {
-                // If we are avoiding a specific entrances, we should skip it!
+                // If we are avoiding specific entrances, we should skip it!
                 if (entrancesToAvoid != null && entrancesToAvoid.Contains(entrance))
                 {
                     continue;

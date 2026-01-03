@@ -1,6 +1,7 @@
 ﻿using LethalBots.Constants;
 using LethalBots.Enums;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace LethalBots.AI.AIStates
@@ -11,19 +12,23 @@ namespace LethalBots.AI.AIStates
     public class TransferLootState : AIState
     {
         private float waitTimer;
+        private List<EntranceTeleport> checkedEntrances = new List<EntranceTeleport>();
+
         public TransferLootState(AIState oldState) : base(oldState)
         {
             CurrentState = EnumAIStates.TransferLoot;
+            checkedEntrances.Clear();
         }
 
         public TransferLootState(LethalBotAI ai) : base(ai)
         {
             CurrentState = EnumAIStates.TransferLoot;
+            checkedEntrances.Clear();
         }
 
         public override void OnEnterState()
         {
-            targetEntrance = FindClosestEntrance();
+            targetEntrance = FindClosestEntrance(entrancesToAvoid: checkedEntrances);
             waitTimer = 0f;
             base.OnEnterState();
         }
@@ -72,6 +77,8 @@ namespace LethalBots.AI.AIStates
             // Alright, we are outside, lets head over to the entrance to transfer loot
             if (targetEntrance == null || !targetEntrance.isEntranceToBuilding)
             {
+                // Alright, reset the list of checked entrances and find the closest one again
+                checkedEntrances.Clear();
                 targetEntrance = FindClosestEntrance();
                 if (targetEntrance == null || !targetEntrance.isEntranceToBuilding)
                 {
@@ -96,7 +103,7 @@ namespace LethalBots.AI.AIStates
                 // Alright lets go transfer some loot!
                 ai.SetDestinationToPositionLethalBotAI(safePathPos);
                 ai.OrderMoveToDestination();
-                waitTimer = 0f;
+                waitTimer = Mathf.Max(waitTimer - ai.AIIntervalTime, 0f); // Slowly decrease wait timer in case we got shoved away from entrance
             }
             else
             {
@@ -113,12 +120,11 @@ namespace LethalBots.AI.AIStates
                     if (waitTimer >= Const.TRANSFER_LOOT_MAX_WAIT_TIME)
                     {
                         // No loot at our target entrance, lets check the other entrances
-                        // FIXME: Bots will just alternate between the two closest entrances, which is fine for most maps, but
-                        // some maps and we need the bot to cycle through all entrances before returning to ship.
+                        // NOTE: Bots will cycle through all entrances before returning to ship.
                         waitTimer = 0f;
-                        EntranceTeleport? currentEntrance = targetEntrance;
-                        targetEntrance = FindClosestEntrance(entranceToAvoid: currentEntrance);
-                        if (targetEntrance != null && targetEntrance != currentEntrance)
+                        checkedEntrances.Add(targetEntrance); // Mark this entrance as checked
+                        targetEntrance = FindClosestEntrance(entrancesToAvoid: checkedEntrances); // Find another entrance to check out
+                        if (targetEntrance != null && !checkedEntrances.Contains(targetEntrance))
                         {
                             // Found another entrance to check out, head over there
                             return;
@@ -132,7 +138,8 @@ namespace LethalBots.AI.AIStates
                 else
                 {
                     // We are not at the entrance yet, reset wait timer
-                    waitTimer = 0f;
+                    // Slowly decrease wait timer in case we got shoved away from entrance
+                    waitTimer = Mathf.Max(waitTimer - ai.AIIntervalTime, 0f);
                 }
             }
         }

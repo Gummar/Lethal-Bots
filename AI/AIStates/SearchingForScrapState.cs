@@ -119,7 +119,7 @@ namespace LethalBots.AI.AIStates
                     return;
                 }
 
-                // If we don't have an entrace selected we should pick one now!
+                // If we don't have an entrance selected we should pick one now!
                 if (targetEntrance == null 
                     || waitForSafePathTimer > Const.WAIT_TIME_FOR_SAFE_PATH 
                     || entranceAttempts > Const.MAX_ENTRANCE_ATTEMPTS)
