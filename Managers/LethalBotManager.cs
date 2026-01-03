@@ -580,7 +580,7 @@ namespace LethalBots.Managers
         public void RemoveLethalBotModelReplacement(LethalBotAI lethalBotAI, bool forceRemove = false)
         {
             IBodyReplacementBase[] bodiesReplacementBase = lethalBotAI.ListModelReplacement.ToArray();
-            Plugin.LogDebug($"RemovePlayerModelReplacement bodiesReplacementBase.Length {bodiesReplacementBase.Length}");
+            //Plugin.LogDebug($"RemovePlayerModelReplacement bodiesReplacementBase.Length {bodiesReplacementBase.Length}");
             foreach (IBodyReplacementBase bodyReplacementBase in bodiesReplacementBase)
             {
                 if (!forceRemove && ListBodyReplacementOnDeadBodies.Contains(bodyReplacementBase))

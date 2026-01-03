@@ -4,6 +4,7 @@ using LethalBots.Constants;
 using LethalBots.Enums;
 using LethalBots.Managers;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,18 +19,19 @@ namespace LethalBots.AI.AIStates
     /// </summary>
     public class ReturnToShipState : AIState
     {
-        private Vector3 targetShipPos; // The point on the ship we want to go to
+        private Transform targetShipTransform; // The transform on the ship we want to go to
+        private Vector3 targetShipPos; // The point of the transform on the ship we want to go to
         private Vector3 targetEntrancePos; // The position we want to path to reach the entrance!
         private bool attemptedToUseTZP = false;
         private float findEntranceTimer;
+        private float shipPositionUpdateTimer;
 
         public ReturnToShipState(AIState oldState) : base(oldState)
         {
             CurrentState = EnumAIStates.ReturnToShip;
 
             // Lets pick a random node on the ship to go to
-            Transform[] ourShip = StartOfRound.Instance.insideShipPositions;
-            this.targetShipPos = RoundManager.Instance.GetNavMeshPosition(ourShip[Random.Range(0, ourShip.Length - 1)].position, default, 2.7f);
+            targetShipTransform = GetRandomInsideShipTransform();
         }
 
         public ReturnToShipState(LethalBotAI ai) : base(ai)
@@ -37,15 +39,14 @@ namespace LethalBots.AI.AIStates
             CurrentState = EnumAIStates.ReturnToShip;
 
             // Lets pick a random node on the ship to go to
-            Transform[] ourShip = StartOfRound.Instance.insideShipPositions;
-            this.targetShipPos = RoundManager.Instance.GetNavMeshPosition(ourShip[Random.Range(0, ourShip.Length - 1)].position, default, 2.7f);
+            targetShipTransform = GetRandomInsideShipTransform();
         }
 
         public override void OnEnterState()
         {
             // It doesn't matter if we had started the state before,
             // we should always recheck the nearest entrance
-            targetEntrance = FindClosestEntrance(this.targetShipPos);
+            targetEntrance = FindClosestEntrance(this.GetTargetShipPos());
             findEntranceTimer = 0f;
             base.OnEnterState();
         }
@@ -79,7 +80,7 @@ namespace LethalBots.AI.AIStates
                     || findEntranceTimer > Const.RETURN_UPDATE_ENTRANCE)
                 {
                     findEntranceTimer = 0f;
-                    targetEntrance = FindClosestEntrance(this.targetShipPos);
+                    targetEntrance = FindClosestEntrance(this.GetTargetShipPos());
                     if (targetEntrance == null)
                     {
                         // Find a door that might help us escape!!!!
@@ -217,7 +218,7 @@ namespace LethalBots.AI.AIStates
                 }
 
                 // Keep moving towards the ship!
-                float sqrMagDistanceToShip = (this.targetShipPos - npcController.Npc.transform.position).sqrMagnitude;
+                float sqrMagDistanceToShip = (this.GetTargetShipPos() - npcController.Npc.transform.position).sqrMagnitude;
                 if (sqrMagDistanceToShip >= Const.DISTANCE_TO_CHILL_POINT * Const.DISTANCE_TO_CHILL_POINT)
                 {
                     // Find a safe path to the ship
@@ -324,6 +325,50 @@ namespace LethalBots.AI.AIStates
             return desiredDrunkness;
         }
 
+        private Transform GetRandomInsideShipTransform()
+        {
+            // Lets pick a random node on the ship to go to
+            List<Transform> ourShip = StartOfRound.Instance.insideShipPositions.ToList();
+
+            // Pick from the list in a random order until we find one we can path to!
+            while (ourShip.Count > 0)
+            {
+                int index = Random.Range(0, ourShip.Count - 1);
+                Transform shipTransform = ourShip[index];
+                ourShip.RemoveAt(index);
+                Vector3 shipPos = RoundManager.Instance.GetNavMeshPosition(shipTransform.position, default, 2.7f);
+                if (ai.IsValidPathToTarget(shipPos, false))
+                {
+                    this.targetShipTransform = shipTransform;
+                    return shipTransform;
+                }
+            }
+
+            Plugin.LogError($"Bot {npcController.Npc.playerUsername} failed to find a valid position on the ship to return to! Falling back to middleOfShipNode");
+            return StartOfRound.Instance.middleOfShipNode;
+        }
+
+        /// <summary>
+        /// Returns the current position of the ship the bot is trying to wait at
+        /// </summary>
+        /// <remarks>
+        /// The position is cached and only updated every <see cref="Const.TIMER_CHECK_EXPOSED"/> seconds.
+        /// </remarks>
+        /// <returns>A <see cref="Vector3"/> representing the most recently determined position of the target ship.</returns>
+        private Vector3 GetTargetShipPos()
+        {
+            // Update the ship position every so often in case the ship moved!
+            if ((Time.timeSinceLevelLoad - shipPositionUpdateTimer) < Const.TIMER_CHECK_EXPOSED)
+            {
+                 return this.targetShipPos;
+            }
+
+            Vector3 shipPos = RoundManager.Instance.GetNavMeshPosition(this.targetShipTransform.position, default, 2.7f);
+            this.targetShipPos = shipPos;
+            shipPositionUpdateTimer = Time.timeSinceLevelLoad;
+            return this.targetShipPos;
+        }
+
         /// <remarks>
         /// We give the ship position we want a safe path to!<br/>
         /// We return our target entrance position if we are not outside!
@@ -333,7 +378,7 @@ namespace LethalBots.AI.AIStates
         {
             if (ai.isOutside)
             {
-                return this.targetShipPos;
+                return this.GetTargetShipPos();
             }
             return this.targetEntrance != null ? this.targetEntrancePos : null;
         }

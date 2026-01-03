@@ -551,9 +551,6 @@ namespace LethalBots.AI
 			}
 			else
 			{
-				// Clear stuck status
-				stuckTimer = 0f;
-
 				if (IsInsideElevator)
 				{
 					// NOTE: We use the same code as above when in an elevator or we end up creating prediction issues
@@ -635,7 +632,7 @@ namespace LethalBots.AI
 			}
 
 			// Do stuck detection
-			if (NpcController.HasToMove || !agent.isOnNavMesh)
+			if (NpcController.HasToMove || (agent.isActiveAndEnabled && !agent.isOnNavMesh && !agent.isOnOffMeshLink))
 			{
 				// If we are stuck, teleport to the closest node!
 				StartOfRound instanceSOR = StartOfRound.Instance;
@@ -664,9 +661,14 @@ namespace LethalBots.AI
 					stuckTimer = Mathf.Max(stuckTimer - Time.deltaTime, 0f);
 				}
 			}
+			else
+			{
+                // Clear stuck status
+                stuckTimer = 0f;
+            }
 
-			// Update interval timer for AI calculation
-			if (updateDestinationIntervalLethalBotAI >= 0f)
+            // Update interval timer for AI calculation
+            if (updateDestinationIntervalLethalBotAI >= 0f)
 			{
 				updateDestinationIntervalLethalBotAI -= Time.deltaTime;
 			}
@@ -4970,12 +4972,14 @@ namespace LethalBots.AI
 				|| !agent.enabled)
 			{
 				this.transform.position = navMeshPosition;
-			}
+				agent?.Warp(navMeshPosition);
+            }
 			else
 			{
 				agent.enabled = false;
 				this.transform.position = navMeshPosition;
-				agent.enabled = true;
+				agent.Warp(navMeshPosition);
+                agent.enabled = true;
 			}
 
 			// For CullFactory mod
