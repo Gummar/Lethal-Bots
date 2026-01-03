@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.7 - 2026-3-1
+Waiter, Waiter, more bugs fixed please! Back with another bug fix update. Hopefully, this should be the last of them for a while, other than the "Incompatible with Better Emotes" bug, which I'm still working on.
+
+- Bots now cache the transform they chose when returning to the ship. They will now update their target ship postion every few seconds. Fixes #18 on GitHub.
+- Fixed logic error in stuck detection causing the off the navmesh teleport check to never run.
+- Updated TeleportAgentAIAndBody to also call agent.Warp when teleporting the bot.
+- Added null checks for NpcController in patches to prevent errors on bot spawn.
+- Disabled and removed most of my model replacement patches. They were from Lethal Internship and were only creating more issues than they were worth. Besides, the base game and original mod handles model replacements just fine. Fixes #19 on GitHub.
+- Minor change to have my mod cleanup model replacements when the bots "disconnect."
+- Fixed LethalBotManager.ShipDoor being a private property
+- Fixed a potential null reference exception in UpdateOwnershipOfBotInventoryServer
+
 ## 1.0.6 - 2026-1-1
 I don't know when, but apparently a bug got introduced that caused bots to not properly clean up their model replacements when they disconnected from the server. This update fixes that bug. Oh, and added a few other things too:
 
