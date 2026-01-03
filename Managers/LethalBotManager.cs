@@ -2732,7 +2732,8 @@ namespace LethalBots.Managers
 
             foreach (LethalBotAI lethalBotAI in AllLethalBotAIs)
             {
-                if (lethalBotAI == null)
+                if (lethalBotAI == null 
+                    || lethalBotAI.NpcController == null)
                 {
                     continue;
                 }
