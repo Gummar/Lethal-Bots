@@ -63,42 +63,42 @@ namespace LethalBots.Patches.NpcPatches
             NpcController npcController = lethalBotAI.NpcController;
             if (npcController != null)
             {
-                lethalBotAI.NpcController.IsCameraDisabled = ___isCameraDisabled;
-                lethalBotAI.NpcController.IsJumping = ___isJumping;
-                lethalBotAI.NpcController.IsFallingFromJump = ___isFallingFromJump;
-                lethalBotAI.NpcController.CrouchMeter = ___crouchMeter;
-                lethalBotAI.NpcController.IsWalking = ___isWalking;
-                lethalBotAI.NpcController.PlayerSlidingTimer = ___playerSlidingTimer;
+                npcController.IsCameraDisabled = ___isCameraDisabled;
+                npcController.IsJumping = ___isJumping;
+                npcController.IsFallingFromJump = ___isFallingFromJump;
+                npcController.CrouchMeter = ___crouchMeter;
+                npcController.IsWalking = ___isWalking;
+                npcController.PlayerSlidingTimer = ___playerSlidingTimer;
 
-                lethalBotAI.NpcController.DisabledJetpackControlsThisFrame = ___disabledJetpackControlsThisFrame;
-                lethalBotAI.NpcController.StartedJetpackControls = ___startedJetpackControls;
-                lethalBotAI.NpcController.UpperBodyAnimationsWeight = ___upperBodyAnimationsWeight;
-                lethalBotAI.NpcController.TimeSinceSwitchingSlots = ___timeSinceSwitchingSlots;
-                lethalBotAI.NpcController.TimeSinceTakingGravityDamage = ___timeSinceTakingGravityDamage;
-                lethalBotAI.NpcController.TeleportingThisFrame = ___teleportingThisFrame;
-                lethalBotAI.NpcController.PreviousFrameDeltaTime = ___previousFrameDeltaTime;
+                npcController.DisabledJetpackControlsThisFrame = ___disabledJetpackControlsThisFrame;
+                npcController.StartedJetpackControls = ___startedJetpackControls;
+                npcController.UpperBodyAnimationsWeight = ___upperBodyAnimationsWeight;
+                npcController.TimeSinceSwitchingSlots = ___timeSinceSwitchingSlots;
+                npcController.TimeSinceTakingGravityDamage = ___timeSinceTakingGravityDamage;
+                npcController.TeleportingThisFrame = ___teleportingThisFrame;
+                npcController.PreviousFrameDeltaTime = ___previousFrameDeltaTime;
 
-                lethalBotAI.NpcController.CameraUp = ___cameraUp;
-                lethalBotAI.NpcController.UpdatePlayerLookInterval = ___updatePlayerLookInterval;
-                lethalBotAI.NpcController.BloodDropTimer = ___bloodDropTimer;
+                npcController.CameraUp = ___cameraUp;
+                npcController.UpdatePlayerLookInterval = ___updatePlayerLookInterval;
+                npcController.BloodDropTimer = ___bloodDropTimer;
 
                 lethalBotAI.UpdateController();
 
-                ___isCameraDisabled = lethalBotAI.NpcController.IsCameraDisabled;
-                ___crouchMeter = lethalBotAI.NpcController.CrouchMeter;
-                ___isWalking = lethalBotAI.NpcController.IsWalking;
-                ___playerSlidingTimer = lethalBotAI.NpcController.PlayerSlidingTimer;
+                ___isCameraDisabled = npcController.IsCameraDisabled;
+                ___crouchMeter = npcController.CrouchMeter;
+                ___isWalking = npcController.IsWalking;
+                ___playerSlidingTimer = npcController.PlayerSlidingTimer;
 
-                ___startedJetpackControls = lethalBotAI.NpcController.StartedJetpackControls;
-                ___upperBodyAnimationsWeight = lethalBotAI.NpcController.UpperBodyAnimationsWeight;
-                ___timeSinceSwitchingSlots = lethalBotAI.NpcController.TimeSinceSwitchingSlots;
-                ___timeSinceTakingGravityDamage = lethalBotAI.NpcController.TimeSinceTakingGravityDamage;
-                ___teleportingThisFrame = lethalBotAI.NpcController.TeleportingThisFrame;
-                ___previousFrameDeltaTime = lethalBotAI.NpcController.PreviousFrameDeltaTime;
+                ___startedJetpackControls = npcController.StartedJetpackControls;
+                ___upperBodyAnimationsWeight = npcController.UpperBodyAnimationsWeight;
+                ___timeSinceSwitchingSlots = npcController.TimeSinceSwitchingSlots;
+                ___timeSinceTakingGravityDamage = npcController.TimeSinceTakingGravityDamage;
+                ___teleportingThisFrame = npcController.TeleportingThisFrame;
+                ___previousFrameDeltaTime = npcController.PreviousFrameDeltaTime;
 
-                ___cameraUp = lethalBotAI.NpcController.CameraUp;
-                ___updatePlayerLookInterval = lethalBotAI.NpcController.UpdatePlayerLookInterval;
-                ___bloodDropTimer = lethalBotAI.NpcController.BloodDropTimer;
+                ___cameraUp = npcController.CameraUp;
+                ___updatePlayerLookInterval = npcController.UpdatePlayerLookInterval;
+                ___bloodDropTimer = npcController.BloodDropTimer;
             }
 
             return false;
@@ -125,18 +125,18 @@ namespace LethalBots.Patches.NpcPatches
                 NpcController npcController = lethalBotAI.NpcController;
                 if (npcController != null)
                 {
-                    lethalBotAI.NpcController.IsWalking = ___isWalking;
-                    lethalBotAI.NpcController.UpdatePositionForNewlyJoinedClient = ___updatePositionForNewlyJoinedClient;
-                    lethalBotAI.NpcController.UpdatePlayerLookInterval = ___updatePlayerLookInterval;
-                    lethalBotAI.NpcController.LimpMultiplier = ___limpMultiplier;
-                    lethalBotAI.NpcController.PlayerMask = ___playerMask;
+                    npcController.IsWalking = ___isWalking;
+                    npcController.UpdatePositionForNewlyJoinedClient = ___updatePositionForNewlyJoinedClient;
+                    npcController.UpdatePlayerLookInterval = ___updatePlayerLookInterval;
+                    npcController.LimpMultiplier = ___limpMultiplier;
+                    npcController.PlayerMask = ___playerMask;
 
-                    lethalBotAI.NpcController.LateUpdate();
+                    npcController.LateUpdate();
 
-                    ___isWalking = lethalBotAI.NpcController.IsWalking;
-                    ___updatePositionForNewlyJoinedClient = lethalBotAI.NpcController.UpdatePositionForNewlyJoinedClient;
-                    ___updatePlayerLookInterval = lethalBotAI.NpcController.UpdatePlayerLookInterval;
-                    ___limpMultiplier = lethalBotAI.NpcController.LimpMultiplier;
+                    ___isWalking = npcController.IsWalking;
+                    ___updatePositionForNewlyJoinedClient = npcController.UpdatePositionForNewlyJoinedClient;
+                    ___updatePlayerLookInterval = npcController.UpdatePlayerLookInterval;
+                    ___limpMultiplier = npcController.LimpMultiplier;
                 }
 
                 return false;
