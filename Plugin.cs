@@ -304,9 +304,9 @@ namespace LethalBots
             }
             if (IsModModelReplacementAPILoaded)
             {
-                _harmony.PatchAll(typeof(BodyReplacementBasePatch));
+                //_harmony.PatchAll(typeof(BodyReplacementBasePatch));
                 _harmony.PatchAll(typeof(ModelReplacementPlayerControllerBPatchPatch));
-                _harmony.PatchAll(typeof(ModelReplacementAPIPatch));
+                //_harmony.PatchAll(typeof(ModelReplacementAPIPatch));
                 //_harmony.PatchAll(typeof(ManagerBasePatch)); // This gives me an error, commenting out for now
             }
             if (isModLethalPhonesLoaded)

@@ -316,10 +316,6 @@ namespace LethalBots.AI
                 }
                 return;
             }
-            else if (playerWhoSentMessage != null && message.Contains("come"))
-            {
-                ai.agent.SetDestination(playerWhoSentMessage.transform.position);
-            }
         }
 
         /// <summary>
