@@ -274,48 +274,84 @@ namespace LethalBots.AI
             }
             // One of us was asked to be the mission controller!
             // NOTE: playerWhoSentMessage should never be null here, but other modders could call this function directly with a null value!
-            // FIXME: This is REALLY bad with many bots since they all call this function. We need a better way to do this!
-            else if (playerWhoSentMessage != null && message.Contains("man the ship"))
+            else if (message.Contains("man the ship"))
             {
-                // FIXME: There has to be a better way to do this!
-                // Get the a trace of where the player who sent the message is looking at!
-                // FIXMEUPDATE: Ok, using RaycastNonAlloc should help a bit with performance here, but its still not great!
-                RaycastHit[] raycastHits = new RaycastHit[3];
-                Ray interactRay = new Ray(playerWhoSentMessage.gameplayCamera.transform.position, playerWhoSentMessage.gameplayCamera.transform.forward);
-                int raycastResults = Physics.RaycastNonAlloc(interactRay, raycastHits, Const.MAX_CHAT_RANGE, StartOfRound.Instance.playersMask);
-                for (int i = 0; i < raycastResults; i++)
+                if (IsBotBeingAddressed(playerWhoSentMessage, out var lethalBotController))
                 {
-                    // Check if we hit a player!
-                    RaycastHit hit = raycastHits[i];
-                    if (hit.collider == null 
-                        || hit.collider.tag != "Player")
-                    {
-                        continue;
-                    }
-
-                    // Make sure its an actual player and not an object with the player tag!
-                    PlayerControllerB player = hit.collider.gameObject.GetComponent<PlayerControllerB>();
-                    if (player == null)
-                    {
-                        continue;
-                    }
-
-                    // Okay, we found a player, is it a bot and are they following us?
-                    LethalBotAI? lethalBot = LethalBotManager.Instance.GetLethalBotAIIfLocalIsOwner(player);
-                    if (lethalBot == null
-                        || lethalBot != ai // Make sure its us!
-                        || lethalBot.IsSpawningAnimationRunning())
-                    {
-                        continue;
-                    }
-
                     // Yay, we found a vaild bot, make it the mission controller!
-                    LethalBotManager.Instance.MissionControlPlayer = player;
+                    LethalBotManager.Instance.MissionControlPlayer = lethalBotController;
                     ai.State = new MissionControlState(this); // Its fine to set the state here directly, if we are not on the ship, the state will handle moving to the ship!
-                    break;
                 }
                 return;
             }
+            // One of us was asked to transfer loot!
+            else if (message.Contains("transfer loot"))
+            {
+                if (IsBotBeingAddressed(playerWhoSentMessage, out var lethalBotController))
+                {
+                    // Yay, we found a vaild bot, make it transfer loot!
+                    ai.State = new TransferLootState(this);
+                }
+                return;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the specified player is currently addressing this bot, based on the player's line of
+        /// sight and ownership.
+        /// </summary>
+        /// <remarks>
+        /// FIXME: This is REALLY bad with many bots since they all call this function. We need a better way to do this!<br/>
+        /// Function taken from PULL Request by <see href="https://github.com/iSeeEthan"/>
+        /// </remarks>
+        /// <param name="player">The player to check for bot interaction. Cannot be null.</param>
+        /// <returns>true if the player is addressing this bot and the bot is eligible to respond; otherwise, false.</returns>
+        protected bool IsBotBeingAddressed(PlayerControllerB player, out PlayerControllerB? lethalBotController)
+        {
+            // Make sure the player is valid
+            lethalBotController = null;
+            if (player == null)
+            {
+                return false;
+            }
+
+            // FIXME: There has to be a better way to do this!
+            // Get the a trace of where the player who sent the message is looking at!
+            // FIXMEUPDATE: Ok, using RaycastNonAlloc should help a bit with performance here, but its still not great!
+            RaycastHit[] raycastHits = new RaycastHit[3];
+            Ray interactRay = new Ray(player.gameplayCamera.transform.position, player.gameplayCamera.transform.forward);
+            int raycastResults = Physics.RaycastNonAlloc(interactRay, raycastHits, Const.MAX_CHAT_RANGE, StartOfRound.Instance.playersMask);
+            for (int i = 0; i < raycastResults; i++)
+            {
+                // Check if we hit a player!
+                RaycastHit hit = raycastHits[i];
+                if (hit.collider == null
+                    || hit.collider.tag != "Player")
+                {
+                    continue;
+                }
+
+                // Make sure its an actual player and not an object with the player tag!
+                lethalBotController = hit.collider.gameObject.GetComponent<PlayerControllerB>();
+                if (lethalBotController == null)
+                {
+                    continue;
+                }
+
+                // Okay, we found a player, is it a bot and are they following us?
+                // We can only address bots that we have ownership of!
+                LethalBotAI? lethalBot = LethalBotManager.Instance.GetLethalBotAIIfLocalIsOwner(lethalBotController);
+                if (lethalBot == null
+                    || lethalBot != ai // Make sure its us!
+                    || lethalBot.IsSpawningAnimationRunning())
+                {
+                    continue;
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>

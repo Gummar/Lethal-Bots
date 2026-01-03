@@ -451,7 +451,6 @@ namespace LethalBots.AI.AIStates
                 }
                 return;
             }
-            base.OnPlayerChatMessageReceived(message, playerWhoSentMessage, isVoice);
         }
 
         public override bool? ShouldBotCrouch()
