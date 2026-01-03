@@ -279,6 +279,7 @@ namespace LethalBots.AI
                 if (IsBotBeingAddressed(playerWhoSentMessage, out var lethalBotController))
                 {
                     // Yay, we found a vaild bot, make it the mission controller!
+                    ai.SendChatMessage("Alright, I'll head to the terminal and watch over the crew!");
                     LethalBotManager.Instance.MissionControlPlayer = lethalBotController;
                     ai.State = new MissionControlState(this); // Its fine to set the state here directly, if we are not on the ship, the state will handle moving to the ship!
                 }
@@ -290,6 +291,7 @@ namespace LethalBots.AI
                 if (IsBotBeingAddressed(playerWhoSentMessage, out var lethalBotController))
                 {
                     // Yay, we found a vaild bot, make it transfer loot!
+                    ai.SendChatMessage("On it! I'll start transferring loot to the ship right away!");
                     ai.State = new TransferLootState(this);
                 }
                 return;

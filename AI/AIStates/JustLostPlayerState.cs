@@ -12,7 +12,6 @@ namespace LethalBots.AI.AIStates
     public class JustLostPlayerState : AIState
     {
         private float lookingAroundTimer;
-        private Coroutine lookingAroundCoroutine = null!;
 
         /// <summary>
         /// <inheritdoc cref="AIState(AIState)"/>
@@ -161,12 +160,6 @@ namespace LethalBots.AI.AIStates
             }
         }
 
-        public override void StopAllCoroutines()
-        {
-            base.StopAllCoroutines();
-            StopLookingAroundCoroutine();
-        }
-
         public override void TryPlayCurrentStateVoiceAudio()
         {
             ai.LethalBotIdentity.Voice.TryPlayVoiceAudio(new PlayVoiceParameters()
@@ -267,7 +260,7 @@ namespace LethalBots.AI.AIStates
         /// Coroutine for making bot turn his body to look around him
         /// </summary>
         /// <returns></returns>
-        private IEnumerator LookingAround()
+        protected override IEnumerator LookingAround()
         {
             yield return null;
             while (lookingAroundTimer < Const.TIMER_LOOKING_AROUND)
@@ -276,22 +269,6 @@ namespace LethalBots.AI.AIStates
                 float angleRandom = Random.Range(-180, 180);
                 npcController.SetTurnBodyTowardsDirection(Quaternion.Euler(0, angleRandom, 0) * npcController.Npc.thisController.transform.forward);
                 yield return new WaitForSeconds(freezeTimeRandom);
-            }
-        }
-
-        private void StartLookingAroundCoroutine()
-        {
-            if (this.lookingAroundCoroutine == null)
-            {
-                this.lookingAroundCoroutine = ai.StartCoroutine(this.LookingAround());
-            }
-        }
-
-        private void StopLookingAroundCoroutine()
-        {
-            if (this.lookingAroundCoroutine != null)
-            {
-                ai.StopCoroutine(this.lookingAroundCoroutine);
             }
         }
     }

@@ -835,14 +835,14 @@ namespace LethalBots.AI.AIStates
         /// FIXME: We also have to check if the exit position lets the bot reach the ship. Offence is a good example where the bots can't path down the fire exit!
         /// </remarks>
         /// <returns>The closest entrance or else null</returns>
-        protected override EntranceTeleport? FindClosestEntrance(Vector3? shipPos = null, EntranceTeleport? entranceToAvoid = null)
+        protected override EntranceTeleport? FindClosestEntrance(EntranceTeleport? entranceToAvoid, Vector3? shipPos = null)
         {
             // Don't do this logic if we are outside!
             if (ai.isOutside)
             {
                 return null;
             }
-            return base.FindClosestEntrance(shipPos, entranceToAvoid);
+            return base.FindClosestEntrance(entranceToAvoid, shipPos);
         }
 
         private void StartPanikCoroutine(EnemyAI currentEnemy, float fearRange)
