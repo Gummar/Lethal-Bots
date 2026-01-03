@@ -1,4 +1,5 @@
-﻿using LethalBots.Constants;
+﻿using GameNetcodeStuff;
+using LethalBots.Constants;
 using LethalBots.Enums;
 using System;
 using System.Collections.Generic;
@@ -175,6 +176,16 @@ namespace LethalBots.AI.AIStates
                 IsLethalBotInside = npcController.Npc.isInsideFactory,
                 AllowSwearing = Plugin.Config.AllowSwearing.Value
             });
+        }
+
+        public override void OnPlayerChatMessageReceived(string message, PlayerControllerB playerWhoSentMessage, bool isVoice)
+        {
+            // We are already transferring loot, no need to respond to transfer loot messages
+            if (message.Contains("transfer loot"))
+            {
+                return;
+            }
+            base.OnPlayerChatMessageReceived(message, playerWhoSentMessage, isVoice);
         }
 
         /// <remarks>
