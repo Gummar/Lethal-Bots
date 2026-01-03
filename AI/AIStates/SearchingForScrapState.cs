@@ -124,7 +124,34 @@ namespace LethalBots.AI.AIStates
                 // as much as they can and return to the ship as a result!
                 if (ai.HasScrapInInventory())
                 {
-                    ai.State = new ReturnToShipState(this);
+                    // Now, lets check if someone is assigned to transfer loot
+                    bool shouldWalkLootToShip = true;
+                    if (LethalBotManager.Instance.LootTransferPlayers.Count > 0
+                        && targetEntrance != null
+                        && (targetEntrance.entrancePoint.position - npcController.Npc.transform.position).sqrMagnitude < Const.DISTANCE_ITEMS_TO_ENTRANCE * Const.DISTANCE_ITEMS_TO_ENTRANCE)
+                    {
+                        // Stop moving while we drop our items
+                        ai.StopMoving();
+                        npcController.OrderToStopSprint();
+
+                        GrabbableObject? heldItem = ai.HeldItem;
+                        if (heldItem != null && heldItem.itemProperties.isScrap)
+                        {
+                            ai.DropItem();
+                            shouldWalkLootToShip = false;
+                        }
+                        else if (ai.HasGrabbableObjectInInventory(FindObjectToDrop, out int objectSlot))
+                        {
+                            ai.SwitchItemSlotsAndSync(objectSlot);
+                            shouldWalkLootToShip = false;
+                        }
+                    }
+
+                    // Only return if we are supposed to walk the loot to the ship!
+                    if (shouldWalkLootToShip)
+                    {
+                        ai.State = new ReturnToShipState(this);
+                    }
                     return;
                 }
 
@@ -203,7 +230,13 @@ namespace LethalBots.AI.AIStates
                 {
                     if (scrapTimer > Const.TIMER_SEARCH_FOR_SCRAP)
                     {
-                        ai.State = new ReturnToShipState(this);
+                        // Now, lets check if someone is assigned to transfer loot
+                        bool shouldWalkLootToShip = true;
+                        if (LethalBotManager.Instance.LootTransferPlayers.Count > 0)
+                        {
+                            shouldWalkLootToShip = false;
+                        }
+                        ai.State = new ReturnToShipState(this, !shouldWalkLootToShip);
                         return;
                     }
                     scrapTimer += ai.AIIntervalTime;
@@ -282,6 +315,19 @@ namespace LethalBots.AI.AIStates
                 IsLethalBotInside = npcController.Npc.isInsideFactory,
                 AllowSwearing = Plugin.Config.AllowSwearing.Value
             });
+        }
+
+        /// <summary>
+        /// Simple function that checks if the give <paramref name="item"/> is scrap.
+        /// </summary>
+        /// <remarks>
+        /// This was designed for use in <see cref="LethalBotAI.HasGrabbableObjectInInventory(System.Func{GrabbableObject, bool}, out int)"/> calls.
+        /// </remarks>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private static bool FindObjectToDrop(GrabbableObject item)
+        {
+            return item.itemProperties.isScrap; // Found a scrap item, great, we want to drop it!
         }
 
         /// <summary>

@@ -153,10 +153,17 @@ namespace LethalBots.AI.AIStates
                         // No loot at our target entrance, lets check the other entrances
                         // NOTE: Bots will cycle through all entrances before returning to ship.
                         waitTimer = 0f;
-
                         EntranceTeleport? previousEntrance = targetEntrance;
                         checkedEntrances.Add(previousEntrance); // Mark this entrance as checked
-                        targetEntrance = FindClosestEntrance(entrancesToAvoid: checkedEntrances); // Find another entrance to check out
+                        if (ai.HasSomethingInInventory())
+                        {
+                            // We have something in our inventory, return to ship to drop it off
+                            ai.State = new ReturnToShipState(this);
+                            return;
+                        }
+
+                        // Find another entrance to check out
+                        targetEntrance = FindClosestEntrance(entrancesToAvoid: checkedEntrances);
                         if (targetEntrance != null 
                             && !checkedEntrances.Contains(targetEntrance) 
                             && previousEntrance != targetEntrance)
@@ -164,14 +171,7 @@ namespace LethalBots.AI.AIStates
                             // Found another entrance to check out, head over there
                             return;
                         }
-
                         // No other entrance found
-                        if (ai.HasSomethingInInventory())
-                        {
-                            // We have something in our inventory, return to ship to drop it off
-                            ai.State = new ReturnToShipState(this);
-                            return;
-                        }
                         else
                         {
                             // Nothing in inventory, reset target entrance and checked list to start over

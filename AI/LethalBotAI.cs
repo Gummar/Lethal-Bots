@@ -4193,13 +4193,15 @@ namespace LethalBots.AI
 			}
 
 			// Is item too close to entrance (with config option enabled)
-			// NEEDTOVALIDATE: Should this only happen if the player they are following sets down their loot or something?
-			if (!Plugin.Config.GrabItemsNearEntrances.Value 
-				&& !LethalBotManager.Instance.AreAllHumanPlayersDead())
+			bool botIsTransferringItems = LethalBotManager.Instance.LootTransferPlayers.Contains(NpcController.Npc);
+			if ((!Plugin.Config.GrabItemsNearEntrances.Value || LethalBotManager.Instance.LootTransferPlayers.Count > 0)
+                && !botIsTransferringItems
+                && !LethalBotManager.Instance.AreAllHumanPlayersDead())
 			{
-				for (int j = 0; j < EntrancesTeleportArray.Length; j++)
+				foreach (EntranceTeleport entrance in EntrancesTeleportArray)
 				{
-					if ((grabbableObject.transform.position - EntrancesTeleportArray[j].entrancePoint.position).sqrMagnitude < Const.DISTANCE_ITEMS_TO_ENTRANCE * Const.DISTANCE_ITEMS_TO_ENTRANCE)
+					if (entrance.isEntranceToBuilding 
+						&& (grabbableObject.transform.position - entrance.entrancePoint.position).sqrMagnitude < Const.DISTANCE_ITEMS_TO_ENTRANCE * Const.DISTANCE_ITEMS_TO_ENTRANCE)
 					{
 						return false;
 					}
