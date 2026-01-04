@@ -160,7 +160,7 @@ namespace LethalBots.AI.AIStates
             int keySlot = ai.IsHoldingKey() ? npcController.Npc.currentItemSlot : -1;
             if (keySlot == -1)
             {
-                if (!ai.TryFindItemInInventory(IsKeyItem, IsBetterKey, out keySlot))
+                if (!ai.TryFindItemInInventory(FindObject, FindBetterObject, out keySlot))
                 {
                     // We don't have a key, exit early!
                     // If we were trying to grab a item past a locked door,
@@ -199,13 +199,13 @@ namespace LethalBots.AI.AIStates
                 {
                     ai.StopMoving();
                     GrabbableObject? heldItem = ai.HeldItem;
-                    if (heldItem != null && !IsKeyItem(heldItem) && heldItem.itemProperties.twoHanded)
+                    if (heldItem != null && !FindObject(heldItem) && heldItem.itemProperties.twoHanded)
                     {
                         droppedHeldItem = heldItem;
                         ai.DropItem();
                         return;
                     }
-                    else if (heldItem == null || (heldItem is not KeyItem && heldItem is not LockPicker))
+                    else if (heldItem == null || !FindObject(heldItem))
                     {
                         ai.SwitchItemSlotsAndSync(keySlot);
                         return;
@@ -287,26 +287,17 @@ namespace LethalBots.AI.AIStates
         /// <summary>
         /// Helper function to check if the given <paramref name="item"/> is a key or lockpicker!
         /// </summary>
-        /// <remarks>
-        /// This was designed for use in <see cref="LethalBotAI.TryFindItemInInventory(System.Func{GrabbableObject, bool}, System.Func{GrabbableObject, GrabbableObject, bool}, out int)"/> calls.
-        /// </remarks>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        private static bool IsKeyItem(GrabbableObject item)
+        /// <inheritdoc cref="AIState.FindObject(GrabbableObject)"/>
+        protected override bool FindObject(GrabbableObject item)
         {
             return item is KeyItem || item is LockPicker;
         }
 
         /// <summary>
-        /// Helper function to check if the <paramref name="canidate"/> is better than our <paramref name="currentBest"/>!
+        /// Helper function to check if the <paramref name="canidate"/> key is better than our <paramref name="currentBest"/>!
         /// </summary>
-        /// <remarks>
-        /// This was designed for use in <see cref="LethalBotAI.TryFindItemInInventory(System.Func{GrabbableObject, bool}, System.Func{GrabbableObject, GrabbableObject, bool}, out int)"/> calls.
-        /// </remarks>
-        /// <param name="currentBest">The best grabbable object we have found so far.</param>
-        /// <param name="canidate">The next object that past the filter earlier in the function.</param>
-        /// <returns></returns>
-        private static bool IsBetterKey(GrabbableObject currentBest, GrabbableObject? canidate)
+        /// <inheritdoc cref="AIState.FindBetterObject(GrabbableObject, GrabbableObject)"/>
+        protected override bool FindBetterObject(GrabbableObject currentBest, GrabbableObject canidate)
         {
             // We prefer the key over the lockpick if possible!
             if (currentBest is not KeyItem && canidate is KeyItem)

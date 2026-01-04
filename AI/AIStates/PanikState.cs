@@ -171,7 +171,7 @@ namespace LethalBots.AI.AIStates
                 else if (previousState == EnumAIStates.ReturnToShip
                     || previousState == EnumAIStates.ChillAtShip)
                 {
-                    ai.State = new ReturnToShipState(this);
+                    ChangeBackToPreviousState(); // Let ChillAtShip and ReturnToShip handle it, no need to create a new instance
                 }
                 // Wait outside the door a bit before heading back in,
                 // if we have been waiting for a bit give up and head back!
@@ -179,7 +179,7 @@ namespace LethalBots.AI.AIStates
                 {
                     ai.State = new ReturnToShipState(this);
                 }
-                else if (calmDownTimer > Const.FLEEING_CALM_DOWN_TIME + 60f)
+                else if (calmDownTimer > Const.FLEEING_CALM_DOWN_TIME + Const.WAIT_TIME_FOR_SAFE_PATH)
                 {
                     ai.State = new SearchingForScrapState(this, targetEntrance);
                 }

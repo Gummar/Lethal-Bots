@@ -1272,5 +1272,33 @@ namespace LethalBots.AI
             }
             return null;
         }
+
+        /// <summary>
+        /// Simple function that checks if the give <paramref name="item"/> is null or not<br/>
+        /// This was designed to be overridden by states that want to drop specific items only!
+        /// </summary>
+        /// <remarks>
+        /// This was designed for use in <see cref="LethalBotAI.HasGrabbableObjectInInventory(System.Func{GrabbableObject, bool}, out int)"/> calls.
+        /// </remarks>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        protected virtual bool FindObject(GrabbableObject item)
+        {
+            return true; // Found an item, great, we want to drop it!
+        }
+
+        /// <summary>
+        /// Helper function to check if the <paramref name="canidate"/> is better than our <paramref name="currentBest"/>!
+        /// </summary>
+        /// <remarks>
+        /// This was designed for use in <see cref="LethalBotAI.TryFindItemInInventory(System.Func{GrabbableObject, bool}, System.Func{GrabbableObject, GrabbableObject, bool}, out int)"/> calls.
+        /// </remarks>
+        /// <param name="currentBest">The current best grabbable object selected by the bot.</param>
+        /// <param name="canidate">The candidate grabbable object to compare against the current best. Can be null.</param>
+        /// <returns>true if the candidate object is considered a better choice than the current best; otherwise, false.</returns>
+        protected virtual bool FindBetterObject(GrabbableObject currentBest, GrabbableObject canidate)
+        {
+            return false; // By default we don't care about better objects!
+        }
     }
 }

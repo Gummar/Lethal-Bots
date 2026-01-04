@@ -153,7 +153,7 @@ namespace LethalBots.AI.AIStates
                             npcController.OrderToStopSprint();
 
                             GrabbableObject? heldItem = ai.HeldItem;
-                            if (heldItem != null && heldItem.itemProperties.isScrap)
+                            if (LethalBotAI.IsItemScrap(heldItem))
                             {
                                 ai.DropItem();
                                 LethalBotAI.DictJustDroppedItems.Remove(heldItem); //HACKHACK: Since DropItem set the just dropped item timer, we clear it here!
@@ -347,7 +347,7 @@ namespace LethalBots.AI.AIStates
         /// <returns></returns>
         private static bool FindObjectToDrop(GrabbableObject item)
         {
-            return item.itemProperties.isScrap; // Found a scrap item, great, we want to drop it!
+            return LethalBotAI.IsItemScrap(item); // Found a scrap item, great, we want to drop it!
         }
 
         /// <summary>

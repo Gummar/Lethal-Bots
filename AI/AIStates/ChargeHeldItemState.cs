@@ -70,21 +70,17 @@ namespace LethalBots.AI.AIStates
             GrabbableObject? heldItem = ai.HeldItem;
             if (heldItem != this.itemToCharge)
             {
-                for (int i = 0; i < npcController.Npc.ItemSlots.Length; i++)
+                if (ai.HasGrabbableObjectInInventory(this.itemToCharge, out int itemSlot))
                 {
-                    GrabbableObject item = npcController.Npc.ItemSlots[i];
-                    if (item != null && item == this.itemToCharge)
+                    if (heldItem != null && heldItem.itemProperties.twoHanded)
                     {
-                        if (heldItem != null && heldItem.itemProperties.twoHanded)
-                        {
-                            // We are holding an two handed item, we should drop it!
-                            ai.DropItem();
-                            LethalBotAI.DictJustDroppedItems.Remove(heldItem); //HACKHACK: Since DropItem set the just dropped item timer, we clear it here!
-                            return;
-                        }
-                        ai.SwitchItemSlotsAndSync(i);
+                        // We are holding an two handed item, we should drop it!
+                        ai.DropItem();
+                        LethalBotAI.DictJustDroppedItems.Remove(heldItem); //HACKHACK: Since DropItem set the just dropped item timer, we clear it here!
                         return;
                     }
+                    ai.SwitchItemSlotsAndSync(itemSlot);
+                    return;
                 }
                 // We don't have the item in our inventory! Mark it as null and go back to the previous state!
                 this.itemToCharge = null;

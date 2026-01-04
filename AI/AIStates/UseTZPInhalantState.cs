@@ -86,7 +86,7 @@ namespace LethalBots.AI.AIStates
             {
                 // We don't have any TZP in our inventory!
                 tzpItem = null;
-                if (!ai.HasGrabbableObjectInInventory(IsUsableTZPItem, out tzpSlot))
+                if (!ai.HasGrabbableObjectInInventory(FindObject, out tzpSlot))
                 {
                     ChangeBackToPreviousState();
                     return;
@@ -144,12 +144,8 @@ namespace LethalBots.AI.AIStates
         /// <summary>
         /// Helper function to check if the given <paramref name="item"/> is a usable <see cref="TetraChemicalItem"/>!
         /// </summary>
-        /// <remarks>
-        /// This was designed for use in <see cref="LethalBotAI.HasGrabbableObjectInInventory(Func{GrabbableObject, bool}, out int)"/> calls.
-        /// </remarks>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        private static bool IsUsableTZPItem(GrabbableObject item)
+        /// <inheritdoc cref="AIState.FindObject(GrabbableObject)"/>
+        protected override bool FindObject(GrabbableObject item)
         {
             if (item is TetraChemicalItem tempTZP
                 && !tempTZP.itemUsedUp)

@@ -2642,6 +2642,7 @@ namespace LethalBots.AI
 			// FIXME: Only a few enemies can be targeted since
 			// I need to check when its a good idea to fight!
 			bool hasRangedWeapon = HasRangedWeapon();
+			bool isEnemyStunned = enemy.stunnedIndefinitely > 0f || enemy.stunNormalizedTimer > 0f; 
 			switch (enemy.enemyType.enemyName)
 			{
 				case "Centipede":
@@ -2650,8 +2651,8 @@ namespace LethalBots.AI
 				case "Hoarding bug":
 					return true;
 				case "Nutcracker":
-					if (hasRangedWeapon 
-						&& (enemy.currentBehaviourStateIndex == 2 
+					if ((hasRangedWeapon || isEnemyStunned)
+                        && (enemy.currentBehaviourStateIndex == 2 
 							|| (enemy is NutcrackerEnemyAI nutcracker 
 								&& (bool)nutcrackerIsInspecting.GetValue(nutcracker))))
 					{
@@ -2661,7 +2662,7 @@ namespace LethalBots.AI
 				case "Flowerman":
 				case "Bunker Spider":
 				case "Baboon hawk":
-					return hasRangedWeapon;
+					return hasRangedWeapon || isEnemyStunned;
 				case "Butler": // For now, don't kill them!
 				case "ForestGiant":
 				case "MouthDog":
@@ -3517,11 +3518,12 @@ namespace LethalBots.AI
 		}
 
 		/// <summary>
-		/// Is the given item a weapon ?
+		/// Is the given item a weapon?
 		/// </summary>
 		/// <remarks>
 		/// Modders can override this to add their own custom weapons for the bots to use!
 		/// </remarks>
+		/// <param name="weapon">The item to check</param>
 		/// <returns>I mean come on</returns>
 		public static bool IsItemWeapon([NotNullWhen(true)] GrabbableObject? weapon)
 		{
@@ -3538,6 +3540,23 @@ namespace LethalBots.AI
 
 			// HACKHACK: weapon.itemProperties.isDefensiveWeapon is set to false on the shovel and shotgun!?
 			return weapon is Shovel || weapon is KnifeItem;
+		}
+
+        /// <summary>
+        /// Is the given item scrap?
+        /// </summary>
+		/// <remarks>
+		/// Modders can override this to add their own custom scrap items!
+		/// </remarks>
+        /// <param name="item">The item to check</param>
+        /// <returns>I mean come on</returns>
+        public static bool IsItemScrap([NotNullWhen(true)] GrabbableObject? item)
+		{
+			if (item == null)
+			{
+				return false;
+			}
+			return item.itemProperties.isScrap;
 		}
 
 		/// <summary>
@@ -3715,13 +3734,13 @@ namespace LethalBots.AI
 
 			// Assess all items in inventory
 			int index = 0;
-			foreach (var item in NpcController.Npc.ItemSlots)
+			foreach (var canidate in NpcController.Npc.ItemSlots)
 			{
-				if (item != null && filter(item))
+				if (canidate != null && filter(canidate))
 				{
-					if (bestItem == null || isBetter(bestItem, item))
+					if (bestItem == null || isBetter(bestItem, canidate))
 					{
-						bestItem = item;
+						bestItem = canidate;
 						objectSlot = index;
 					}
 				}
@@ -3777,14 +3796,13 @@ namespace LethalBots.AI
 		/// <returns>I mean come on</returns>
 		public bool HasScrapInInventory()
 		{
-			if (!AreHandsFree() && HeldItem.itemProperties.isScrap)
+			if (!AreHandsFree() && IsItemScrap(HeldItem))
 			{
 				return true;
 			}
 			foreach (var scrap in NpcController.Npc.ItemSlots)
 			{
-				if (scrap != null 
-					&& scrap.itemProperties.isScrap)
+				if (IsItemScrap(scrap))
 				{
 					return true;
 				}
@@ -4242,7 +4260,7 @@ namespace LethalBots.AI
 			if ((!ignoreHeldFlag && grabbableObject.isHeld)
 				|| !grabbableObject.grabbable
 				|| grabbableObject.deactivated 
-				|| !grabbableObject.itemProperties.isScrap)
+				|| !IsItemScrap(grabbableObject))
 			{
 				return false;
 			}

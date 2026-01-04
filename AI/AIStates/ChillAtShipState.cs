@@ -73,7 +73,7 @@ namespace LethalBots.AI.AIStates
                 }
                 // If we still have stuff in our inventory,
                 // we should swap to it and drop it!
-                else if (ai.HasGrabbableObjectInInventory(FindObjectToDrop, out int objectSlot))
+                else if (ai.HasGrabbableObjectInInventory(FindObject, out int objectSlot))
                 {
                     ai.SwitchItemSlotsAndSync(objectSlot);
                     canInverseTeleport = false;
@@ -289,19 +289,6 @@ namespace LethalBots.AI.AIStates
                 return;
             }
             base.OnSignalTranslatorMessageReceived(message);
-        }
-
-        /// <summary>
-        /// Simple function that checks if the give <paramref name="item"/> is null or not
-        /// </summary>
-        /// <remarks>
-        /// This was designed for use in <see cref="LethalBotAI.HasGrabbableObjectInInventory(System.Func{GrabbableObject, bool}, out int)"/> calls.
-        /// </remarks>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        private static bool FindObjectToDrop(GrabbableObject item)
-        {
-            return true; // Found an item, great, we want to drop it!
         }
 
         /// <summary>

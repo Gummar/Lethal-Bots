@@ -81,26 +81,17 @@ namespace LethalBots.AI.AIStates
                     return;
                 }
 
-                // If we are holding an item with a battery, we should charge it!
                 // Bot drop item
                 GrabbableObject? heldItem = ai.HeldItem;
-                if (heldItem != null && (Plugin.Config.DropHeldEquipmentAtShip || heldItem.itemProperties.isScrap))
+                if (heldItem != null && FindObject(heldItem))
                 {
                     ai.DropItem();
                 }
                 // If we still have stuff in our inventory,
                 // we should swap to it and drop it!
-                else if (ai.HasSomethingInInventory())
+                else if (ai.HasGrabbableObjectInInventory(FindObject, out int objectSlot))
                 {
-                    for (int i = 0; i < npcController.Npc.ItemSlots.Length; i++)
-                    {
-                        var item = npcController.Npc.ItemSlots[i];
-                        if (item != null && (Plugin.Config.DropHeldEquipmentAtShip || item.itemProperties.isScrap))
-                        {
-                            ai.SwitchItemSlotsAndSync(i);
-                            break;
-                        }
-                    }
+                    ai.SwitchItemSlotsAndSync(objectSlot);
                 }
             }
             else if (ai.HasSpaceInInventory())
@@ -258,6 +249,16 @@ namespace LethalBots.AI.AIStates
                     break;
                 }
             }
+        }
+
+        /// <summary>
+        /// Find and drop items that are no longer needed
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        protected override bool FindObject(GrabbableObject item)
+        {
+            return Plugin.Config.DropHeldEquipmentAtShip || LethalBotAI.IsItemScrap(item);
         }
     }
 }
