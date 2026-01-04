@@ -3219,8 +3219,8 @@ namespace LethalBots.AI
 				if (ElevatorScript.elevatorDoorOpen 
 					&& distanceFromInsidePosition <= Const.DISTANCE_CLOSE_ENOUGH_TO_DESTINATION
 					&& ElevatorScript.elevatorMovingDown == goUp 
-					&& timerElevatorCooldown > Const.TIMER_USE_ELEVATOR
-					&& (Time.timeSinceLevelLoad - pressElevatorButtonCooldown) > (AIIntervalTime + 0.16f))
+					&& (timerElevatorCooldown > Const.TIMER_USE_ELEVATOR || NpcController.Npc.isPlayerAlone)
+                    && (Time.timeSinceLevelLoad - pressElevatorButtonCooldown) > (AIIntervalTime + 0.16f))
 				{
 					//ElevatorScript.PressElevatorButtonOnServer(true);
 					pressElevatorButtonCooldown = Time.timeSinceLevelLoad;
@@ -3246,7 +3246,7 @@ namespace LethalBots.AI
 					&& distanceFromVector <= Const.DISTANCE_CLOSE_ENOUGH_TO_DESTINATION
 					&& ElevatorScript.elevatorMovingDown != goUp 
 					&& !ElevatorScript.elevatorCalled 
-					&& timerElevatorCooldown > Const.TIMER_USE_ELEVATOR
+					&& (timerElevatorCooldown > Const.TIMER_USE_ELEVATOR || NpcController.Npc.isPlayerAlone)
 					&& (Time.timeSinceLevelLoad - pressElevatorButtonCooldown) > (AIIntervalTime + 0.16f))
 				{
 					//ElevatorScript.CallElevatorOnServer(goUp);
