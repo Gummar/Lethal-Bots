@@ -164,14 +164,14 @@ namespace LethalBots.AI.AIStates
                 {
                     shouldWalkLootToShip = false;
                 }
-                if (shouldWalkLootToShip && ai.HasScrapInInventory())
+                if (ai.HasScrapInInventory())
                 {
-                    ai.State = new ReturnToShipState(this);
+                    ai.State = new ReturnToShipState(this, !shouldWalkLootToShip);
                 }
                 else if (previousState == EnumAIStates.ReturnToShip
                     || previousState == EnumAIStates.ChillAtShip)
                 {
-                    ChangeBackToPreviousState(); // Let ChillAtShip and ReturnToShip handle it, no need to create a new instance
+                    ai.State = new ReturnToShipState(this, !shouldWalkLootToShip);
                 }
                 // Wait outside the door a bit before heading back in,
                 // if we have been waiting for a bit give up and head back!

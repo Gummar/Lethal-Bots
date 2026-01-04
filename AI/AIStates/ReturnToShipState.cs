@@ -27,7 +27,7 @@ namespace LethalBots.AI.AIStates
         private float findEntranceTimer;
         private float shipPositionUpdateTimer;
 
-        public ReturnToShipState(AIState oldState, bool endIfOutside = false) : base(oldState)
+        public ReturnToShipState(AIState oldState, bool endIfOutside = false, AIState? changeToOnEnd = null) : base(oldState, changeToOnEnd)
         {
             CurrentState = EnumAIStates.ReturnToShip;
             this.endIfOutside = endIfOutside;
@@ -36,7 +36,7 @@ namespace LethalBots.AI.AIStates
             targetShipTransform = GetRandomInsideShipTransform();
         }
 
-        public ReturnToShipState(LethalBotAI ai, bool endIfOutside = false) : base(ai)
+        public ReturnToShipState(LethalBotAI ai, bool endIfOutside = false, AIState? changeToOnEnd = null) : base(ai, changeToOnEnd)
         {
             CurrentState = EnumAIStates.ReturnToShip;
             this.endIfOutside = endIfOutside;
