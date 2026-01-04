@@ -2,6 +2,7 @@ using DunGen;
 using GameNetcodeStuff;
 using LethalBots.Constants;
 using LethalBots.Enums;
+using LethalBots.Managers;
 using LethalBots.Patches.GameEnginePatches;
 using System;
 using System.Collections;
@@ -83,7 +84,7 @@ namespace LethalBots.AI.AIStates
                         if ((Time.timeSinceLevelLoad - lastDeclaredJesterTimer) > 30f)
                         {
                             lastDeclaredJesterTimer = Time.timeSinceLevelLoad;
-                            ai.SendChatMessage("JESTER!!! RUN!!!");
+                            ai.SendChatMessage("JESTER!!! RUN!!!", true);
                         }
                     }
                 }
@@ -144,7 +145,7 @@ namespace LethalBots.AI.AIStates
                         if ((Time.timeSinceLevelLoad - lastDeclaredJesterTimer) > 30f)
                         {
                             lastDeclaredJesterTimer = Time.timeSinceLevelLoad;
-                            ai.SendChatMessage("JESTER!!! RUN!!!");
+                            ai.SendChatMessage("JESTER!!! RUN!!!", true);
                         }
                     }
                 }
@@ -156,14 +157,21 @@ namespace LethalBots.AI.AIStates
             {
                 // Check if we should end early!
                 ai.StopMoving();
+
+                // Now, lets check if someone is assigned to transfer loot
+                bool shouldWalkLootToShip = true;
+                if (LethalBotManager.Instance.LootTransferPlayers.Count > 0)
+                {
+                    shouldWalkLootToShip = false;
+                }
                 if (ai.HasScrapInInventory())
                 {
-                    ai.State = new ReturnToShipState(this);
+                    ai.State = new ReturnToShipState(this, !shouldWalkLootToShip);
                 }
                 else if (previousState == EnumAIStates.ReturnToShip
                     || previousState == EnumAIStates.ChillAtShip)
                 {
-                    ai.State = new ReturnToShipState(this);
+                    ai.State = new ReturnToShipState(this, !shouldWalkLootToShip);
                 }
                 // Wait outside the door a bit before heading back in,
                 // if we have been waiting for a bit give up and head back!
@@ -171,7 +179,7 @@ namespace LethalBots.AI.AIStates
                 {
                     ai.State = new ReturnToShipState(this);
                 }
-                else if (calmDownTimer > Const.FLEEING_CALM_DOWN_TIME + 60f)
+                else if (calmDownTimer > Const.FLEEING_CALM_DOWN_TIME + Const.WAIT_TIME_FOR_SAFE_PATH)
                 {
                     ai.State = new SearchingForScrapState(this, targetEntrance);
                 }
@@ -446,12 +454,11 @@ namespace LethalBots.AI.AIStates
                     if ((Time.timeSinceLevelLoad - lastDeclaredJesterTimer) > 30f)
                     {
                         lastDeclaredJesterTimer = Time.timeSinceLevelLoad;
-                        ai.SendChatMessage("JESTER!!! RUN!!!");
+                        ai.SendChatMessage("JESTER!!! RUN!!!", true);
                     }
                 }
                 return;
             }
-            base.OnPlayerChatMessageReceived(message, playerWhoSentMessage, isVoice);
         }
 
         public override bool? ShouldBotCrouch()
@@ -529,16 +536,23 @@ namespace LethalBots.AI.AIStates
                 }
 
                 // Priority: enemy is further > path out of sight > node out of sight
-                if (isEnemyCloser != other.isEnemyCloser)
-                    return isEnemyCloser ? -1 : 1;
+                //if (isEnemyCloser != other.isEnemyCloser)
+                //    return isEnemyCloser ? -1 : 1;
 
-                if (isPathOutOfSight != other.isPathOutOfSight)
-                    return isPathOutOfSight ? 1 : -1;
+                //if (isPathOutOfSight != other.isPathOutOfSight)
+                //    return isPathOutOfSight ? 1 : -1;
 
-                if (isNodeOutOfSight != other.isNodeOutOfSight)
-                    return isNodeOutOfSight ? 1 : -1;
+                //if (isNodeOutOfSight != other.isNodeOutOfSight)
+                //    return isNodeOutOfSight ? 1 : -1;
 
-                return 0;
+                int ourScore = this.SafetyScore;
+                int otherScore = other.SafetyScore;
+                if (ourScore == otherScore)
+                {
+                    return 0;
+                }
+
+                return ourScore > otherScore ? 1 : -1;
             }
 
             public bool Equals(NodeSafety? other)
@@ -815,13 +829,22 @@ namespace LethalBots.AI.AIStates
         protected override void ChangeBackToPreviousState()
         {
             if (previousState == EnumAIStates.SearchingForScrap
-                    || (previousState == EnumAIStates.FetchingObject && !ai.IsFollowingTargetPlayer()))
+                    || (previousState == EnumAIStates.FetchingObject 
+                        && (ai.targetPlayer == null
+                        || !ai.targetPlayer.isPlayerControlled
+                        || ai.targetPlayer.isPlayerDead)))
             {
                 // If we have some scrap, it might be a good time to bring it back,
                 // just in case.....
                 if (ai.HasScrapInInventory())
                 {
-                    ai.State = new ReturnToShipState(this);
+                    // Now, lets check if someone is assigned to transfer loot
+                    bool shouldWalkLootToShip = true;
+                    if (LethalBotManager.Instance.LootTransferPlayers.Count > 0)
+                    {
+                        shouldWalkLootToShip = false;
+                    }
+                    ai.State = new ReturnToShipState(this, !shouldWalkLootToShip);
                     return;
                 }
             }
@@ -836,14 +859,14 @@ namespace LethalBots.AI.AIStates
         /// FIXME: We also have to check if the exit position lets the bot reach the ship. Offence is a good example where the bots can't path down the fire exit!
         /// </remarks>
         /// <returns>The closest entrance or else null</returns>
-        protected override EntranceTeleport? FindClosestEntrance(Vector3? shipPos = null, EntranceTeleport? entranceToAvoid = null)
+        protected override EntranceTeleport? FindClosestEntrance(EntranceTeleport? entranceToAvoid, Vector3? shipPos = null)
         {
             // Don't do this logic if we are outside!
             if (ai.isOutside)
             {
                 return null;
             }
-            return base.FindClosestEntrance(shipPos, entranceToAvoid);
+            return base.FindClosestEntrance(entranceToAvoid, shipPos);
         }
 
         private void StartPanikCoroutine(EnemyAI currentEnemy, float fearRange)

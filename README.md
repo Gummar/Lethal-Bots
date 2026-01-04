@@ -90,6 +90,7 @@ Also, the bot only checks for the keywords anywhere in the message, for example,
 </br>**clear monitoring** - The bot who is currently on the terminal will stop monitoring you and return to the default behavior of cycling through players.
 </br>**man the ship** - Makes the bot you are looking at go to the ship terminal and start manning it.
 </br>**transmit (desired message)** - The bot who is currently on the terminal will send the given message on the signal translator.
+</br>**transfer loot** - The bot will cycle between facility entrances and transfer any loot they find to the ship.
 </br>Please note that you must be in chat range for the bot to hear you. If you are too far away, the bot will not respond to your command.
 If both you and the bot have a walkie-talkie, you can use the command in the chat and the bot will respond to it.
 </br>Please note that these are also voice commands, but they require you to only say the word unlike how they work as said in the chat.
@@ -173,6 +174,9 @@ NOTE: All players, "humans and bots," must be on the ship before the bot will vo
 - Teleport players who they considered in grave danger
 - Use the signal translator to send messages to the crew about enemies and the current time
 - Use the walkie-talkie to keep players' sanity up and receive chat messages from the crew
+
+</br>TransferLoot
+</br>The bot will transfer loot from the facility entrances to the ship
 
 </br>CollectScrapToSell
 </br>The bot will collect scrap on the ship with the intent of selling it. There are a few items the bots will refuse to sell:

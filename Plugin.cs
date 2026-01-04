@@ -398,7 +398,8 @@ namespace LethalBots
                 "request teleport",
                 "clear monitoring",
                 "man the ship",
-                "transmit"
+                "transmit", // FIXME: This command doesn't work due to how speech recognition works, a fix will be made later
+                "transfer loot"
             };
 
             // Register valid phrases for speech recognition

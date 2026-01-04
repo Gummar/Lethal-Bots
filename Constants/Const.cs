@@ -195,6 +195,9 @@ namespace LethalBots.Constants
         public const float WAIT_TIME_FOR_SAFE_PATH = 60f;
         public const int MAX_ENTRANCE_ATTEMPTS = 3;
 
+        // Transfer Loot state
+        public const float TRANSFER_LOOT_MAX_WAIT_TIME = 30f;
+
         // Use Inverse Teleporter State
         public const float DISTANCE_FROM_INVERSE_TELEPORTER = 1.5f;
 

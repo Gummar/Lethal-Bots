@@ -49,6 +49,12 @@ namespace LethalBots.AI.AIStates
                 return;
             }
 
+            // Kinda hard to transfer loot when you're dead!
+            if (LethalBotManager.Instance.LootTransferPlayers.Contains(npcController.Npc))
+            {
+                LethalBotManager.Instance.RemovePlayerFromLootTransferListAndSync(npcController.Npc);
+            }
+
             // Check if every human player is dead,
             // and if our fellow players and bots are on the ship
             bool allLivingPlayersOnShip = LethalBotManager.Instance.AreAllPlayersOnTheShip();

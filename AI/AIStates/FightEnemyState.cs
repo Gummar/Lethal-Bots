@@ -2,6 +2,7 @@
 using HarmonyLib;
 using LethalBots.Constants;
 using LethalBots.Enums;
+using LethalBots.Managers;
 using System.Collections;
 using System.Linq;
 using System.Reflection;
@@ -108,43 +109,11 @@ namespace LethalBots.AI.AIStates
 
             // Alright, lets select out weapon!
             // We prefer a ranged weapon if possible!
-            // NOTE: This cannot use HasGrabbableObjectInInventory, since we are picking the best item out of the bot's entire inventory
-            int weaponSlot = -1;
-            for (int i = 0; i < npcController.Npc.ItemSlots.Length; i++)
+            if (!ai.TryFindItemInInventory(FindObject, FindBetterObject, out int weaponSlot))
             {
-                // Don't pick an empty weapon!
-                // FIXME: We should use a helper function and some enum variables rather
-                // than this hacky mess!
-                // NOTE: HasAmmoForWeapon, checks if the item is a weapon internally!
-                GrabbableObject? weapon = npcController.Npc.ItemSlots[i];
-                if (!ai.HasAmmoForWeapon(weapon))
-                {
-                    continue;
-                }
-                weaponSlot = i;
-                if (this.currentEnemy is CentipedeAI)
-                {
-                    if (!LethalBotAI.IsItemRangedWeapon(weapon))
-                    {
-                        break; // We want to use a melee weapon on the snare flea!
-                    }
-                    else
-                    {
-                        // We don't want to use a ranged weapon on the snare flea if possible!
-                        continue;
-                    }
-                }
-                else if (LethalBotAI.IsItemRangedWeapon(weapon))
-                {
-                    break;
-                }
-            }
-
-            // HOW DID THIS HAPPEN!!!!!
-            // HasCombatWeapon checks if the bot has a weapon in the first place!
-            // This may be caused by a race conditon or another mod!
-            if (weaponSlot == -1)
-            {
+                // HOW DID THIS HAPPEN!!!!!
+                // HasCombatWeapon checks if the bot has a weapon in the first place!
+                // This may be caused by a race conditon or another mod!
                 Plugin.LogWarning($"Bot {npcController.Npc.playerUsername} didn't have a weapon despite HasCombatWeapon telling us we did!");
                 ChangeBackToPreviousState();
                 return;
@@ -282,7 +251,13 @@ namespace LethalBots.AI.AIStates
                 // just in case.....
                 if (ai.HasScrapInInventory())
                 {
-                    ai.State = new ReturnToShipState(this);
+                    // Now, lets check if someone is assigned to transfer loot
+                    bool shouldWalkLootToShip = true;
+                    if (LethalBotManager.Instance.LootTransferPlayers.Count > 0)
+                    {
+                        shouldWalkLootToShip = false;
+                    }
+                    ai.State = new ReturnToShipState(this, !shouldWalkLootToShip);
                     return;
                 }
             }
@@ -598,6 +573,52 @@ namespace LethalBots.AI.AIStates
                 maxRange = 1.5f;
                 hitMask = (int)shovelMask.GetValue(shovel);
             }
+        }
+
+        /// <summary>
+        /// We need to find a weapon that has ammo!
+        /// </summary>
+        /// <inheritdoc cref="AIState.FindObject(GrabbableObject)"/>
+        protected override bool FindObject(GrabbableObject item)
+        {
+            // Don't pick an empty weapon!
+            // NOTE: HasAmmoForWeapon, checks if the item is a weapon internally!
+            return ai.HasAmmoForWeapon(item);
+        }
+
+        /// <summary>
+        /// Determines whether the specified candidate object is a better choice than the current best object for the
+        /// bot to use, based on weapon type and the current enemy.
+        /// </summary>
+        /// <remarks>
+        /// When the current enemy is a Snare Flea, melee weapons are preferred over ranged
+        /// weapons. In other cases, ranged weapons are preferred if the current best is not ranged and the candidate
+        /// is.<br/>
+        /// <inheritdoc cref="AIState.FindBetterObject(GrabbableObject, GrabbableObject)"/>
+        /// </remarks>
+        /// <inheritdoc cref="AIState.FindBetterObject(GrabbableObject, GrabbableObject)"/>
+        protected override bool FindBetterObject(GrabbableObject currentBest, GrabbableObject canidate)
+        {
+            bool isCurrentRanged = LethalBotAI.IsItemRangedWeapon(currentBest);
+            bool isCanidateRanged = LethalBotAI.IsItemRangedWeapon(canidate);
+            if (this.currentEnemy is CentipedeAI)
+            {
+                if (isCurrentRanged && !isCanidateRanged)
+                {
+                    return true; // We want to use a melee weapon on the snare flea!
+                }
+                else
+                {
+                    // We don't want to use a ranged weapon on the snare flea if possible!
+                    return false;
+                }
+            }
+            else if (!isCurrentRanged && isCanidateRanged)
+            {
+                return true; // Prefer ranged weapons otherwise
+            }
+
+            return false;
         }
 
         private void StartAttackCoroutine()

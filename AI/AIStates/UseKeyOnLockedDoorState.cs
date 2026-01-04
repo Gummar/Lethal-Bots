@@ -18,7 +18,6 @@ namespace LethalBots.AI.AIStates
     /// </summary>
     public class UseKeyOnLockedDoorState : AIState
     {
-        private Coroutine? lookingAroundCoroutine = null;
         private DoorLock? targetDoor = null;
         private Vector3? doorPos = null;
         private float attemptToUnlockTimer;
@@ -82,13 +81,13 @@ namespace LethalBots.AI.AIStates
             base.OnEnterState();
         }
 
-        public override void OnExitState()
+        public override void OnExitState(AIState newState)
         {
             if (droppedHeldItem != null)
             {
                 LethalBotAI.DictJustDroppedItems.Remove(droppedHeldItem); //HACKHACK: Since DropItem sets the just dropped item timer, we clear it here!
             }
-            base.OnExitState();
+            base.OnExitState(newState);
         }
 
         public override void DoAI()
@@ -161,7 +160,7 @@ namespace LethalBots.AI.AIStates
             int keySlot = ai.IsHoldingKey() ? npcController.Npc.currentItemSlot : -1;
             if (keySlot == -1)
             {
-                if (!ai.TryFindItemInInventory(IsKeyItem, IsBetterKey, out keySlot))
+                if (!ai.TryFindItemInInventory(FindObject, FindBetterObject, out keySlot))
                 {
                     // We don't have a key, exit early!
                     // If we were trying to grab a item past a locked door,
@@ -200,13 +199,13 @@ namespace LethalBots.AI.AIStates
                 {
                     ai.StopMoving();
                     GrabbableObject? heldItem = ai.HeldItem;
-                    if (heldItem != null && !IsKeyItem(heldItem) && heldItem.itemProperties.twoHanded)
+                    if (heldItem != null && !FindObject(heldItem) && heldItem.itemProperties.twoHanded)
                     {
                         droppedHeldItem = heldItem;
                         ai.DropItem();
                         return;
                     }
-                    else if (heldItem == null || (heldItem is not KeyItem && heldItem is not LockPicker))
+                    else if (heldItem == null || !FindObject(heldItem))
                     {
                         ai.SwitchItemSlotsAndSync(keySlot);
                         return;
@@ -280,12 +279,6 @@ namespace LethalBots.AI.AIStates
             return this.targetDoor.lockPickerPosition2.position; // Was local position, but was causing issues.
         }
 
-        public override void StopAllCoroutines()
-        {
-            base.StopAllCoroutines();
-            StopLookingAroundCoroutine();
-        }
-
         public override void TryPlayCurrentStateVoiceAudio()
         {
             return;
@@ -294,26 +287,17 @@ namespace LethalBots.AI.AIStates
         /// <summary>
         /// Helper function to check if the given <paramref name="item"/> is a key or lockpicker!
         /// </summary>
-        /// <remarks>
-        /// This was designed for use in <see cref="LethalBotAI.TryFindItemInInventory(System.Func{GrabbableObject, bool}, System.Func{GrabbableObject, GrabbableObject, bool}, out int)"/> calls.
-        /// </remarks>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        private static bool IsKeyItem(GrabbableObject item)
+        /// <inheritdoc cref="AIState.FindObject(GrabbableObject)"/>
+        protected override bool FindObject(GrabbableObject item)
         {
             return item is KeyItem || item is LockPicker;
         }
 
         /// <summary>
-        /// Helper function to check if the <paramref name="canidate"/> is better than our <paramref name="currentBest"/>!
+        /// Helper function to check if the <paramref name="canidate"/> key is better than our <paramref name="currentBest"/>!
         /// </summary>
-        /// <remarks>
-        /// This was designed for use in <see cref="LethalBotAI.TryFindItemInInventory(System.Func{GrabbableObject, bool}, System.Func{GrabbableObject, GrabbableObject, bool}, out int)"/> calls.
-        /// </remarks>
-        /// <param name="currentBest">The best grabbable object we have found so far.</param>
-        /// <param name="canidate">The next object that past the filter earlier in the function.</param>
-        /// <returns></returns>
-        private static bool IsBetterKey(GrabbableObject currentBest, GrabbableObject? canidate)
+        /// <inheritdoc cref="AIState.FindBetterObject(GrabbableObject, GrabbableObject)"/>
+        protected override bool FindBetterObject(GrabbableObject currentBest, GrabbableObject canidate)
         {
             // We prefer the key over the lockpick if possible!
             if (currentBest is not KeyItem && canidate is KeyItem)
@@ -322,58 +306,6 @@ namespace LethalBots.AI.AIStates
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// Coroutine for making bot turn his body to look around him
-        /// </summary>
-        /// <returns></returns>
-        private IEnumerator LookingAround()
-        {
-            yield return null;
-            while (ai.State != null
-                    && ai.State == this)
-            {
-                float freezeTimeRandom = Random.Range(Const.MIN_TIME_SEARCH_LOOKING_AROUND, Const.MAX_TIME_SEARCH_LOOKING_AROUND);
-                float angleRandom = Random.Range(0f, 360f);
-
-                // Convert angle to world position for looking
-                // Convert to local space (relative to the bot's forward direction)
-                Vector3 lookDirection = Quaternion.Euler(0, angleRandom, 0) * Vector3.forward;
-                float minLookDistance = 2f; // TODO: Move these into the Const class!
-                float maxLookDistance = 8f;
-                float lookDistance = Random.Range(minLookDistance, maxLookDistance); // Hardcoded for now
-                Vector3 lookAtPoint = npcController.Npc.gameplayCamera.transform.position + lookDirection * lookDistance;
-
-                // Ensure bot doesn’t look at unreachable areas (optional raycast check)
-                if (Physics.Raycast(npcController.Npc.thisController.transform.position, lookDirection, out RaycastHit hit, lookDistance, StartOfRound.Instance.collidersAndRoomMaskAndDefault))
-                {
-                    lookAtPoint = hit.point; // Adjust to the first obstacle it hits
-                }
-
-                // Use OrderToLookAtPosition as SetTurnBodyTowardsDirection can be overriden!
-                npcController.OrderToLookAtPosition(lookAtPoint);
-                yield return new WaitForSeconds(freezeTimeRandom);
-            }
-
-            lookingAroundCoroutine = null;
-        }
-
-        private void StartLookingAroundCoroutine()
-        {
-            if (this.lookingAroundCoroutine == null)
-            {
-                this.lookingAroundCoroutine = ai.StartCoroutine(this.LookingAround());
-            }
-        }
-
-        private void StopLookingAroundCoroutine()
-        {
-            if (this.lookingAroundCoroutine != null)
-            {
-                ai.StopCoroutine(this.lookingAroundCoroutine);
-                this.lookingAroundCoroutine = null;
-            }
         }
 
         // We are unlocking a door, these messages should be queued!

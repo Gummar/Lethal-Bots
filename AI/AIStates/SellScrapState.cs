@@ -185,7 +185,7 @@ namespace LethalBots.AI.AIStates
                 else
                 {
                     // Swap to our next item!
-                    if (ai.HasGrabbableObjectInInventory(FindNextSellableObject, out int itemSlot))
+                    if (ai.HasGrabbableObjectInInventory(FindObject, out int itemSlot))
                     {
                         ai.SwitchItemSlotsAndSync(itemSlot);
                     }
@@ -202,12 +202,8 @@ namespace LethalBots.AI.AIStates
         /// <summary>
         /// Helper function to check if the given <paramref name="item"/> is a object we can sell!
         /// </summary>
-        /// <remarks>
-        /// This was designed for use in <see cref="LethalBotAI.HasGrabbableObjectInInventory(Func{GrabbableObject, bool}, out int)"/> calls.
-        /// </remarks>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        private bool FindNextSellableObject(GrabbableObject item)
+        /// <inheritdoc cref="AIState.FindObject(GrabbableObject)"/>
+        protected override bool FindObject(GrabbableObject item)
         {
             return ai.IsGrabbableObjectSellable(item, true, true);
         }

@@ -20,7 +20,6 @@ namespace LethalBots.AI.AIStates
     public class SearchingForScrapState : AIState
     {
         private Coroutine? searchingWanderCoroutine = null;
-        private Coroutine? lookingAroundCoroutine = null;
         private float scrapTimer;
         private float waitForSafePathTimer; // This is how long we have been waiting for a safe path to our target entrance.
         private int entranceAttempts; // This is how many times we spent going into the same entrance!
@@ -51,6 +50,15 @@ namespace LethalBots.AI.AIStates
 
         public override void OnEnterState()
         {
+            if (!hasBeenStarted)
+            {
+                // We are now searching for scrap and are no longer transferring loot!
+                if (LethalBotManager.Instance.LootTransferPlayers.Contains(npcController.Npc))
+                {
+                    LethalBotManager.Instance.RemovePlayerFromLootTransferListAndSync(npcController.Npc);
+                }
+            }
+
             // It doesn't matter if we had started the state before,
             // we should always recheck the nearest entrance
             EntranceTeleport? previousEntrance = this.targetEntrance;
@@ -104,7 +112,14 @@ namespace LethalBots.AI.AIStates
             else
             {
                 // If our inventory is full, return to the ship to drop our stuff off
-                ai.State = new ReturnToShipState(this);
+                // Now, lets check if someone is assigned to transfer loot
+                bool shouldWalkLootToShip = true;
+                if (!ai.isOutside && LethalBotManager.Instance.LootTransferPlayers.Count > 0)
+                {
+                    shouldWalkLootToShip = false;
+                }
+
+                ai.State = new ReturnToShipState(this, !shouldWalkLootToShip);
                 return;
             }
 
@@ -116,11 +131,51 @@ namespace LethalBots.AI.AIStates
                 // as much as they can and return to the ship as a result!
                 if (ai.HasScrapInInventory())
                 {
-                    ai.State = new ReturnToShipState(this);
+                    // Now, lets check if someone is assigned to transfer loot
+                    bool shouldWalkLootToShip = true;
+                    if (LethalBotManager.Instance.LootTransferPlayers.Count > 0)
+                    {
+                        bool areWeNearbyEntrance = false;
+                        foreach (EntranceTeleport entrance in LethalBotAI.EntrancesTeleportArray)
+                        {
+                            if (entrance.isEntranceToBuilding 
+                                && (entrance.entrancePoint.position - npcController.Npc.transform.position).sqrMagnitude < Const.DISTANCE_NEARBY_ENTRANCE * Const.DISTANCE_NEARBY_ENTRANCE)
+                            {
+                                areWeNearbyEntrance = true;
+                                break;
+                            }
+                        }
+
+                        if (areWeNearbyEntrance)
+                        {
+                            // Stop moving while we drop our items
+                            ai.StopMoving();
+                            npcController.OrderToStopSprint();
+
+                            GrabbableObject? heldItem = ai.HeldItem;
+                            if (LethalBotAI.IsItemScrap(heldItem))
+                            {
+                                ai.DropItem();
+                                LethalBotAI.DictJustDroppedItems.Remove(heldItem); //HACKHACK: Since DropItem set the just dropped item timer, we clear it here!
+                                shouldWalkLootToShip = false;
+                            }
+                            else if (ai.HasGrabbableObjectInInventory(FindObjectToDrop, out int objectSlot))
+                            {
+                                ai.SwitchItemSlotsAndSync(objectSlot);
+                                shouldWalkLootToShip = false;
+                            }
+                        }
+                    }
+
+                    // Only return if we are supposed to walk the loot to the ship!
+                    if (shouldWalkLootToShip)
+                    {
+                        ai.State = new ReturnToShipState(this);
+                    }
                     return;
                 }
 
-                // If we don't have an entrace selected we should pick one now!
+                // If we don't have an entrance selected we should pick one now!
                 if (targetEntrance == null 
                     || waitForSafePathTimer > Const.WAIT_TIME_FOR_SAFE_PATH 
                     || entranceAttempts > Const.MAX_ENTRANCE_ATTEMPTS)
@@ -195,7 +250,13 @@ namespace LethalBots.AI.AIStates
                 {
                     if (scrapTimer > Const.TIMER_SEARCH_FOR_SCRAP)
                     {
-                        ai.State = new ReturnToShipState(this);
+                        // Now, lets check if someone is assigned to transfer loot
+                        bool shouldWalkLootToShip = true;
+                        if (LethalBotManager.Instance.LootTransferPlayers.Count > 0)
+                        {
+                            shouldWalkLootToShip = false;
+                        }
+                        ai.State = new ReturnToShipState(this, !shouldWalkLootToShip);
                         return;
                     }
                     scrapTimer += ai.AIIntervalTime;
@@ -257,7 +318,6 @@ namespace LethalBots.AI.AIStates
         {
             base.StopAllCoroutines();
             StopSearchingWanderCoroutine();
-            StopLookingAroundCoroutine();
         }
 
         public override void TryPlayCurrentStateVoiceAudio()
@@ -275,6 +335,58 @@ namespace LethalBots.AI.AIStates
                 IsLethalBotInside = npcController.Npc.isInsideFactory,
                 AllowSwearing = Plugin.Config.AllowSwearing.Value
             });
+        }
+
+        /// <summary>
+        /// Simple function that checks if the give <paramref name="item"/> is scrap.
+        /// </summary>
+        /// <remarks>
+        /// This was designed for use in <see cref="LethalBotAI.HasGrabbableObjectInInventory(System.Func{GrabbableObject, bool}, out int)"/> calls.
+        /// </remarks>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private static bool FindObjectToDrop(GrabbableObject item)
+        {
+            return LethalBotAI.IsItemScrap(item); // Found a scrap item, great, we want to drop it!
+        }
+
+        /// <summary>
+        /// Coroutine for making bot turn his body to look around him
+        /// </summary>
+        /// <returns></returns>
+        protected override IEnumerator LookingAround()
+        {
+            yield return null;
+            while (ai.State != null
+                    && ai.State == this)
+            {
+                float freezeTimeRandom = Random.Range(Const.MIN_TIME_SEARCH_LOOKING_AROUND, Const.MAX_TIME_SEARCH_LOOKING_AROUND);
+                float angleRandom = Random.Range(0f, 360f);
+
+                // Only look around if we are already not doing so!
+                if (npcController.LookAtTarget.IsLookingForward())
+                {
+                    // Convert angle to world position for looking
+                    // Convert to local space (relative to the bot's forward direction)
+                    Vector3 lookDirection = Quaternion.Euler(0, angleRandom, 0) * Vector3.forward;
+                    float minLookDistance = 2f; // TODO: Move these into the Const class!
+                    float maxLookDistance = 8f;
+                    float lookDistance = Random.Range(minLookDistance, maxLookDistance); // Hardcoded for now
+                    Vector3 lookAtPoint = npcController.Npc.gameplayCamera.transform.position + lookDirection * lookDistance;
+
+                    // Ensure bot doesn’t look at unreachable areas (optional raycast check)
+                    if (Physics.Raycast(npcController.Npc.thisController.transform.position, lookDirection, out RaycastHit hit, lookDistance, StartOfRound.Instance.collidersAndRoomMaskAndDefault))
+                    {
+                        lookAtPoint = hit.point; // Adjust to the first obstacle it hits
+                    }
+
+                    // Use OrderToLookAtPosition as SetTurnBodyTowardsDirection can be overriden!
+                    npcController.OrderToLookAtPosition(lookAtPoint);
+                }
+                yield return new WaitForSeconds(freezeTimeRandom);
+            }
+
+            lookingAroundCoroutine = null;
         }
 
         /// <remarks>
@@ -344,62 +456,6 @@ namespace LethalBots.AI.AIStates
             {
                 ai.StopCoroutine(this.searchingWanderCoroutine);
                 this.searchingWanderCoroutine = null;
-            }
-        }
-
-        /// <summary>
-        /// Coroutine for making bot turn his body to look around him
-        /// </summary>
-        /// <returns></returns>
-        private IEnumerator LookingAround()
-        {
-            yield return null;
-            while (ai.State != null
-                    && ai.State == this)
-            {
-                float freezeTimeRandom = Random.Range(Const.MIN_TIME_SEARCH_LOOKING_AROUND, Const.MAX_TIME_SEARCH_LOOKING_AROUND);
-                float angleRandom = Random.Range(0f, 360f);
-
-                // Only look around if we are already not doing so!
-                if (npcController.LookAtTarget.IsLookingForward())
-                {
-                    // Convert angle to world position for looking
-                    // Convert to local space (relative to the bot's forward direction)
-                    Vector3 lookDirection = Quaternion.Euler(0, angleRandom, 0) * Vector3.forward;
-                    float minLookDistance = 2f; // TODO: Move these into the Const class!
-                    float maxLookDistance = 8f;
-                    float lookDistance = Random.Range(minLookDistance, maxLookDistance); // Hardcoded for now
-                    Vector3 lookAtPoint = npcController.Npc.gameplayCamera.transform.position + lookDirection * lookDistance;
-
-                    // Ensure bot doesn’t look at unreachable areas (optional raycast check)
-                    if (Physics.Raycast(npcController.Npc.thisController.transform.position, lookDirection, out RaycastHit hit, lookDistance, StartOfRound.Instance.collidersAndRoomMaskAndDefault))
-                    {
-                        lookAtPoint = hit.point; // Adjust to the first obstacle it hits
-                    }
-
-                    // Use OrderToLookAtPosition as SetTurnBodyTowardsDirection can be overriden!
-                    npcController.OrderToLookAtPosition(lookAtPoint);
-                }
-                yield return new WaitForSeconds(freezeTimeRandom);
-            }
-
-            lookingAroundCoroutine = null;
-        }
-
-        private void StartLookingAroundCoroutine()
-        {
-            if (this.lookingAroundCoroutine == null)
-            {
-                this.lookingAroundCoroutine = ai.StartCoroutine(this.LookingAround());
-            }
-        }
-
-        private void StopLookingAroundCoroutine()
-        {
-            if (this.lookingAroundCoroutine != null)
-            {
-                ai.StopCoroutine(this.lookingAroundCoroutine);
-                this.lookingAroundCoroutine = null;
             }
         }
     }

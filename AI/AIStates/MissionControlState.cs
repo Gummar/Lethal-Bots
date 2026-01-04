@@ -128,6 +128,12 @@ namespace LethalBots.AI.AIStates
                 return;
             }
 
+            // We are assigned to man the ship, make sure we are not on the loot transfer list
+            if (LethalBotManager.Instance.LootTransferPlayers.Contains(npcController.Npc))
+            {
+                LethalBotManager.Instance.RemovePlayerFromLootTransferListAndSync(npcController.Npc);
+            }
+
             // Its kinda hard to be the mission controller if we are not on the ship!
             if (!npcController.Npc.isInElevator && !npcController.Npc.isInHangarShipRoom)
             {
@@ -1410,17 +1416,27 @@ namespace LethalBots.AI.AIStates
                         || hostPlayer == playerWhoSentMessage
                         || hostPlayer.isPlayerDead)
                     {
+                        if (LethalBotManager.AreWeAtTheCompanyBuilding())
+                        {
+                            ai.SendChatMessage($"Affirmative, I will start the ship in {Const.LETHAL_BOT_TIMER_LEAVE_PLANET} seconds and once everyone is onboard.");
+                        }
+                        else
+                        { 
+                            ai.SendChatMessage($"Affirmative, I will start the ship in {Const.LETHAL_BOT_TIMER_LEAVE_PLANET} seconds."); 
+                        }
                         playerRequestLeave = true;
                     }
                 }
                 // A player is requesting we monitor them
                 else if (message.Contains("request monitoring"))
                 {
+                    ai.SendChatMessage("Roger, I will only monitor you.");
                     monitoredPlayer = playerWhoSentMessage;
                 }
                 // The player wants to stop being monitored
                 else if (monitoredPlayer == playerWhoSentMessage && message.Contains("clear monitoring"))
                 {
+                    ai.SendChatMessage("Understood, I will resume monitoring all crew members.");
                     monitoredPlayer = null;
                 }
                 // This player wants to be teleported back to the ship
@@ -1429,6 +1445,7 @@ namespace LethalBots.AI.AIStates
                     // Only add new requests!
                     if (!playersRequstedTeleport.Contains(playerWhoSentMessage))
                     { 
+                        ai.SendChatMessage("Hold on, I will teleport you back to the ship as soon as possible.");
                         playersRequstedTeleport.Enqueue(playerWhoSentMessage); 
                     }
                 }
@@ -1436,6 +1453,10 @@ namespace LethalBots.AI.AIStates
                 // probably so they can use it.
                 else if (message.Contains("hop off the terminal"))
                 {
+                    if (!playerRequestedTerminal)
+                    { 
+                        ai.SendChatMessage("Understood, I am leaving the terminal now."); 
+                    }
                     playerRequestedTerminal = true;
                     waitForTerminalTime = 0f;
                 }

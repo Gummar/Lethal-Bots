@@ -13,8 +13,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.AI;
-using UnityEngine.UI;
+using Random = UnityEngine.Random;
 
 namespace LethalBots.AI
 {
@@ -59,6 +58,7 @@ namespace LethalBots.AI
 
         protected Coroutine? panikCoroutine;
         protected Coroutine? safePathCoroutine;
+        protected Coroutine? lookingAroundCoroutine;
         protected EnemyAI? currentEnemy;
         protected Vector3 safePathPos; // The closest point to targetShipPos that is safe
         protected CancellationTokenSource? pathfindCancellationToken = null; // For use in the async danger pathfinder
@@ -146,7 +146,8 @@ namespace LethalBots.AI
         /// You should use this to save variables, or reset the bot, etc.<br/>
         /// You can use <see cref="hasBeenStarted"/> to check if this state has been started before.<br/>
         /// </remarks>
-        public virtual void OnExitState() { }
+        /// <param name="newState">The new state the bot is entering</param>
+        public virtual void OnExitState(AIState newState) { }
 
         /// <summary>
         /// Apply the behaviour according to the type of state <see cref="Enums.EnumAIStates"><c>Enums.EnumAIStates</c></see>.<br/>
@@ -274,48 +275,90 @@ namespace LethalBots.AI
             }
             // One of us was asked to be the mission controller!
             // NOTE: playerWhoSentMessage should never be null here, but other modders could call this function directly with a null value!
-            // FIXME: This is REALLY bad with many bots since they all call this function. We need a better way to do this!
-            else if (playerWhoSentMessage != null && message.Contains("man the ship"))
+            else if (message.Contains("man the ship"))
             {
-                // FIXME: There has to be a better way to do this!
-                // Get the a trace of where the player who sent the message is looking at!
-                // FIXMEUPDATE: Ok, using RaycastNonAlloc should help a bit with performance here, but its still not great!
-                RaycastHit[] raycastHits = new RaycastHit[3];
-                Ray interactRay = new Ray(playerWhoSentMessage.gameplayCamera.transform.position, playerWhoSentMessage.gameplayCamera.transform.forward);
-                int raycastResults = Physics.RaycastNonAlloc(interactRay, raycastHits, Const.MAX_CHAT_RANGE, StartOfRound.Instance.playersMask);
-                for (int i = 0; i < raycastResults; i++)
+                if (IsBotBeingAddressed(playerWhoSentMessage, out var lethalBotController))
                 {
-                    // Check if we hit a player!
-                    RaycastHit hit = raycastHits[i];
-                    if (hit.collider == null 
-                        || hit.collider.tag != "Player")
-                    {
-                        continue;
-                    }
-
-                    // Make sure its an actual player and not an object with the player tag!
-                    PlayerControllerB player = hit.collider.gameObject.GetComponent<PlayerControllerB>();
-                    if (player == null)
-                    {
-                        continue;
-                    }
-
-                    // Okay, we found a player, is it a bot and are they following us?
-                    LethalBotAI? lethalBot = LethalBotManager.Instance.GetLethalBotAIIfLocalIsOwner(player);
-                    if (lethalBot == null
-                        || lethalBot != ai // Make sure its us!
-                        || lethalBot.IsSpawningAnimationRunning())
-                    {
-                        continue;
-                    }
-
                     // Yay, we found a vaild bot, make it the mission controller!
-                    LethalBotManager.Instance.MissionControlPlayer = player;
+                    ai.SendChatMessage("Alright, I'll head to the terminal and watch over the crew!");
+                    LethalBotManager.Instance.MissionControlPlayer = lethalBotController;
                     ai.State = new MissionControlState(this); // Its fine to set the state here directly, if we are not on the ship, the state will handle moving to the ship!
-                    break;
                 }
                 return;
             }
+            // One of us was asked to transfer loot!
+            else if (message.Contains("transfer loot"))
+            {
+                if (IsBotBeingAddressed(playerWhoSentMessage, out var lethalBotController))
+                {
+                    // Yay, we found a vaild bot, make it transfer loot!
+                    ai.SendChatMessage("I'll start transferring loot to the ship right away!");
+                    if (!LethalBotManager.Instance.LootTransferPlayers.Contains(lethalBotController))
+                    {
+                        LethalBotManager.Instance.AddPlayerToLootTransferListAndSync(lethalBotController);
+                    }
+                    ai.State = new TransferLootState(this);
+                }
+                return;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the specified player is currently addressing this bot, based on the player's line of
+        /// sight and ownership.
+        /// </summary>
+        /// <remarks>
+        /// FIXME: This is REALLY bad with many bots since they all call this function. We need a better way to do this!<br/>
+        /// Function taken from PULL Request by <see href="https://github.com/iSeeEthan"/>
+        /// </remarks>
+        /// <param name="player">The player to check for bot interaction. Cannot be null.</param>
+        /// <returns>true if the player is addressing this bot and the bot is eligible to respond; otherwise, false.</returns>
+        protected bool IsBotBeingAddressed(PlayerControllerB player, out PlayerControllerB? lethalBotController)
+        {
+            // Make sure the player is valid
+            lethalBotController = null;
+            if (player == null)
+            {
+                return false;
+            }
+
+            // FIXME: There has to be a better way to do this!
+            // Get the a trace of where the player who sent the message is looking at!
+            // FIXMEUPDATE: Ok, using RaycastNonAlloc should help a bit with performance here, but its still not great!
+            RaycastHit[] raycastHits = new RaycastHit[3];
+            Ray interactRay = new Ray(player.gameplayCamera.transform.position, player.gameplayCamera.transform.forward);
+            int raycastResults = Physics.RaycastNonAlloc(interactRay, raycastHits, Const.MAX_CHAT_RANGE, StartOfRound.Instance.playersMask);
+            for (int i = 0; i < raycastResults; i++)
+            {
+                // Check if we hit a player!
+                RaycastHit hit = raycastHits[i];
+                if (hit.collider == null
+                    || hit.collider.tag != "Player")
+                {
+                    continue;
+                }
+
+                // Make sure its an actual player and not an object with the player tag!
+                lethalBotController = hit.collider.gameObject.GetComponent<PlayerControllerB>();
+                if (lethalBotController == null)
+                {
+                    continue;
+                }
+
+                // Okay, we found a player, is it a bot and are they following us?
+                // We can only address bots that we have ownership of!
+                LethalBotAI? lethalBot = LethalBotManager.Instance.GetLethalBotAIIfLocalIsOwner(lethalBotController);
+                if (lethalBot == null
+                    || lethalBot != ai // Make sure its us!
+                    || lethalBot.IsSpawningAnimationRunning())
+                {
+                    continue;
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -340,6 +383,25 @@ namespace LethalBots.AI
             return null;
         }
 
+        /// <remarks>
+        /// Helper function that only avoids a single entrance!<br/>
+        /// <inheritdoc cref="FindClosestEntrance(Vector3?, List{EntranceTeleport}?)"></inheritdoc>
+        /// </remarks>
+        /// <inheritdoc cref="FindClosestEntrance(Vector3?, List{EntranceTeleport}?)"></inheritdoc>
+        protected virtual EntranceTeleport? FindClosestEntrance(EntranceTeleport? entranceToAvoid, Vector3? shipPos = null)
+        {
+            List<EntranceTeleport>? entrancesToAvoid;
+            if (entranceToAvoid != null)
+            {
+                entrancesToAvoid = new List<EntranceTeleport>() { entranceToAvoid };
+            }
+            else
+            {
+                entrancesToAvoid = null;
+            }
+            return FindClosestEntrance(shipPos, entrancesToAvoid);
+        }
+
         /// <summary>
         /// Find an entrance we can path to so we can enter or exit the main building!
         /// </summary>
@@ -348,7 +410,7 @@ namespace LethalBots.AI
         /// We also have to check if the exit position lets the bot reach the ship. Offence is a good example where the bots can't path down the fire exit!
         /// </remarks>
         /// <returns>The closest entrance or else null</returns>
-        protected virtual EntranceTeleport? FindClosestEntrance(Vector3? shipPos = null, EntranceTeleport? entranceToAvoid = null)
+        protected virtual EntranceTeleport? FindClosestEntrance(Vector3? shipPos = null, List<EntranceTeleport>? entrancesToAvoid = null)
         {
             bool shouldOnlyUseFrontEntrance = ShouldOnlyUseFrontEntrance();
             bool isClosestEntranceFront = false;
@@ -358,8 +420,8 @@ namespace LethalBots.AI
             shipPos ??= RoundManager.Instance.GetNavMeshPosition(StartOfRound.Instance.middleOfShipNode.position);
             foreach (var entrance in LethalBotAI.EntrancesTeleportArray)
             {
-                // If we are avoiding a specific entrance, we should skip it!
-                if (entranceToAvoid != null && entranceToAvoid == entrance)
+                // If we are avoiding specific entrances, we should skip it!
+                if (entrancesToAvoid != null && entrancesToAvoid.Contains(entrance))
                 {
                     continue;
                 }
@@ -788,6 +850,7 @@ namespace LethalBots.AI
                 ai.StopSearch(searchForScrap, false);
             }
             StopSafePathCoroutine();
+            StopLookingAroundCoroutine();
         }
 
         /// <summary>
@@ -1077,6 +1140,58 @@ namespace LethalBots.AI
         }
 
         /// <summary>
+        /// Coroutine for making bot turn his body to look around him
+        /// </summary>
+        /// <returns></returns>
+        protected virtual IEnumerator LookingAround()
+        {
+            yield return null;
+            while (ai.State != null
+                    && ai.State == this)
+            {
+                float freezeTimeRandom = Random.Range(Const.MIN_TIME_SEARCH_LOOKING_AROUND, Const.MAX_TIME_SEARCH_LOOKING_AROUND);
+                float angleRandom = Random.Range(0f, 360f);
+
+                // Convert angle to world position for looking
+                // Convert to local space (relative to the bot's forward direction)
+                Vector3 lookDirection = Quaternion.Euler(0, angleRandom, 0) * Vector3.forward;
+                float minLookDistance = 2f; // TODO: Move these into the Const class!
+                float maxLookDistance = 8f;
+                float lookDistance = Random.Range(minLookDistance, maxLookDistance); // Hardcoded for now
+                Vector3 lookAtPoint = npcController.Npc.gameplayCamera.transform.position + lookDirection * lookDistance;
+
+                // Ensure bot doesn’t look at unreachable areas (optional raycast check)
+                if (Physics.Raycast(npcController.Npc.thisController.transform.position, lookDirection, out RaycastHit hit, lookDistance, StartOfRound.Instance.collidersAndRoomMaskAndDefault))
+                {
+                    lookAtPoint = hit.point; // Adjust to the first obstacle it hits
+                }
+
+                // Use OrderToLookAtPosition as SetTurnBodyTowardsDirection can be overriden!
+                npcController.OrderToLookAtPosition(lookAtPoint);
+                yield return new WaitForSeconds(freezeTimeRandom);
+            }
+
+            lookingAroundCoroutine = null;
+        }
+
+        protected void StartLookingAroundCoroutine()
+        {
+            if (this.lookingAroundCoroutine == null)
+            {
+                this.lookingAroundCoroutine = ai.StartCoroutine(this.LookingAround());
+            }
+        }
+
+        protected void StopLookingAroundCoroutine()
+        {
+            if (this.lookingAroundCoroutine != null)
+            {
+                ai.StopCoroutine(this.lookingAroundCoroutine);
+                this.lookingAroundCoroutine = null;
+            }
+        }
+
+        /// <summary>
         /// Changes back to the previous state
         /// </summary>
         /// <remarks>
@@ -1156,6 +1271,34 @@ namespace LethalBots.AI
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// Simple function that checks if the give <paramref name="item"/> is null or not<br/>
+        /// This was designed to be overridden by states that want to drop specific items only!
+        /// </summary>
+        /// <remarks>
+        /// This was designed for use in <see cref="LethalBotAI.HasGrabbableObjectInInventory(System.Func{GrabbableObject, bool}, out int)"/> calls.
+        /// </remarks>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        protected virtual bool FindObject(GrabbableObject item)
+        {
+            return true; // Found an item, great, we want to drop it!
+        }
+
+        /// <summary>
+        /// Helper function to check if the <paramref name="canidate"/> is better than our <paramref name="currentBest"/>!
+        /// </summary>
+        /// <remarks>
+        /// This was designed for use in <see cref="LethalBotAI.TryFindItemInInventory(System.Func{GrabbableObject, bool}, System.Func{GrabbableObject, GrabbableObject, bool}, out int)"/> calls.
+        /// </remarks>
+        /// <param name="currentBest">The current best grabbable object selected by the bot.</param>
+        /// <param name="canidate">The candidate grabbable object to compare against the current best. Can be null.</param>
+        /// <returns>true if the candidate object is considered a better choice than the current best; otherwise, false.</returns>
+        protected virtual bool FindBetterObject(GrabbableObject currentBest, GrabbableObject canidate)
+        {
+            return false; // By default we don't care about better objects!
         }
     }
 }

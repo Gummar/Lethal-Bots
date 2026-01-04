@@ -9,10 +9,10 @@ using LethalBots.Enums;
 using LethalBots.Managers;
 using LethalBots.NetworkSerializers;
 using LethalBots.Patches.EnemiesPatches;
+using LethalBots.Patches.GameEnginePatches;
 using LethalBots.Patches.MapPatches;
 using LethalBots.Patches.ModPatches.ModelRplcmntAPI;
 using LethalBots.Patches.NpcPatches;
-using LethalBots.Patches.GameEnginePatches;
 using LethalBots.Utils;
 using LethalInternship.AI;
 using LethalLib.Modules;
@@ -26,6 +26,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Unity.Netcode;
@@ -93,7 +94,7 @@ namespace LethalBots.AI
 				if (oldState != null)
 				{
 					Plugin.LogDebug($"LethalBot {NpcController.Npc.playerUsername} change from {oldState.GetAIState()} to {value.GetAIState()}!");
-					oldState.OnExitState();
+					oldState.OnExitState(value);
 					oldState.StopAllCoroutines();
 				}
 
@@ -2641,6 +2642,7 @@ namespace LethalBots.AI
 			// FIXME: Only a few enemies can be targeted since
 			// I need to check when its a good idea to fight!
 			bool hasRangedWeapon = HasRangedWeapon();
+			bool isEnemyStunned = enemy.stunnedIndefinitely > 0f || enemy.stunNormalizedTimer > 0f; 
 			switch (enemy.enemyType.enemyName)
 			{
 				case "Centipede":
@@ -2649,8 +2651,8 @@ namespace LethalBots.AI
 				case "Hoarding bug":
 					return true;
 				case "Nutcracker":
-					if (hasRangedWeapon 
-						&& (enemy.currentBehaviourStateIndex == 2 
+					if ((hasRangedWeapon || isEnemyStunned)
+                        && (enemy.currentBehaviourStateIndex == 2 
 							|| (enemy is NutcrackerEnemyAI nutcracker 
 								&& (bool)nutcrackerIsInspecting.GetValue(nutcracker))))
 					{
@@ -2660,7 +2662,7 @@ namespace LethalBots.AI
 				case "Flowerman":
 				case "Bunker Spider":
 				case "Baboon hawk":
-					return hasRangedWeapon;
+					return hasRangedWeapon || isEnemyStunned;
 				case "Butler": // For now, don't kill them!
 				case "ForestGiant":
 				case "MouthDog":
@@ -3217,8 +3219,8 @@ namespace LethalBots.AI
 				if (ElevatorScript.elevatorDoorOpen 
 					&& distanceFromInsidePosition <= Const.DISTANCE_CLOSE_ENOUGH_TO_DESTINATION
 					&& ElevatorScript.elevatorMovingDown == goUp 
-					&& timerElevatorCooldown > Const.TIMER_USE_ELEVATOR
-					&& (Time.timeSinceLevelLoad - pressElevatorButtonCooldown) > (AIIntervalTime + 0.16f))
+					&& (timerElevatorCooldown > Const.TIMER_USE_ELEVATOR || NpcController.Npc.isPlayerAlone)
+                    && (Time.timeSinceLevelLoad - pressElevatorButtonCooldown) > (AIIntervalTime + 0.16f))
 				{
 					//ElevatorScript.PressElevatorButtonOnServer(true);
 					pressElevatorButtonCooldown = Time.timeSinceLevelLoad;
@@ -3244,7 +3246,7 @@ namespace LethalBots.AI
 					&& distanceFromVector <= Const.DISTANCE_CLOSE_ENOUGH_TO_DESTINATION
 					&& ElevatorScript.elevatorMovingDown != goUp 
 					&& !ElevatorScript.elevatorCalled 
-					&& timerElevatorCooldown > Const.TIMER_USE_ELEVATOR
+					&& (timerElevatorCooldown > Const.TIMER_USE_ELEVATOR || NpcController.Npc.isPlayerAlone)
 					&& (Time.timeSinceLevelLoad - pressElevatorButtonCooldown) > (AIIntervalTime + 0.16f))
 				{
 					//ElevatorScript.CallElevatorOnServer(goUp);
@@ -3516,11 +3518,12 @@ namespace LethalBots.AI
 		}
 
 		/// <summary>
-		/// Is the given item a weapon ?
+		/// Is the given item a weapon?
 		/// </summary>
 		/// <remarks>
 		/// Modders can override this to add their own custom weapons for the bots to use!
 		/// </remarks>
+		/// <param name="weapon">The item to check</param>
 		/// <returns>I mean come on</returns>
 		public static bool IsItemWeapon([NotNullWhen(true)] GrabbableObject? weapon)
 		{
@@ -3537,6 +3540,23 @@ namespace LethalBots.AI
 
 			// HACKHACK: weapon.itemProperties.isDefensiveWeapon is set to false on the shovel and shotgun!?
 			return weapon is Shovel || weapon is KnifeItem;
+		}
+
+        /// <summary>
+        /// Is the given item scrap?
+        /// </summary>
+		/// <remarks>
+		/// Modders can override this to add their own custom scrap items!
+		/// </remarks>
+        /// <param name="item">The item to check</param>
+        /// <returns>I mean come on</returns>
+        public static bool IsItemScrap([NotNullWhen(true)] GrabbableObject? item)
+		{
+			if (item == null)
+			{
+				return false;
+			}
+			return item.itemProperties.isScrap;
 		}
 
 		/// <summary>
@@ -3714,13 +3734,13 @@ namespace LethalBots.AI
 
 			// Assess all items in inventory
 			int index = 0;
-			foreach (var item in NpcController.Npc.ItemSlots)
+			foreach (var canidate in NpcController.Npc.ItemSlots)
 			{
-				if (item != null && filter(item))
+				if (canidate != null && filter(canidate))
 				{
-					if (bestItem == null || isBetter(bestItem, item))
+					if (bestItem == null || isBetter(bestItem, canidate))
 					{
-						bestItem = item;
+						bestItem = canidate;
 						objectSlot = index;
 					}
 				}
@@ -3776,14 +3796,13 @@ namespace LethalBots.AI
 		/// <returns>I mean come on</returns>
 		public bool HasScrapInInventory()
 		{
-			if (!AreHandsFree() && HeldItem.itemProperties.isScrap)
+			if (!AreHandsFree() && IsItemScrap(HeldItem))
 			{
 				return true;
 			}
 			foreach (var scrap in NpcController.Npc.ItemSlots)
 			{
-				if (scrap != null 
-					&& scrap.itemProperties.isScrap)
+				if (IsItemScrap(scrap))
 				{
 					return true;
 				}
@@ -4193,13 +4212,17 @@ namespace LethalBots.AI
 			}
 
 			// Is item too close to entrance (with config option enabled)
-			// NEEDTOVALIDATE: Should this only happen if the player they are following sets down their loot or something?
-			if (!Plugin.Config.GrabItemsNearEntrances.Value 
-				&& !LethalBotManager.Instance.AreAllHumanPlayersDead())
+			bool shouldReturnToShip = this.State?.ShouldReturnToShip() ?? false;
+            bool botIsTransferringItems = LethalBotManager.Instance.LootTransferPlayers.Contains(NpcController.Npc);
+			if (((!Plugin.Config.GrabItemsNearEntrances.Value 
+					&& !LethalBotManager.Instance.AreAllHumanPlayersDead())
+                    || (LethalBotManager.Instance.LootTransferPlayers.Count > 0 && !shouldReturnToShip))
+                && !botIsTransferringItems)
 			{
-				for (int j = 0; j < EntrancesTeleportArray.Length; j++)
+				foreach (EntranceTeleport entrance in EntrancesTeleportArray)
 				{
-					if ((grabbableObject.transform.position - EntrancesTeleportArray[j].entrancePoint.position).sqrMagnitude < Const.DISTANCE_ITEMS_TO_ENTRANCE * Const.DISTANCE_ITEMS_TO_ENTRANCE)
+					if (entrance.isEntranceToBuilding 
+						&& (grabbableObject.transform.position - entrance.entrancePoint.position).sqrMagnitude < Const.DISTANCE_ITEMS_TO_ENTRANCE * Const.DISTANCE_ITEMS_TO_ENTRANCE)
 					{
 						return false;
 					}
@@ -4237,7 +4260,7 @@ namespace LethalBots.AI
 			if ((!ignoreHeldFlag && grabbableObject.isHeld)
 				|| !grabbableObject.grabbable
 				|| grabbableObject.deactivated 
-				|| !grabbableObject.itemProperties.isScrap)
+				|| !IsItemScrap(grabbableObject))
 			{
 				return false;
 			}
@@ -4462,7 +4485,7 @@ namespace LethalBots.AI
 			if (grabbableObjectToEvaluate is CaveDwellerPhysicsProp caveDwellerGrabbableObject) // Was gameObject.name.Contains("CaveDwellerEnemy"), but CaveDwellerPhysicsProp is better and more reliable
 			{
 				// The host has config options to allow or disallow the bot to grab the maneater baby
-				if (!Plugin.Config.GrabManeaterBaby.Value)
+				if (!Plugin.Config.TakeCareOfManeaterBaby.Value)
 				{
 					Plugin.LogDebug($"Bot {NpcController.Npc.playerUsername} will not pickup the maneater, pickup is disabled!");
 					return true;
@@ -6500,25 +6523,99 @@ namespace LethalBots.AI
 			grabbableObject.ChargeBatteries();
 		}
 
-		#endregion
+        #endregion
 
-		#region Bot Chat
+        #region Bot Chat
 
-		/// <summary>
-		/// Helper function for sending chat messages to all players!
-		/// </summary>
-		/// <param name="message"></param>
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public void SendChatMessage(string message)
-		{
-			HUDManagerPatch.AddPlayerChatMessageServerRpc_ReversePatch(HUDManager.Instance, message, (int)NpcController.Npc.playerClientId);
-		}
+        /// <summary>
+        /// Helper function for sending chat messages to all players!
+        /// </summary>
+        /// <remarks>
+        /// Currently, bots send messages instantly, we will work on adding a "typing" delay later on.
+        /// </remarks>
+        /// <param name="message">The message the bot wants to send</param>
+		/// <param name="bypassConfig">Should we bypass the config check for allowing bots to chat?</param>
+        public void SendChatMessage(string message, bool bypassConfig = false)
+        {
+            // First, check if bots are allowed to chat!
+            if (!bypassConfig && !Plugin.Config.AllowBotsToChat.Value)
+            {
+                return;
+            }
 
-		#endregion
+            // OK, there is a 50 character limit for chat messages, so we need to split them up!
+            const int charLimit = 49;
+            List<string> splitMessages = new List<string>();
 
-		#region Vote to leave early RPC
+            // Split the message into words
+            string[] words = message.Split(' ');
+            StringBuilder currentLine = new StringBuilder();
 
-		/*[ServerRpc(RequireOwnership = false)]
+            foreach (string word in words)
+            {
+                // If the word itself is longer than the limit, force-split it
+                if (word.Length > charLimit)
+                {
+                    // Flush current line first
+                    if (currentLine.Length > 0)
+                    {
+                        splitMessages.Add(currentLine.ToString());
+                        currentLine.Clear();
+                    }
+
+                    // Split the long word
+                    for (int i = 0; i < word.Length; i += charLimit)
+                    {
+                        splitMessages.Add(
+                            word.Substring(i, Math.Min(charLimit, word.Length - i))
+                        );
+                    }
+
+                    continue;
+                }
+
+                // Check if adding this word would exceed the limit
+                int extraLength = currentLine.Length == 0 ? word.Length : word.Length + 1;
+
+                if (currentLine.Length + extraLength <= charLimit)
+                {
+                    if (currentLine.Length > 0)
+                        currentLine.Append(' ');
+
+                    currentLine.Append(word);
+                }
+                else
+                {
+                    // Commit the current line and start a new one
+                    splitMessages.Add(currentLine.ToString());
+                    currentLine.Clear();
+                    currentLine.Append(word);
+                }
+            }
+
+            // Add the last line if it exists
+            if (currentLine.Length > 0)
+            {
+                splitMessages.Add(currentLine.ToString());
+            }
+
+            // Send each message separately
+            foreach (string msg in splitMessages)
+            {
+                HUDManagerPatch.AddPlayerChatMessageServerRpc_ReversePatch(
+                    HUDManager.Instance,
+                    msg,
+                    (int)NpcController.Npc.playerClientId
+                );
+            }
+        }
+
+
+        #endregion
+
+        #region Vote to leave early RPC
+
+        /*[ServerRpc(RequireOwnership = false)]
 		public void LethalBotVoteToLeaveEarlyServerRpc()
 		{
 			// I had to recreate the the functions as its easier than editing the base functions!
@@ -6535,7 +6632,7 @@ namespace LethalBots.AI
 			}
 		}*/
 
-		/*[ClientRpc]
+        /*[ClientRpc]
 		public void AddVoteForShipToLeaveEarlyClientRpc()
 		{
 			// If we are the host or server, we shouldn't increment this as we would be doing it twice!
@@ -6546,7 +6643,7 @@ namespace LethalBots.AI
 			HUDManager.Instance.SetShipLeaveEarlyVotesText(TimeOfDay.Instance.votesForShipToLeaveEarly);
 		}*/
 
-		/*[ClientRpc]
+        /*[ClientRpc]
 		public void SetShipLeaveEarlyClientRpc(float timeToLeaveEarly, int votes)
 		{
 			TimeOfDay instanceTOD = TimeOfDay.Instance;
@@ -6559,25 +6656,25 @@ namespace LethalBots.AI
 			HUDManager.Instance.shipLeavingEarlyIcon.enabled = true;
 		}*/
 
-		#endregion
+        #endregion
 
-		// TODO: This needs A LOT of work, hopefully this will pay off in the long run.
-		// This would require some workarounds to get this to work!
-		// NOTE: We HAVE to fake the use terminal call, it would make some incompatability with some mods,
-		// but they can be fixed with custom patches.
-		#region Bot Terminal
+        // TODO: This needs A LOT of work, hopefully this will pay off in the long run.
+        // This would require some workarounds to get this to work!
+        // NOTE: We HAVE to fake the use terminal call, it would make some incompatability with some mods,
+        // but they can be fixed with custom patches.
+        #region Bot Terminal
 
-		/// <summary>
-		/// Makes the bot enter the terminal, this has proper support for animations!
-		/// </summary>
-		/// <remarks>
-		/// FIXME: At the current moment, this doesn't seem like a "good" way of doing this.
-		/// There is probably a better way of doing this so for now i'm only leaving this here
-		/// so I can use it for reference!
-		/// NOTE: Bots can NOT use the terminal's interact trigger to enter the terminal,
-		/// this is because of how its programmed, there is not much else I can do about it!
-		/// </remarks>
-		public void EnterTerminal()
+        /// <summary>
+        /// Makes the bot enter the terminal, this has proper support for animations!
+        /// </summary>
+        /// <remarks>
+        /// FIXME: At the current moment, this doesn't seem like a "good" way of doing this.
+        /// There is probably a better way of doing this so for now i'm only leaving this here
+        /// so I can use it for reference!
+        /// NOTE: Bots can NOT use the terminal's interact trigger to enter the terminal,
+        /// this is because of how its programmed, there is not much else I can do about it!
+        /// </remarks>
+        public void EnterTerminal()
 		{
 			// Terminal is invalid for some reason, report the error!
 			Terminal ourTerminal = Managers.TerminalManager.Instance.GetTerminal();

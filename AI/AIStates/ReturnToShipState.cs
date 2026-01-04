@@ -23,20 +23,23 @@ namespace LethalBots.AI.AIStates
         private Vector3 targetShipPos; // The point of the transform on the ship we want to go to
         private Vector3 targetEntrancePos; // The position we want to path to reach the entrance!
         private bool attemptedToUseTZP = false;
+        private bool endIfOutside;
         private float findEntranceTimer;
         private float shipPositionUpdateTimer;
 
-        public ReturnToShipState(AIState oldState) : base(oldState)
+        public ReturnToShipState(AIState oldState, bool endIfOutside = false, AIState? changeToOnEnd = null) : base(oldState, changeToOnEnd)
         {
             CurrentState = EnumAIStates.ReturnToShip;
+            this.endIfOutside = endIfOutside;
 
             // Lets pick a random node on the ship to go to
             targetShipTransform = GetRandomInsideShipTransform();
         }
 
-        public ReturnToShipState(LethalBotAI ai) : base(ai)
+        public ReturnToShipState(LethalBotAI ai, bool endIfOutside = false, AIState? changeToOnEnd = null) : base(ai, changeToOnEnd)
         {
             CurrentState = EnumAIStates.ReturnToShip;
+            this.endIfOutside = endIfOutside;
 
             // Lets pick a random node on the ship to go to
             targetShipTransform = GetRandomInsideShipTransform();
@@ -206,6 +209,15 @@ namespace LethalBots.AI.AIStates
             }
             else
             {
+                // We made it outside, we can end this state
+                // Some state probably wanted to move us outside!
+                // NOTE: We do this so I don't have to duplicate the move outside code in multiple states!
+                if (endIfOutside)
+                {
+                    ChangeBackToPreviousState();
+                    return;
+                }
+
                 // If we have TZP we should attempt to use to speed up our return trip if needed!
                 if (!attemptedToUseTZP)
                 {

@@ -26,9 +26,9 @@ namespace LethalBots.AI.AIStates
             CurrentState = EnumAIStates.ChillAtShip;
         }
 
-        public override void OnExitState()
+        public override void OnExitState(AIState newState)
         {
-            base.OnExitState();
+            base.OnExitState(newState);
             npcController.StopPreformingEmote();
         }
 
@@ -73,16 +73,32 @@ namespace LethalBots.AI.AIStates
                 }
                 // If we still have stuff in our inventory,
                 // we should swap to it and drop it!
-                else if (ai.HasGrabbableObjectInInventory(FindObjectToDrop, out int objectSlot))
+                else if (ai.HasGrabbableObjectInInventory(FindObject, out int objectSlot))
                 {
                     ai.SwitchItemSlotsAndSync(objectSlot);
                     canInverseTeleport = false;
                 }
+                // If we are transferring loot, go back to that state
+                else if (LethalBotManager.Instance.LootTransferPlayers.Contains(npcController.Npc))
+                {
+                    // We finished dropping our stuff off, go back to transferring loot!
+                    if (previousAIState is TransferLootState)
+                    {
+                        ChangeBackToPreviousState(); // We were transferring loot before, go back to it
+                    }
+                    else
+                    {
+                        ai.State = new TransferLootState(this); // Go to transferring loot state
+                    }
+                    return;
+                }
+                // If we are the mission controller, go to that state
                 else if (missionController == npcController.Npc)
                 {
                     ai.State = new MissionControlState(this);
                     return;
                 }
+                // If there is no mission controller, or its dead, we should be it!
                 else if (!StartOfRound.Instance.shipIsLeaving)
                 {
                     if (missionController == null || !missionController.isPlayerControlled || missionController.isPlayerDead)
@@ -273,19 +289,6 @@ namespace LethalBots.AI.AIStates
                 return;
             }
             base.OnSignalTranslatorMessageReceived(message);
-        }
-
-        /// <summary>
-        /// Simple function that checks if the give <paramref name="item"/> is null or not
-        /// </summary>
-        /// <remarks>
-        /// This was designed for use in <see cref="LethalBotAI.HasGrabbableObjectInInventory(System.Func{GrabbableObject, bool}, out int)"/> calls.
-        /// </remarks>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        private static bool FindObjectToDrop(GrabbableObject item)
-        {
-            return true; // Found an item, great, we want to drop it!
         }
 
         /// <summary>

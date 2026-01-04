@@ -1,5 +1,45 @@
 # Changelog
 
+## 1.1.0 - 2026-4-1
+Its time for the first "real" update that isn't just bug fixes. You can now give bots another role! You can now assign, multiple bots to focus on transferring loot between the facility entrances to the ship. Other bots should recognize this and will leave loot they find outside of the building entrances. There are also some bug fixes included as well!
+
+## New Features & Gameplay Changes
+- Added TransferLootState for bots to handle transferring loot from facility entrances to the ship, with entrance selection and wait logic.
+- Added new chat and voice command "transfer loot"
+- Bots now drop scrap for loot transfer players near entrances, instead of always returning to the ship if a bot was assigned to transfer loot.
+- Bots that are alone no longer wait to press the elevator button
+- Improve enemy combat logic to consider stunned state. Enemies that bots would only fight with ranged weapons, will now be fought with melee weapons while said enemy is stunned.
+
+## AI & State Refactors
+- Refactored looking around coroutine into the base AIState for reuse across states.
+- Updated ReturnToShipState to support early exit when outside, allowing it to be used to move the bot outside if they were inside the facility.
+- Refactor FindClosestEntrance to accept a list of entrances to avoid
+- OnExitState now has a new parameter which is the state the bot is changing to
+- Refactor Bot item selection with virtual helper methods
+- Added virtual FindObject/FindBetterObject in AIState for item selection and comparison.
+- Refactor state logic to override these methods, replacing redundant helpers.
+
+## Chat, Voice, & Interaction Improvements
+- Added new helper function IsBotBeingAddressed, this helper was provided by https://github.com/iSeeEthan
+- Bots will now respond in the chat upon "hearing" or "seeing" a chat command
+- Added new config option AllowBotsToChat and improved SendChatMessage
+- AllowBotsToChat controls if bots can reply to chat or voice commands by sending a chat message. NOTE: This doesn't affect the bots ability to declare jesters!
+- SendChatMessage has been updated to no longer cut off words in long messages if possible. The bot will try to send the rest of the word on another line.
+
+## Loot & Item Handling Changes
+- Refactored IsGrabbableObjectGrabbable to allow bots set to transfer loot, to grab items near entrances. It now also prevent bots from picking up items near entrances if a bot is set to transfer loot.
+- Add IsItemScrap utility and update scrap checks.
+
+## Bug Fixes & Behavior Adjustments
+- PanikState will no longer call the base class for OnPlayerChatMessageRecevied since it seemed a bit weird for a bot that is panicking to be listening to a player
+- Fixed a logic error in PanikState that caused bots to return to the ship even if they were following a player
+- Potentially fixed another logic error in PanikState:
+Changed node consideration code to use the safety score instead of a bunch of if else statements. This should hopefully fix an issue where bots only prioritized paths further from the enemy instead of trying to break line of sight as well.
+
+## Config Changes
+- Changed GrabManeaterBaby config name:
+This was done since the name may have been misleading for users. Its new name actually describes what it does! Bots will pickup and calm down the baby Maneater if its crying!
+
 ## 1.0.7 - 2026-3-1
 Waiter, Waiter, more bugs fixed please! Back with another bug fix update. Hopefully, this should be the last of them for a while, other than the "Incompatible with Better Emotes" bug, which I'm still working on.
 
