@@ -4467,7 +4467,7 @@ namespace LethalBots.AI
 			if (grabbableObjectToEvaluate is CaveDwellerPhysicsProp caveDwellerGrabbableObject) // Was gameObject.name.Contains("CaveDwellerEnemy"), but CaveDwellerPhysicsProp is better and more reliable
 			{
 				// The host has config options to allow or disallow the bot to grab the maneater baby
-				if (!Plugin.Config.GrabManeaterBaby.Value)
+				if (!Plugin.Config.TakeCareOfManeaterBaby.Value)
 				{
 					Plugin.LogDebug($"Bot {NpcController.Npc.playerUsername} will not pickup the maneater, pickup is disabled!");
 					return true;

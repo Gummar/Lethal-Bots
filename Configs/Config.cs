@@ -40,7 +40,7 @@ namespace LethalBots.Configs
         [SyncedEntryField] public SyncedEntry<bool> GrabItemsNearEntrances;
         [SyncedEntryField] public SyncedEntry<bool> GrabBeesNest;
         [SyncedEntryField] public SyncedEntry<bool> GrabDeadBodies;
-        [SyncedEntryField] public SyncedEntry<bool> GrabManeaterBaby;
+        [SyncedEntryField] public SyncedEntry<bool> TakeCareOfManeaterBaby;
         [SyncedEntryField] public SyncedEntry<bool> AdvancedManeaterBabyAI;
         [SyncedEntryField] public SyncedEntry<bool> GrabWheelbarrow;
         [SyncedEntryField] public SyncedEntry<bool> GrabShoppingCart;
@@ -131,10 +131,10 @@ namespace LethalBots.Configs
                                       defaultVal: true,
                                       "Should the bot try to grab dead bodies? (NOTE: The bot at the terminal will still teleport them back to the ship!))");
 
-            GrabManeaterBaby = cfg.BindSyncedEntry(ConfigConst.ConfigSectionBehavior,
-                                      "Grab the baby maneater",
+            TakeCareOfManeaterBaby = cfg.BindSyncedEntry(ConfigConst.ConfigSectionBehavior,
+                                      "Take care of baby maneater",
                                       defaultVal: true,
-                                      "Is the bot allowed to grab the baby maneater? (NOTE: The bots do have AI for taking care of the baby maneater, but it's very basic!)");
+                                      "Is the bot allowed to calm down the baby maneater if its crying?");
 
             AdvancedManeaterBabyAI = cfg.BindSyncedEntry(ConfigConst.ConfigSectionBehavior,
                                       "Advanced baby maneater AI",
