@@ -109,6 +109,17 @@ namespace LethalBots.AI.AIStates
                 }
             }
 
+            // HACKHACK: Piggyback off of canInverseTeleport before we can look for players to revive!
+            if (canInverseTeleport)
+            {
+                PlayerControllerB? playerController = ai.LookingForPlayerToRevive(true, true);
+                if (playerController != null)
+                {
+                    ai.State = new RescueAndReviveState(this, playerController);
+                    return;
+                }
+            }
+
             // Is the inverse teleporter on, we should use it!
             if (LethalBotManager.IsInverseTeleporterActive 
                 && canInverseTeleport)

@@ -98,6 +98,14 @@ namespace LethalBots.AI.AIStates
                 return;
             }
 
+            // Check to see if we can revive anyone!
+            PlayerControllerB? playerController = ai.LookingForPlayerToRevive();
+            if (playerController != null)
+            {
+                ai.State = new RescueAndReviveState(this, playerController);
+                return;
+            }
+
             // If we are inside, make the bot go outside so we can transfer loot to the ship
             if (!ai.isOutside)
             {

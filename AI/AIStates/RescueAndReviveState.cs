@@ -94,7 +94,7 @@ namespace LethalBots.AI.AIStates
                 GrabbableObject playerBody = this.playerToRevive.deadBody.grabBodyObject;
                 if (heldItem == null || heldItem != playerBody)
                 {
-                    if (heldItem != null && heldItem.itemProperties.twoHanded)
+                    if (heldItem != null && (heldItem.itemProperties.twoHanded || !ai.HasSpaceInInventory()))
                     {
                         ai.DropItem();
                     }
@@ -350,6 +350,13 @@ namespace LethalBots.AI.AIStates
 
         public static bool CanRevivePlayer(LethalBotAI lethalBotAI, PlayerControllerB playerController)
         {
+            // Make sure there is a vaild dead body!
+            GrabbableObject? playerBody = playerController.deadBody?.grabBodyObject;
+            if (playerBody == null || !playerController.isPlayerDead)
+            {
+                return false;
+            }
+
             // Alright, we prefer Revive Company, then Zaprillator, then Bunkbed Revive.
             if (Plugin.IsModReviveCompanyLoaded && ReviveCompanyCanRevivePlayer(lethalBotAI, playerController))
             {

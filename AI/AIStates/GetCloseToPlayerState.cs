@@ -94,6 +94,14 @@ namespace LethalBots.AI.AIStates
                 }
             }
 
+            // Check to see if we can revive anyone!
+            PlayerControllerB? playerController = ai.LookingForPlayerToRevive();
+            if (playerController != null)
+            {
+                ai.State = new RescueAndReviveState(this, playerController);
+                return;
+            }
+
             // If we are at the company building and have some scrap, we should sell it!
             if (LethalBotManager.AreWeAtTheCompanyBuilding() 
                 && ai.HasScrapInInventory())

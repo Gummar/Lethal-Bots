@@ -75,6 +75,14 @@ namespace LethalBots.AI.AIStates
                 }
             }
 
+            // Check to see if we can revive anyone!
+            PlayerControllerB? playerController = ai.LookingForPlayerToRevive();
+            if (playerController != null)
+            {
+                ai.State = new RescueAndReviveState(this, playerController);
+                return;
+            }
+
             // If we are inside, we need to move outside first!
             if (!ai.isOutside)
             {

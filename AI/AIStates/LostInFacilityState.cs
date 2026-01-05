@@ -1,4 +1,5 @@
-﻿using LethalBots.Constants;
+﻿using GameNetcodeStuff;
+using LethalBots.Constants;
 using LethalBots.Enums;
 using System.Collections;
 using System.Collections.Generic;
@@ -43,6 +44,14 @@ namespace LethalBots.AI.AIStates
                     ai.State = new FetchingObjectState(this, grabbableObject);
                     return;
                 }
+            }
+
+            // Check to see if we can revive anyone!
+            PlayerControllerB? playerController = ai.LookingForPlayerToRevive();
+            if (playerController != null)
+            {
+                ai.State = new RescueAndReviveState(this, playerController);
+                return;
             }
 
             if (ai.isOutside)

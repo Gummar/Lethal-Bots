@@ -168,6 +168,20 @@ namespace LethalBots.AI.AIStates
                 waitForTerminalTime = 0f;
             }
 
+            // Check to see if we can revive anyone!
+            PlayerControllerB? playerController = ai.LookingForPlayerToRevive(true, true);
+            if (playerController != null)
+            {
+                if (npcController.Npc.inTerminalMenu)
+                {
+                    StopAllCoroutines();
+                    ai.LeaveTerminal();
+                    return;
+                }
+                ai.State = new RescueAndReviveState(this, playerController);
+                return;
+            }
+
             // If we are to return to the ship, we should pull the ship lever if needed!
             if (LethalBotManager.AreWeAtTheCompanyBuilding())
             {
