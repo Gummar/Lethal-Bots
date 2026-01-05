@@ -1,7 +1,9 @@
 # Changelog
 
 ## 1.1.1 - 2026-4-1
-Hotfix for the 1.1.0 update. Fixed a potential race condition in safe path system.
+Hotfix for the 1.1.0 update. 
+- Fixed a potential race condition in safe path system.
+- Fixed a logic error where bots checking if an entrance was safe would consider other bots as enemies. (This is since bots are EnemyAI's internally!)
 
 ## 1.1.0 - 2026-4-1
 Its time for the first "real" update that isn't just bug fixes. You can now give bots another role! You can now assign, multiple bots to focus on transferring loot between the facility entrances to the ship. Other bots should recognize this and will leave loot they find outside of the building entrances. There are also some bug fixes included as well!
