@@ -636,7 +636,7 @@ namespace LethalBots.AI
             Vector3 entrancePoint = useEntrancePoint ? entrance.entrancePoint.position : entrance.exitPoint.position;
             foreach (EnemyAI enemy in RoundManager.Instance.SpawnedEnemies)
             {
-                if (!enemy.isEnemyDead && (enemy.transform.position - entrancePoint).sqrMagnitude < 7.7f * 7.7f) // 7.7f is the same distance used by the base game to show the enemy activity nearby message!
+                if (!enemy.isEnemyDead && enemy is not LethalBotAI && (enemy.transform.position - entrancePoint).sqrMagnitude < 7.7f * 7.7f) // 7.7f is the same distance used by the base game to show the enemy activity nearby message!
                 {
                     // We found an enemy near the exit point, so we should not use this entrance!
                     entranceSafetyCache[entrance] = (false, Time.timeSinceLevelLoad);
