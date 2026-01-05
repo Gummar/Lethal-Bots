@@ -4264,21 +4264,37 @@ namespace LethalBots.AI
             return closestDeadPlayer;
         }
 
-		/// <summary>
-		/// Check all conditions for deciding if an item is grabbable or not.
-		/// </summary>
-		/// <param name="grabbableObject">Item to check</param>
-		/// <returns></returns>
-		public bool IsGrabbableObjectGrabbable(GrabbableObject grabbableObject)
+        /// <summary>
+        /// Check all conditions for deciding if an item is grabbable or not.
+        /// </summary>
+        /// <param name="grabbableObject">Item to check</param>
+        /// <param name="enumGrabbable">Type of blacklist checks that should be done or skipped</param>
+        /// <returns></returns>
+        public bool IsGrabbableObjectGrabbable(GrabbableObject grabbableObject, EnumGrabbableObjectCall enumGrabbable = EnumGrabbableObjectCall.Default)
 		{
+			if (enumGrabbable == EnumGrabbableObjectCall.Selling)
+			{
+				Plugin.LogWarning("IsGrabbableObjectGrabbable was called with enumGrabbable set to Selling. You should use IsGrabbableObjectSellable instead!");
+				return IsGrabbableObjectSellable(grabbableObject);
+			}
+
 			if (grabbableObject == null
 				|| !grabbableObject.gameObject.activeSelf)
 			{
 				return false;
 			}
 
-			if (grabbableObject.isHeld
-				|| !grabbableObject.grabbable
+			// If its held, check if we are reviving the player or not
+			if (grabbableObject.isHeld)
+			{
+				// Alright, if we are picking up a player to revive them, check if we are already holding their body!
+				if (enumGrabbable != EnumGrabbableObjectCall.Reviving || !this.HasGrabbableObjectInInventory(grabbableObject, out _))
+				{
+					return false;
+				}
+			}
+
+			if (!grabbableObject.grabbable
 				|| grabbableObject.deactivated)
 			{
 				return false;
