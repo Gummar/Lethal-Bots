@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.1.1 - 2026-4-1
+Bug fix hotfix for the 1.1.0 update. Fixed a potential race condition in safe path system.
+
 ## 1.1.0 - 2026-4-1
 Its time for the first "real" update that isn't just bug fixes. You can now give bots another role! You can now assign, multiple bots to focus on transferring loot between the facility entrances to the ship. Other bots should recognize this and will leave loot they find outside of the building entrances. There are also some bug fixes included as well!
 
