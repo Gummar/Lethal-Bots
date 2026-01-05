@@ -335,14 +335,10 @@ namespace LethalBots
                                null,
                                null,
                                new HarmonyMethod(typeof(ReviveCompanyPlayerControllerBPatchPatch), nameof(ReviveCompanyPlayerControllerBPatchPatch.SetHoverTipAndCurrentInteractTriggerPatch_Transpiler)));
-                _harmony.CreateReversePatcher(AccessTools.Method(AccessTools.TypeByName("OPJosMod.ReviveCompany.Patches.PlayerControllerBPatch"), "canRevive"), 
-                    new HarmonyMethod(typeof(ReviveCompanyPlayerControllerBPatchPatch), nameof(ReviveCompanyPlayerControllerBPatchPatch.CanRevive_ReversePatch))).Patch(HarmonyReversePatchType.Snapshot);
             }
             if (IsModBunkbedReviveLoaded)
             {
                 _harmony.PatchAll(typeof(BunkbedControllerPatch));
-                _harmony.CreateReversePatcher(AccessTools.Method(AccessTools.TypeByName("BunkbedRevive.BunkbedNetworking"), "RevivePlayerServerRpc"),
-                    new HarmonyMethod(typeof(BunkbedNetworkingPatch), nameof(BunkbedNetworkingPatch.RevivePlayerServerRpc_ReversePatch))).Patch(HarmonyReversePatchType.Snapshot);
             }
             if (IsModZaprillatorLoaded)
             {

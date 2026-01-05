@@ -2707,6 +2707,13 @@ namespace LethalBots.Managers
             return true;
         }
 
+        /// <summary>
+        /// Retrieves all LethalBotAI instances that are currently owned by the local player.
+        /// </summary>
+        /// <returns>
+        /// An array of LethalBotAI objects owned by the local player. The array is empty if the local player does not
+        /// own any LethalBotAI instances.
+        /// </returns>
         public LethalBotAI[] GetLethalBotsAIOwnedByLocal()
         {
             StartOfRound instanceSOR = StartOfRound.Instance;
@@ -2715,6 +2722,29 @@ namespace LethalBots.Managers
             for (int i = 0; i < instanceSOR.allPlayerScripts.Length; i++)
             {
                 lethalBotAI = GetLethalBotAIIfLocalIsOwner(instanceSOR.allPlayerScripts[i]);
+                if (lethalBotAI != null)
+                {
+                    results.Add(lethalBotAI);
+                }
+            }
+            return results.ToArray();
+        }
+
+        /// <summary>
+        /// Retrieves all active LethalBotAI instances associated with the current game round.
+        /// </summary>
+        /// <returns>
+        /// An array of LethalBotAI objects representing all active bots in the current round. The array is empty if no
+        /// bots are present.
+        /// </returns>
+        public LethalBotAI[] GetLethalBotAIs()
+        {
+            StartOfRound instanceSOR = StartOfRound.Instance;
+            List<LethalBotAI> results = new List<LethalBotAI>();
+            LethalBotAI? lethalBotAI;
+            for (int i = 0; i < instanceSOR.allPlayerScripts.Length; i++)
+            {
+                lethalBotAI = GetLethalBotAI(instanceSOR.allPlayerScripts[i]);
                 if (lethalBotAI != null)
                 {
                     results.Add(lethalBotAI);

@@ -301,6 +301,15 @@ namespace LethalBots.AI
                 }
                 return;
             }
+            else if (message.Contains("save me"))
+            {
+                if (playerWhoSentMessage != null)
+                {
+                    playerWhoSentMessage.KillPlayer(Vector3.zero, true, CauseOfDeath.Electrocution, 3, default);
+                    playerWhoSentMessage.deadBody.transform.position = playerWhoSentMessage.transform.position + Vector3.up;
+                    ai.State = new RescueAndReviveState(this, playerWhoSentMessage);
+                }
+            }
         }
 
         /// <summary>

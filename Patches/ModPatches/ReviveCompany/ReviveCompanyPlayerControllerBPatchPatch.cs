@@ -115,7 +115,5 @@ namespace LethalBots.Patches.ModPatches.ReviveCompany
 
             return codes.AsEnumerable();
         }
-
-        public static bool CanRevive_ReversePatch(RagdollGrabbableObject revivingBody) => throw new NotImplementedException("Stub LethalBot.Patches.ModPatches.ReviveCompany.ReviveCompanyPlayerControllerBPatchPatch.CanRevive_ReversePatch");
     }
 }

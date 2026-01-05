@@ -20,6 +20,9 @@ namespace LethalBots.AI.AIStates
 {
     public class RescueAndReviveState : AIState
     {
+        private static Func<RagdollGrabbableObject, bool>? ReviveCompanyCanReviveDelegate = null;
+        private static Action<int>? BunkbedReviveRPCDelegate = null;
+
         private PlayerControllerB playerToRevive;
         private ReviveMethod reviveMethod = ReviveMethod.None;
         private Coroutine? fallbackCoroutine;
@@ -77,6 +80,7 @@ namespace LethalBots.AI.AIStates
             }
 
             // If they are no longer reviveable, revert to previous state
+            reviveMethod = DetermineBestReviveMethod();
             if (!CanRevivePlayer())
             {
                 Plugin.LogInfo($"[{npcController.Npc.playerUsername}] Cannot revive player {playerToRevive.playerUsername} with method {reviveMethod}. Reverting to previous state.");
@@ -169,15 +173,15 @@ namespace LethalBots.AI.AIStates
         private ReviveMethod DetermineBestReviveMethod()
         {
             // Alright, we prefer Revive Company, then Zaprillator, then Bunkbed Revive.
-            if (Plugin.IsModReviveCompanyLoaded && ReviveCompanyCanRevivePlayer(this.playerToRevive))
+            if (Plugin.IsModReviveCompanyLoaded && ReviveCompanyCanRevivePlayer(ai, this.playerToRevive))
             {
                 return ReviveMethod.ModReviveCompany;
             }
-            else if (Plugin.IsModZaprillatorLoaded && ZaprillatorCanRevivePlayer(this.playerToRevive))
+            else if (Plugin.IsModZaprillatorLoaded && ZaprillatorCanRevivePlayer(ai, this.playerToRevive))
             {
                 return ReviveMethod.ModZaprillator;
             }
-            else if (Plugin.IsModBunkbedReviveLoaded && BunkbedReviveCanRevivePlayer(this.playerToRevive))
+            else if (Plugin.IsModBunkbedReviveLoaded && BunkbedReviveCanRevivePlayer(ai, this.playerToRevive))
             {
                 return ReviveMethod.ModBunkbedRevive;
             }
@@ -193,15 +197,61 @@ namespace LethalBots.AI.AIStates
         /// If the mod is not loaded or the required method is
         /// unavailable, the method returns false.
         /// </remarks>
+        /// <param name="lethalBotAI">The bot who is checking if the player can be revived.</param>
         /// <param name="playerToRevive">The player to check for revival eligibility.</param>
         /// <returns>true if the player can be revived using the ReviveCompany mod; otherwise, false.</returns>
-        private bool ReviveCompanyCanRevivePlayer(PlayerControllerB playerToRevive)
+        private static bool ReviveCompanyCanRevivePlayer(LethalBotAI lethalBotAI, PlayerControllerB playerToRevive)
         {
             if (Plugin.IsModReviveCompanyLoaded)
             {
+                if (ReviveCompanyCanReviveDelegate == null)
+                {
+                    try
+                    {
+                        MethodInfo reviveCompanyCanReviveMethod = AccessTools.Method(AccessTools.TypeByName("OPJosMod.ReviveCompany.Patches.PlayerControllerBPatch"), "canRevive");
+                        if (reviveCompanyCanReviveMethod != null)
+                        {
+                            ReviveCompanyCanReviveDelegate = (Func<RagdollGrabbableObject, bool>)Delegate.CreateDelegate(typeof(Func<RagdollGrabbableObject, bool>), reviveCompanyCanReviveMethod);
+                        }
+                    }
+                    catch (Exception e) { Plugin.LogError(e.Message); }
+                    if (ReviveCompanyCanReviveDelegate == null)
+                    {
+                        Plugin.LogInfo("Failed to create Delegate!?");
+                        return false;
+                    }
+                }
+
+                Plugin.LogInfo("Revive before checking RagdollGrabbableObject");
                 if (playerToRevive.deadBody.grabBodyObject is RagdollGrabbableObject ragdollGrabbableObject)
                 {
-                    return ReviveCompanyPlayerControllerBPatchPatch.CanRevive_ReversePatch(ragdollGrabbableObject);
+                    // So the base function ignores the local player, so I have to recreate the method in order for this to work....
+                    if (playerToRevive == GameNetworkManager.Instance.localPlayerController)
+                    {
+                        if (GlobalVariables.RemainingRevives <= 0)
+                        {
+                            return false;
+                        }
+                        // Sigh, got to love being forced to recreate methods.......
+                        //if (ragdollGrabbableObject != null && ragdollGrabbableObject.ragdoll != null && ragdollGrabbableObject.ragdoll.playerScript != null && GameNetworkManager.Instance.localPlayerController.playerClientId == ragdollGrabbableObject.ragdoll.playerScript.playerClientId)
+                        //{
+                        //    return false;
+                        //}
+                        int playerClientId = (int)ragdollGrabbableObject.ragdoll.playerScript.playerClientId;
+                        if (GeneralUtil.HasPlayerTeleported(playerClientId) && !ConfigVariables.reviveTeleportedBodies)
+                        {
+                            return false;
+                        }
+                        //Plugin.LogDebug(Time.time + " | " + GeneralUtil.GetPlayersDiedAtTime(playerClientId));
+                        if (Time.time - GeneralUtil.GetPlayersDiedAtTime(playerClientId) > (float)ConfigVariables.TimeUnitlCantBeRevived && !ConfigVariables.InfiniteReviveTime)
+                        {
+                            return false;
+                        }
+
+                        return true;
+                    }
+
+                    return ReviveCompanyCanReviveDelegate.Invoke(ragdollGrabbableObject);
                 }
             }
 
@@ -215,9 +265,10 @@ namespace LethalBots.AI.AIStates
         /// This method currently does not support player revival through the Zaprillator mod,
         /// regardless of the player's state or mod status.
         /// </remarks>
+        /// <param name="lethalBotAI">The bot who is checking if the player can be revived.</param>
         /// <param name="playerToRevive">The player to check for revival eligibility by the Zaprillator mod.</param>
         /// <returns>Always returns false, indicating that the Zaprillator mod cannot revive the specified player.</returns>
-        private bool ZaprillatorCanRevivePlayer(PlayerControllerB playerToRevive)
+        private static bool ZaprillatorCanRevivePlayer(LethalBotAI lethalBotAI, PlayerControllerB playerToRevive)
         {
             // BROKEN ON PURPOSE!
             // For some reason Zaprillator is completely marked as internal, making it extremely difficult to access any of its methods or properties.
@@ -233,14 +284,33 @@ namespace LethalBots.AI.AIStates
         /// <summary>
         /// Determines whether the specified player can be revived using Bunkbed Revive.
         /// </summary>
+        /// <param name="lethalBotAI">The bot who is checking if the player can be revived.</param>
         /// <param name="playerToRevive">The player to check for Bunkbed Revive eligibility.</param>
         /// <returns>true if the player can be revived using Bunkbed Revive; otherwise, false.</returns>
-        private bool BunkbedReviveCanRevivePlayer(PlayerControllerB playerToRevive)
+        private static bool BunkbedReviveCanRevivePlayer(LethalBotAI lethalBotAI, PlayerControllerB playerToRevive)
         {
             // Bunkbed Revive can only be used on the ship!
-            if (!npcController.Npc.isInElevator && !npcController.Npc.isInHangarShipRoom)
+            if (!lethalBotAI.NpcController.Npc.isInElevator && !lethalBotAI.NpcController.Npc.isInHangarShipRoom)
             {
                 return false;
+            }
+
+            // Find the RPC method before we do anything!
+            if (BunkbedReviveRPCDelegate == null)
+            {
+                try
+                {
+                    MethodInfo bunkbedReviveRPCMethod = AccessTools.Method(AccessTools.TypeByName("BunkbedRevive.BunkbedNetworking"), "RevivePlayerServerRpc");
+                    if (bunkbedReviveRPCMethod != null)
+                    {
+                        BunkbedReviveRPCDelegate = (Action<int>)Delegate.CreateDelegate(typeof(Action<int>), bunkbedReviveRPCMethod);
+                    }
+                }
+                catch (Exception e) { Plugin.LogError(e.Message); }
+                if (BunkbedReviveRPCDelegate == null)
+                {
+                    return false;
+                }
             }
 
             // Check if the player can be revived using Bunkbed Revive
@@ -268,14 +338,33 @@ namespace LethalBots.AI.AIStates
             switch (reviveMethod)
             {
                 case ReviveMethod.ModReviveCompany:
-                    return ReviveCompanyCanRevivePlayer(this.playerToRevive);
+                    return ReviveCompanyCanRevivePlayer(ai, this.playerToRevive);
                 case ReviveMethod.ModBunkbedRevive:
-                    return BunkbedReviveCanRevivePlayer(this.playerToRevive);
+                    return BunkbedReviveCanRevivePlayer(ai, this.playerToRevive);
                 case ReviveMethod.ModZaprillator:
-                    return ZaprillatorCanRevivePlayer(this.playerToRevive);
+                    return ZaprillatorCanRevivePlayer(ai, this.playerToRevive);
                 default:
                     return false;
             }
+        }
+
+        public static bool CanRevivePlayer(LethalBotAI lethalBotAI, PlayerControllerB playerController)
+        {
+            // Alright, we prefer Revive Company, then Zaprillator, then Bunkbed Revive.
+            if (Plugin.IsModReviveCompanyLoaded && ReviveCompanyCanRevivePlayer(lethalBotAI, playerController))
+            {
+                return true;
+            }
+            else if (Plugin.IsModZaprillatorLoaded && ZaprillatorCanRevivePlayer(lethalBotAI, playerController))
+            {
+                return true;
+            }
+            else if (Plugin.IsModBunkbedReviveLoaded && BunkbedReviveCanRevivePlayer(lethalBotAI, playerController))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private IEnumerator findFallbackSpot()
@@ -453,7 +542,7 @@ namespace LethalBots.AI.AIStates
             yield return new WaitForSeconds(ConfigVariables.reviveTime);
 
             // Dang it, we were too late.....
-            if (this.playerToRevive == null || !ReviveCompanyCanRevivePlayer(this.playerToRevive))
+            if (this.playerToRevive == null || !ReviveCompanyCanRevivePlayer(ai, this.playerToRevive))
             {
                 StopReviveCoroutine();
                 yield break;
@@ -473,6 +562,13 @@ namespace LethalBots.AI.AIStates
             RpcMessageHandler.SendRpcMessage(message);
             ResponseHandler.SentMessageNeedResponses(message);
             GeneralUtil.RevivePlayer((int)playerBody.ragdoll.playerScript.playerClientId);
+
+            // HACKHACK: Fake responses for all bots!
+            foreach (LethalBotAI lethalBotAI in LethalBotManager.Instance.GetLethalBotAIs())
+            {
+                ResponseHandler.RecievedResponse(MessageTasks.RevivePlayer);
+            }
+
             RpcMessage message2 = new RpcMessage(MessageTasks.TurnOffGhostMode, playerBody.ragdoll.playerScript.playerClientId.ToString(), (int)GameNetworkManager.Instance.localPlayerController.playerClientId, MessageCodes.Request);
             RpcMessageHandler.SendRpcMessage(message2);
             StopReviveCoroutine();
@@ -564,14 +660,15 @@ namespace LethalBots.AI.AIStates
             }
 
             // Move towards the bunkbed
-            float sqrDistToBunkbed = (bunkbedController.transform.position - npcController.Npc.transform.position).sqrMagnitude;
+            Vector3 bunkbedPos = RoundManager.Instance.GetNavMeshPosition(bunkbedController.transform.position, default, 2.7f);
+            float sqrDistToBunkbed = (bunkbedPos - npcController.Npc.transform.position).sqrMagnitude;
             if (sqrDistToBunkbed >= Const.DISTANCE_CLOSE_ENOUGH_TO_DESTINATION * Const.DISTANCE_CLOSE_ENOUGH_TO_DESTINATION)
             {
                 // Alright lets go outside!
-                ai.SetDestinationToPositionLethalBotAI(bunkbedController.transform.position);
+                ai.SetDestinationToPositionLethalBotAI(bunkbedPos);
 
                 // Sprint if far enough
-                if (!npcController.WaitForFullStamina && sqrDistToBunkbed > Const.DISTANCE_START_RUNNING * Const.DISTANCE_START_RUNNING) // NEEDTOVALIDATE: Should we use the distance to the ship or the safe position?
+                if (!npcController.WaitForFullStamina && sqrDistToBunkbed > Const.DISTANCE_START_RUNNING * Const.DISTANCE_START_RUNNING)
                 {
                     npcController.OrderToSprint();
                 }
@@ -596,7 +693,7 @@ namespace LethalBots.AI.AIStates
                 }
 
                 RagdollGrabbableObject? ragdollGrabbableObject = ai.HeldItem as RagdollGrabbableObject;
-                if (ragdollGrabbableObject == null)
+                if (ragdollGrabbableObject == null || BunkbedReviveRPCDelegate == null)
                 {
                     return;
                 }
@@ -613,7 +710,7 @@ namespace LethalBots.AI.AIStates
                 Terminal terminalScript = TerminalManager.Instance.GetTerminal();
                 terminalScript.groupCredits -= reviveCost;
                 LethalBotManager.Instance.SyncGroupCreditsForNotOwnerTerminalServerRpc(terminalScript.groupCredits, terminalScript.numberOfItemsInDropship);
-                BunkbedNetworkingPatch.RevivePlayerServerRpc_ReversePatch(ragdollGrabbableObject.bodyID.Value);
+                BunkbedReviveRPCDelegate.Invoke(ragdollGrabbableObject.bodyID.Value);
                 npcController.Npc?.DespawnHeldObject();
             }
         }
