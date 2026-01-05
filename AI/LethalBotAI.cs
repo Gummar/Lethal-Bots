@@ -4233,7 +4233,7 @@ namespace LethalBots.AI
                 }
 
                 // Object close to awareness distance ?
-                if (sqrDistanceEyeDeadPlayer < Const.LETHAL_BOT_OBJECT_AWARNESS * Const.LETHAL_BOT_OBJECT_AWARNESS)
+                if (grabbableObject.isHeld || sqrDistanceEyeDeadPlayer < Const.LETHAL_BOT_OBJECT_AWARNESS * Const.LETHAL_BOT_OBJECT_AWARNESS)
                 {
                     Plugin.LogDebug($"awareness {grabbableObject.name}");
                 }
@@ -4339,7 +4339,7 @@ namespace LethalBots.AI
 			}
 
 			// Are we holding a two handed item and is the item we are grabbing two handed
-			if (!AreHandsFree() && HeldItem.itemProperties.twoHanded)
+			if (!AreHandsFree() && enumGrabbable != EnumGrabbableObjectCall.Reviving && HeldItem.itemProperties.twoHanded)
 			{
 				// If the item requires one hand then we can set down our large item and pick up the small one!
 				if (grabbableObject.itemProperties.twoHanded 
@@ -4356,7 +4356,8 @@ namespace LethalBots.AI
 			if (((!Plugin.Config.GrabItemsNearEntrances.Value 
 					&& !LethalBotManager.Instance.AreAllHumanPlayersDead())
                     || (LethalBotManager.Instance.LootTransferPlayers.Count > 0 && !shouldReturnToShip))
-                && !botIsTransferringItems)
+                && !botIsTransferringItems 
+				&& enumGrabbable != EnumGrabbableObjectCall.Reviving)
 			{
 				foreach (EntranceTeleport entrance in EntrancesTeleportArray)
 				{
