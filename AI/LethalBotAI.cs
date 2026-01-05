@@ -1634,13 +1634,13 @@ namespace LethalBots.AI
 					token.ThrowIfCancellationRequested();
 				}
 
-				// Give the main thread a chance to think
-				if (i % 10 == 0)
+                // Give the main thread a chance to think
+                EnemyAI? enemy = instanceRM.SpawnedEnemies[i];
+                if (i % 10 == 0)
 				{
 					await Task.Yield();
 				}
 
-				EnemyAI? enemy = instanceRM.SpawnedEnemies[i];
 				Plugin.LogDebug($"{NpcController.Npc.playerUsername} is checking {enemy.enemyType.enemyName} for exposure...");
 				if (enemy == null)
 				{
@@ -1738,14 +1738,14 @@ namespace LethalBots.AI
 					token.ThrowIfCancellationRequested();
 				}
 
-				// Give the main thread a chance to think
-				if (i % 5 == 0)
+                // Give the main thread a chance to think
+                QuicksandTrigger? quicksand = QuicksandArray[i];
+                if (i % 5 == 0)
 				{
 					await Task.Yield();
 				}
 
-				var quicksand = QuicksandArray[i];
-				if (!quicksand.isActiveAndEnabled)
+				if (quicksand == null || !quicksand.isActiveAndEnabled)
 					continue;
 
 				Collider? collider = quicksand.gameObject.GetComponent<Collider>();
