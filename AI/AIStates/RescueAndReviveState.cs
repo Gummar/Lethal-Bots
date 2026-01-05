@@ -22,6 +22,7 @@ namespace LethalBots.AI.AIStates
     {
         private static Func<RagdollGrabbableObject, bool>? ReviveCompanyCanReviveDelegate = null;
         private static Action<int>? BunkbedReviveRPCDelegate = null;
+        private static readonly FieldInfo isScanning = AccessTools.Field(typeof(PatcherTool), "isScanning");
 
         private PlayerControllerB playerToRevive;
         private ReviveMethod reviveMethod = ReviveMethod.None;
@@ -62,6 +63,16 @@ namespace LethalBots.AI.AIStates
             base.OnEnterState();
         }
 
+        public override void OnExitState(AIState newState)
+        {
+            // If we got interupted while using the Zap Gun, break the beam!
+            if (ai.HeldItem is PatcherTool patcherTool && patcherTool.isShocking)
+            {
+                patcherTool.UseItemOnClient(true);
+            }
+            base.OnExitState(newState);
+        }
+
         public override void DoAI()
         {
             // Check for enemies
@@ -80,7 +91,6 @@ namespace LethalBots.AI.AIStates
             }
 
             // If they are no longer reviveable, revert to previous state
-            reviveMethod = DetermineBestReviveMethod();
             if (!CanRevivePlayer())
             {
                 Plugin.LogInfo($"[{npcController.Npc.playerUsername}] Cannot revive player {playerToRevive.playerUsername} with method {reviveMethod}. Reverting to previous state.");
@@ -121,6 +131,7 @@ namespace LethalBots.AI.AIStates
                     break;
                 }
                 case ReviveMethod.ModZaprillator:
+                    DoZaprillatorLogic();
                     break;
                 case ReviveMethod.ModBunkbedRevive:
                 {
@@ -261,21 +272,16 @@ namespace LethalBots.AI.AIStates
         /// <summary>
         /// Determines whether the Zaprillator mod can revive the specified player.
         /// </summary>
-        /// <remarks>
-        /// This method currently does not support player revival through the Zaprillator mod,
-        /// regardless of the player's state or mod status.
-        /// </remarks>
         /// <param name="lethalBotAI">The bot who is checking if the player can be revived.</param>
         /// <param name="playerToRevive">The player to check for revival eligibility by the Zaprillator mod.</param>
         /// <returns>Always returns false, indicating that the Zaprillator mod cannot revive the specified player.</returns>
         private static bool ZaprillatorCanRevivePlayer(LethalBotAI lethalBotAI, PlayerControllerB playerToRevive)
         {
-            // BROKEN ON PURPOSE!
-            // For some reason Zaprillator is completely marked as internal, making it extremely difficult to access any of its methods or properties.
-            // This will be fixed once I figure out how to use Harmony's AccessTools to create reverse patches for internal methods.
+            // FIXME: This doesn't consider ANY of the config options,
+            // this is due to Zaprillator being marked as Internal! 
             if (Plugin.IsModZaprillatorLoaded)
             {
-                return false;
+                return lethalBotAI.HasGrabbableObjectInInventory(FindZapGun, out _);
             }
 
             return false;
@@ -651,6 +657,150 @@ namespace LethalBots.AI.AIStates
             }
         }
 
+        private IEnumerator reviveUsingZaprillator()
+        {
+            RagdollGrabbableObject? playerBody = this.playerToRevive.deadBody.grabBodyObject as RagdollGrabbableObject;
+            if (playerBody == null)
+            {
+                Plugin.LogError($"[{npcController.Npc.playerUsername}] Tried to revive player {playerToRevive.playerUsername} using Zaprillator but their body is not a RagdollGrabbableObject!");
+                StopReviveCoroutine();
+                yield break;
+            }
+
+            // Alright, look at the body first
+            npcController.OrderToLookAtPosition(playerBody.transform.position);
+            yield return new WaitForSeconds(2f); // Two seconds should be enough time!
+
+            if (!ai.HasGrabbableObjectInInventory(FindZapGun, out int itemSlot))
+            {
+                Plugin.LogWarning($"[{npcController.Npc.playerUsername}] Tried to revive player {playerToRevive.playerUsername} using Zaprillator but they don't have a zap gun!");
+                StopReviveCoroutine();
+                yield break;
+            }
+
+            // If we are somehow holding a two handed item, drop it first!
+            if (!ai.AreHandsFree() && ai.HeldItem.itemProperties.twoHanded)
+            {
+                ai.DropItem();
+                yield return null;
+            }
+
+            // Swap to zap gun and give time for the weapon switch to happen!
+            ai.SwitchItemSlotsAndSync(itemSlot);
+            yield return new WaitForSeconds(1f); // One second to allow RPC to got to server and back to us!
+
+            // Alright, are we holding the Zap Gun?
+            GrabbableObject? heldItem = ai.HeldItem;
+            if (heldItem is not PatcherTool patcherTool)
+            {
+                Plugin.LogWarning($"[{npcController.Npc.playerUsername}] Tried to revive player {playerToRevive.playerUsername} using Zaprillator but they either don't have a zap gun or item switch failed!");
+                StopReviveCoroutine();
+                yield break;
+            }
+
+            // Revive them now!
+            heldItem.UseItemOnClient(true);
+            yield return null;
+            yield return new WaitUntil(() => patcherTool == null || (bool)isScanning.GetValue(patcherTool) == false); // Wait a bit!
+
+            // Did we hit em?
+            if (!patcherTool.isShocking)
+            {
+                Plugin.LogWarning($"[{npcController.Npc.playerUsername}] Tried to revive player {playerToRevive.playerUsername} using Zaprillator but the Zap Gun failed to find the body!");
+                StopReviveCoroutine();
+                yield break;
+            }
+
+            // Alright, hold the beam.
+            // Zaprillator revives the player after one second!
+            yield return new WaitForSeconds(1f);
+            yield return null; // Make sure the revive actually goes through!
+
+            // Still shocking......I think we hit the wrong target....
+            if (patcherTool.isShocking)
+            {
+                heldItem.UseItemOnClient(true); // Break the beam!
+                Plugin.LogWarning($"[{npcController.Npc.playerUsername}] Tried to revive player {playerToRevive.playerUsername} using Zaprillator but the Zap Gun hit the wrong target!");
+                StopReviveCoroutine();
+                yield break;
+            }
+
+            // Alright, we are no longer shocking the target, but the revive is done through an RPC.
+            // This means we need to wait a bit before terminating the coroutine. Incase we have to do this again.
+            yield return new WaitForSeconds(1f); // One second to allow RPC to got to server and back to us!
+            StopReviveCoroutine();
+        }
+
+        /// <summary>
+        /// Helper function that handles reviving our target player
+        /// </summary>
+        /// <remarks>
+        /// This is done so if revive company isn't installed, my mod won't error out!
+        /// </remarks>
+        private void DoZaprillatorLogic()
+        {
+            // Wait for fallback to be caculated
+            if (!fallbackPos.HasValue)
+            {
+                StartFallbackCoroutine(); // Just in case the coroutine failed somehow!
+                return;
+            }
+
+            // Move towards our fallback position via safe path
+            float sqrDistToFallback = (fallbackPos.Value - npcController.Npc.transform.position).sqrMagnitude;
+            if (sqrDistToFallback >= Const.DISTANCE_CLOSE_ENOUGH_TO_DESTINATION * Const.DISTANCE_CLOSE_ENOUGH_TO_DESTINATION)
+            {
+                // Find a safe path to our fallback spot
+                StartSafePathCoroutine();
+
+                float sqrMagDistanceToSafePos = (this.safePathPos - npcController.Npc.transform.position).sqrMagnitude;
+                if (sqrMagDistanceToSafePos >= Const.DISTANCE_CLOSE_ENOUGH_TO_DESTINATION * Const.DISTANCE_CLOSE_ENOUGH_TO_DESTINATION)
+                {
+                    // Alright lets go outside!
+                    ai.SetDestinationToPositionLethalBotAI(this.safePathPos);
+
+                    // Sprint if far enough
+                    if (!npcController.WaitForFullStamina && sqrMagDistanceToSafePos > Const.DISTANCE_START_RUNNING * Const.DISTANCE_START_RUNNING) // NEEDTOVALIDATE: Should we use the distance to the ship or the safe position?
+                    {
+                        npcController.OrderToSprint();
+                    }
+                    else
+                    {
+                        npcController.OrderToStopSprint();
+                    }
+
+                    ai.OrderMoveToDestination();
+                }
+                else
+                {
+                    // Wait here until its safe to move to the entrance
+                    ai.StopMoving();
+                    npcController.OrderToStopSprint();
+                }
+
+            }
+            else
+            {
+                // Alright we are close enough to the fallback position, stop moving
+                ai.StopMoving();
+                npcController.OrderToStopSprint();
+                StopSafePathCoroutine(); // Don't need this anymore
+
+                // We need to set down the body before reviving
+                shouldPickupBody = false; // Don't try to pick up the body again, we need it on the ground for the revive
+                if (!ai.AreHandsFree())
+                {
+                    ai.DropItem();
+                    return;
+                }
+
+                if (reviveCoroutine == null)
+                {
+                    reviveCoroutine = ai.StartCoroutine(reviveUsingZaprillator());
+                }
+            }
+        }
+
         /// <summary>
         /// Helper function that moves the bot over to the bunkbed to do the revive
         /// </summary>
@@ -776,6 +926,18 @@ namespace LethalBots.AI.AIStates
             // The host will update the number of living players when the bot is spawned
             StartOfRound.Instance.livingPlayers++;
             npcController.Npc?.DespawnHeldObject();
+        }
+
+        /// <summary>
+        /// Checks if the bot has the Zap Gun in its inventory!
+        /// </summary>
+        /// <remarks>
+        /// Can't use the default FindObject since its a member function not static!
+        /// </remarks>
+        /// <inheritdoc cref="AIState.FindObject(GrabbableObject)"/>
+        private static bool FindZapGun(GrabbableObject item)
+        {
+            return item is PatcherTool zapGun && !zapGun.insertedBattery.empty; // For anyone wondering PatcherTool is the internal class name for the Zap Gun!
         }
 
         private void StopReviveCoroutine()

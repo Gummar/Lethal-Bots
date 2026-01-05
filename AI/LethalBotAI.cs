@@ -4079,7 +4079,7 @@ namespace LethalBots.AI
 				}
 
 				// Black listed ? 
-				if (IsGrabbableObjectBlackListed(grabbableObject, true))
+				if (IsGrabbableObjectBlackListed(grabbableObject, EnumGrabbableObjectCall.Selling))
 				{
 					continue;
 				}
@@ -4197,20 +4197,13 @@ namespace LethalBots.AI
                 }
 
                 // Black listed ? 
-                if (IsGrabbableObjectBlackListed(grabbableObject))
+                if (IsGrabbableObjectBlackListed(grabbableObject, EnumGrabbableObjectCall.Reviving))
                 {
                     continue;
                 }
 
                 // Object on ship
                 if (shipOnly && !grabbableObject.isInElevator && !grabbableObject.isInShipRoom)
-                {
-                    continue;
-                }
-
-                // Object in cruiser vehicle
-                if (grabbableObject.transform.parent != null
-                    && grabbableObject.transform.parent.name.StartsWith("CompanyCruiser"))
                 {
                     continue;
                 }
@@ -4587,15 +4580,15 @@ namespace LethalBots.AI
 		/// Checks if the given object is blacklisted
 		/// </summary>
 		/// <param name="grabbableObjectToEvaluate">The object to check</param>
-		/// <param name="isSelling">Is the bot going to sell this object</param>
+		/// <param name="enumGrabbable">Type of blacklist checks that should be done or skipped</param>
 		/// <returns>true: this object is blacklisted. false: we are allowed to pick up this object</returns>
-		private bool IsGrabbableObjectBlackListed(GrabbableObject grabbableObjectToEvaluate, bool isSelling = false)
+		private bool IsGrabbableObjectBlackListed(GrabbableObject grabbableObjectToEvaluate, EnumGrabbableObjectCall enumGrabbable = EnumGrabbableObjectCall.Default)
 		{
 			// Bee nest
 			GameObject gameObject = grabbableObjectToEvaluate.gameObject;
 			if (!Plugin.Config.GrabBeesNest.Value 
-				&& !isSelling
-				&& gameObject.name.Contains("RedLocustHive"))
+				&& enumGrabbable != EnumGrabbableObjectCall.Selling
+                && gameObject.name.Contains("RedLocustHive"))
 			{
 				return true;
 			}
@@ -4603,8 +4596,9 @@ namespace LethalBots.AI
 			// Dead bodies
 			// TODO: Probably should add a desperation mechanic where they only sell if we won't make the quota
 			if (!Plugin.Config.GrabDeadBodies.Value
-				&& !isSelling
-				&& gameObject.name.Contains("RagdollGrabbableObject")
+				&& enumGrabbable != EnumGrabbableObjectCall.Selling
+				&& enumGrabbable != EnumGrabbableObjectCall.Reviving
+                && gameObject.name.Contains("RagdollGrabbableObject")
 				&& gameObject.tag == "PhysicsProp"
 				&& gameObject.GetComponentInParent<DeadBodyInfo>() != null)
 			{
@@ -4653,7 +4647,7 @@ namespace LethalBots.AI
 			}
 
 			// Giant Kiwi/Sapsucker eggs
-			if (!isSelling && grabbableObjectToEvaluate is KiwiBabyItem egg)
+			if (enumGrabbable != EnumGrabbableObjectCall.Selling && grabbableObjectToEvaluate is KiwiBabyItem egg)
 			{
 				GiantKiwiAI giantKiwiAI = egg.mamaAI;
 				if (giantKiwiAI == null || giantKiwiAI.isEnemyDead)
@@ -4664,21 +4658,21 @@ namespace LethalBots.AI
 			}
 
 			// Wheelbarrow
-			if ((!Plugin.Config.GrabWheelbarrow.Value || isSelling)
+			if ((!Plugin.Config.GrabWheelbarrow.Value || enumGrabbable == EnumGrabbableObjectCall.Selling)
 				&& gameObject.name.Contains("Wheelbarrow"))
 			{
 				return true;
 			}
 
 			// ShoppingCart
-			if ((!Plugin.Config.GrabShoppingCart.Value || isSelling)
+			if ((!Plugin.Config.GrabShoppingCart.Value || enumGrabbable == EnumGrabbableObjectCall.Selling)
 				&& gameObject.name.Contains("ShoppingCart"))
 			{
 				return true;
 			}
 
 			// ZedDogs!
-			if (isSelling && gameObject.name.Contains("ZeddogPlushie"))
+			if (enumGrabbable == EnumGrabbableObjectCall.Selling && gameObject.name.Contains("ZeddogPlushie"))
 			{
 				return true;
 			}
