@@ -676,6 +676,7 @@ namespace LethalBots.AI.AIStates
             for (int i = 0; i < ai.allAINodes.Length; i++)
             {
                 // Give the main thread a chance to do something else
+                var node = ai.allAINodes[i];
                 if (i % maxAsync == 0)
                 {
                     // This feels like too much!
@@ -684,7 +685,6 @@ namespace LethalBots.AI.AIStates
                 }
 
                 // Check if the node is too close to the enemy
-                var node = ai.allAINodes[i];
                 if (node == null)
                 {
                     continue;
