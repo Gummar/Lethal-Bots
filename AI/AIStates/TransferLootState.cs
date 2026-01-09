@@ -81,6 +81,14 @@ namespace LethalBots.AI.AIStates
                 return;
             }
 
+            // Check to see if we can revive anyone!
+            PlayerControllerB? playerController = ai.LookingForPlayerToRevive();
+            if (playerController != null)
+            {
+                ai.State = new RescueAndReviveState(this, playerController);
+                return;
+            }
+
             // Check for object to grab
             if (ai.HasSpaceInInventory())
             {
@@ -95,14 +103,6 @@ namespace LethalBots.AI.AIStates
             {
                 // If our inventory is full, return to the ship to drop our stuff off
                 ai.State = new ReturnToShipState(this);
-                return;
-            }
-
-            // Check to see if we can revive anyone!
-            PlayerControllerB? playerController = ai.LookingForPlayerToRevive();
-            if (playerController != null)
-            {
-                ai.State = new RescueAndReviveState(this, playerController);
                 return;
             }
 

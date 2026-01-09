@@ -1165,7 +1165,17 @@ namespace LethalBots.Managers
             // If the bot was revived, we need to update the spectator boxes to reflect this!
             if (GameNetworkManager.Instance.localPlayerController.isPlayerDead)
             {
-                HUDManager.Instance.UpdateBoxesSpectateUI();
+                // Ok, the base game only removes spectator boxes if a player disconnects.
+                // So, we are going to fake that!
+                lethalBotController.isPlayerControlled = false;
+                try
+                {
+                    HUDManager.Instance.UpdateBoxesSpectateUI();
+                }
+                finally
+                {
+                    lethalBotController.isPlayerControlled = true;
+                }
             }
 
             // FIXME: This creates bugs for some reason, the cause is unknown!

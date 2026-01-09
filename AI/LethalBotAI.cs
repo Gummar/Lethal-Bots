@@ -4158,53 +4158,72 @@ namespace LethalBots.AI
 
             PlayerControllerB? closestDeadPlayer = null;
             float closestDeadPlayerDistSqr = float.MaxValue;
-            for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+            for (int i = 0; i < LethalBotManager.grabbableObjectsInMap.Count; i++)
             {
-                PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[i];
-                Plugin.LogInfo($"Is local player {playerController == GameNetworkManager.Instance.localPlayerController}");
-                if (playerController == null || !RescueAndReviveState.CanRevivePlayer(this, playerController))
+                GameObject gameObject = LethalBotManager.grabbableObjectsInMap[i];
+                if (gameObject == null)
                 {
+                    LethalBotManager.grabbableObjectsInMap.TrimExcess();
                     continue;
                 }
 
-                // Get game and grabbable object infos
-                GrabbableObject? grabbableObject = playerController.deadBody?.grabBodyObject;
-                GameObject? gameObject = grabbableObject?.gameObject;
-                if (gameObject == null || grabbableObject == null)
+                // Get grabbable object infos
+                // NOTE: This also functions as a null check!
+                GrabbableObject? grabbableObject = gameObject.GetComponent<GrabbableObject>();
+                if (grabbableObject is not RagdollGrabbableObject deadBody)
                 {
+                    //Plugin.LogInfo("Body is null!");
                     continue;
                 }
 
-                // Object not outside when ai inside and vice versa
+				// Object not outside when ai inside and vice versa
+				bool isHeld = grabbableObject.isHeld;
                 Vector3 deadBodyPosition = gameObject.transform.position;
-                if (isOutside && deadBodyPosition.y < -100f)
-                {
-                    continue;
-                }
-                else if (!isOutside && deadBodyPosition.y > -80f)
-                {
-                    continue;
-                }
+				if (!isHeld)
+				{
+					if (isOutside && deadBodyPosition.y < -100f)
+					{
+						//Plugin.LogInfo("Body is not in range");
+						continue;
+					}
+					else if (!isOutside && deadBodyPosition.y > -80f)
+					{
+						//Plugin.LogInfo("Body is not in range");
+						continue;
+					}
+				}
 
                 // Object in range ?
                 // Check if object is further away from the closest object
                 // FIXME: This should be PATH distance not elucian!
                 float sqrDistanceEyeDeadPlayer = (deadBodyPosition - this.eye.position).sqrMagnitude;
-                if ((!shipOnly && sqrDistanceEyeDeadPlayer > Const.LETHAL_BOT_RESCUE_RANGE * Const.LETHAL_BOT_RESCUE_RANGE)
+                if ((!isHeld && sqrDistanceEyeDeadPlayer > Const.LETHAL_BOT_RESCUE_RANGE * Const.LETHAL_BOT_RESCUE_RANGE)
                     || sqrDistanceEyeDeadPlayer > closestDeadPlayerDistSqr)
                 {
+                    continue;
+                }
+
+                PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[deadBody.bodyID.Value];
+                if (playerController == null || !RescueAndReviveState.CanRevivePlayer(this, playerController))
+                {
+					//Plugin.LogInfo($"Can Revive Player? {playerController != null && RescueAndReviveState.CanRevivePlayer(this, playerController)}");
                     continue;
                 }
 
                 // Black listed ? 
                 if (IsGrabbableObjectBlackListed(grabbableObject, EnumGrabbableObjectCall.Reviving))
                 {
+					//Plugin.LogInfo("Body is blacklisted?");
                     continue;
                 }
 
                 // Object on ship
-                if (shipOnly && !grabbableObject.isInElevator && !grabbableObject.isInShipRoom)
+                if (shipOnly 
+					&& !isHeld 
+					&& !grabbableObject.isInElevator 
+					&& !grabbableObject.isInShipRoom)
                 {
+					//Plugin.LogInfo("Body is not on the ship");
                     continue;
                 }
 
@@ -4213,6 +4232,7 @@ namespace LethalBots.AI
                 {
                     if (IsGrabbableObjectInContainerMod(grabbableObject))
                     {
+                        //Plugin.LogInfo("Body is in custom container");
                         continue;
                     }
                 }
@@ -4222,6 +4242,7 @@ namespace LethalBots.AI
                 {
                     if (IsGrabbableObjectHeldByPikminMod(grabbableObject))
                     {
+                        //Plugin.LogInfo("Body is held by pikmin!");
                         continue;
                     }
                 }
@@ -4229,32 +4250,41 @@ namespace LethalBots.AI
                 // Grabbable object ?
                 if (!IsGrabbableObjectGrabbable(grabbableObject, EnumGrabbableObjectCall.Reviving))
                 {
+                    //Plugin.LogInfo("Body is not grabbable");
                     continue;
                 }
 
-                // Object close to awareness distance ?
-                if (grabbableObject.isHeld || sqrDistanceEyeDeadPlayer < Const.LETHAL_BOT_OBJECT_AWARNESS * Const.LETHAL_BOT_OBJECT_AWARNESS)
-                {
-                    Plugin.LogDebug($"awareness {grabbableObject.name}");
-                }
-                // Object visible ?
-                else if (!ignoreLOS && !Physics.Linecast(eye.position, grabbableObject.transform.position + Vector3.up * 0.05f, StartOfRound.Instance.collidersAndRoomMaskAndDefault)) // Was + Vector3.up * grabbableObject.itemProperties.verticalOffset, testing a small value to see if it has any kind of effect!
-                {
-                    Vector3 to = deadBodyPosition - eye.position;
-                    if (Vector3.Angle(eye.forward, to) < Const.LETHAL_BOT_FOV)
-                    {
-                        // Object in FOV
-                        Plugin.LogDebug($"LOS {grabbableObject.name}");
-                    }
-                    else
-                    {
-                        continue;
-                    }
-                }
-                else
-                {
-                    // Object not in line of sight
-                    continue;
+				// Check if we should do the Line of Sight checks!
+				if (!ignoreLOS)
+				{
+					// Object close to awareness distance ?
+					if (isHeld || sqrDistanceEyeDeadPlayer < Const.LETHAL_BOT_OBJECT_AWARNESS * Const.LETHAL_BOT_OBJECT_AWARNESS)
+					{
+						Plugin.LogDebug($"awareness {grabbableObject.name}");
+					}
+					// Object visible ?
+					else if (!Physics.Linecast(eye.position, grabbableObject.transform.position + Vector3.up * 0.05f, StartOfRound.Instance.collidersAndRoomMaskAndDefault)) // Was + Vector3.up * grabbableObject.itemProperties.verticalOffset, testing a small value to see if it has any kind of effect!
+					{
+						Vector3 to = deadBodyPosition - eye.position;
+						if (Vector3.Angle(eye.forward, to) < Const.LETHAL_BOT_FOV)
+						{
+							// Object in FOV
+							Plugin.LogDebug($"LOS {grabbableObject.name}");
+						}
+						else
+						{
+							continue;
+						}
+					}
+					else
+					{
+						// Object not in line of sight
+						continue;
+					}
+				}
+				else
+				{
+                    Plugin.LogDebug($"Skipped LOS {grabbableObject.name}");
                 }
 
                 closestDeadPlayer = playerController;
@@ -4332,7 +4362,7 @@ namespace LethalBots.AI
 			}
 
 			// Item just dropped, should wait a bit before grab it again
-			if (DictJustDroppedItems.TryGetValue(grabbableObject, out float justDroppedItemTime))
+			if (!grabbableObject.isHeld && DictJustDroppedItems.TryGetValue(grabbableObject, out float justDroppedItemTime))
 			{
 				if (Time.realtimeSinceStartup - justDroppedItemTime < Const.WAIT_TIME_FOR_GRAB_DROPPED_OBJECTS)
 				{
