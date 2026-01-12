@@ -1,4 +1,7 @@
-﻿using System;
+﻿using LethalLib.Modules;
+using System;
+using System.Text;
+using System.Xml.Linq;
 using Unity.Netcode;
 
 namespace LethalBots.NetworkSerializers
@@ -22,6 +25,30 @@ namespace LethalBots.NetworkSerializers
             // Sigh, stupid Unity doesn't support string arrays by default.
             // I have to do it myself!
             LethalBotNetworkSerializer.SerializeStringArray(serializer, ref itemNames);
+        }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine($"Loadout Name: {name}");
+            sb.AppendLine("Items:");
+            if (itemNames.Length == 0)
+            {
+                sb.AppendLine("(None)");
+            }
+            else
+            {
+                foreach (string item in itemNames)
+                {
+                    if (item == null)
+                    {
+                        sb.AppendLine("(null Item)");
+                        continue;
+                    }
+                    sb.AppendLine($"Name: {item}");
+                }
+            }
+            return sb.ToString();
         }
     }
 
