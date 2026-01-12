@@ -1253,7 +1253,7 @@ namespace LethalBots.AI.AIStates
         /// </summary>
         private void FindWeapon()
         {
-            // First, we need to check if we have a walkie-talkie in our inventory
+            // First, we need to check if we have a weapon in our inventory
             weapon = null;
             foreach (var weapon in npcController.Npc.ItemSlots)
             {
@@ -1265,7 +1265,7 @@ namespace LethalBots.AI.AIStates
                 }
             }
 
-            // So, we don't have a walkie-talkie in our inventory, lets check the ship!
+            // So, we don't have a weapon in our inventory, lets check the ship!
             float closestWeaponSqr = float.MaxValue;
             for (int i = 0; i < LethalBotManager.grabbableObjectsInMap.Count; i++)
             {
@@ -1280,11 +1280,11 @@ namespace LethalBots.AI.AIStates
                 if (ai.HasAmmoForWeapon(weapon)
                     && weapon.isInShipRoom)
                 {
-                    float walkieSqr = (weapon.transform.position - npcController.Npc.transform.position).sqrMagnitude;
-                    if (walkieSqr < closestWeaponSqr
+                    float weaponSqr = (weapon.transform.position - npcController.Npc.transform.position).sqrMagnitude;
+                    if (weaponSqr < closestWeaponSqr
                         && ai.IsGrabbableObjectGrabbable(weapon)) // NOTE: IsGrabbableObjectGrabbable has a pathfinding check, so we run it last since it can be expensive!
                     {
-                        closestWeaponSqr = walkieSqr;
+                        closestWeaponSqr = weaponSqr;
                         this.weapon = weapon;
                     }
                 }

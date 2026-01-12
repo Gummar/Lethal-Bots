@@ -507,6 +507,7 @@ namespace LethalBots.AI.AIStates
         {
             // The node associated with this safety object
             public GameObject node;
+            public float fearRange;
 
             // These affect the safety score of the node
             public bool isPathOutOfSight; // true is good; false is bad
@@ -517,9 +518,10 @@ namespace LethalBots.AI.AIStates
             public float enemyPathDistance; // further away is better
             public float botPathDistance; // closer is better
 
-            public NodeSafety(GameObject node, bool isPathOutOfSight, bool isNodeOutOfSight)
+            public NodeSafety(GameObject node, float fearRange, bool isPathOutOfSight, bool isNodeOutOfSight)
             {
                 this.node = node ?? throw new ArgumentNullException(nameof(node));
+                this.fearRange = fearRange;
                 this.isPathOutOfSight = isPathOutOfSight;
                 this.isNodeOutOfSight = isNodeOutOfSight;
             }
@@ -534,6 +536,37 @@ namespace LethalBots.AI.AIStates
                 return node.transform.position;
             }
 
+            /// <summary>
+            /// Returns the current safety score of this <see cref="NodeSafety"/> object
+            /// </summary>
+            /// <returns></returns>
+            public float GetSafetyScore()
+            {
+                float score = 0f;
+
+                // Check the fear range
+                if (minPathDistanceToEnemy < fearRange)
+                {
+                    score -= 100f; // Not good, really dislike this node!
+                }
+
+                // Path safety is king
+                score += minPathDistanceToEnemy * 2.5f;
+
+                // Visibility matters, but not infinitely
+                if (isPathOutOfSight) score += 15f;
+                if (isNodeOutOfSight) score += 10f;
+
+                // Enemy distance
+                score += Mathf.Min(enemyPathDistance, fearRange) * 1.2f;
+
+                // Prefer closer nodes, but lightly
+                score -= botPathDistance * 0.6f;
+
+                return score;
+            }
+
+
             public override string ToString()
             {
                 return $"GameObject: {node}, IsPathOutOfSight: {isPathOutOfSight}, IsNodeOutOfSight: {isNodeOutOfSight}, MinPathDistanceToEnemy: {minPathDistanceToEnemy}, EnemyPathDistance: {enemyPathDistance}, BotPathDistance: {botPathDistance}";
@@ -547,24 +580,16 @@ namespace LethalBots.AI.AIStates
                     return 1;
                 }
 
-                // 1. Path safety 
-                int cmp = minPathDistanceToEnemy.CompareTo(other.minPathDistanceToEnemy);
-                if (cmp != 0) return cmp;
+                // Compare the two safety scores
+                float a = this.GetSafetyScore();
+                float b = other.GetSafetyScore();
 
-                // 2. Path visibility
-                if (isPathOutOfSight != other.isPathOutOfSight)
-                    return isPathOutOfSight ? 1 : -1;
+                // If they are equal, consider them the same!
+                if (Mathf.Approximately(a, b))
+                    return 0;
 
-                // 3. Node visibility
-                if (isNodeOutOfSight != other.isNodeOutOfSight)
-                    return isNodeOutOfSight ? 1 : -1;
-
-                // 4. Farther from enemy wins
-                cmp = enemyPathDistance.CompareTo(other.enemyPathDistance);
-                if (cmp != 0) return cmp;
-
-                // 5. Closer to bot wins
-                return -botPathDistance.CompareTo(other.botPathDistance);
+                // Check to see which score is higher!
+                return a > b ? 1 : -1;
             }
 
             public bool Equals(NodeSafety? other)
@@ -574,11 +599,12 @@ namespace LethalBots.AI.AIStates
                     return false;
                 }
                 return node == other.node 
+                    && fearRange == other.fearRange
                     && isPathOutOfSight == other.isPathOutOfSight 
                     && isNodeOutOfSight == other.isNodeOutOfSight 
                     && minPathDistanceToEnemy == other.minPathDistanceToEnemy 
                     && enemyPathDistance == other.enemyPathDistance
-                    && botPathDistance == other.enemyPathDistance;
+                    && botPathDistance == other.botPathDistance;
             }
 
             public override bool Equals(object obj)
@@ -588,7 +614,7 @@ namespace LethalBots.AI.AIStates
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(node, isPathOutOfSight, isNodeOutOfSight, minPathDistanceToEnemy, enemyPathDistance, botPathDistance);
+                return HashCode.Combine(node, fearRange, isPathOutOfSight, isNodeOutOfSight, minPathDistanceToEnemy, enemyPathDistance, botPathDistance);
             }
 
             public static bool operator <(NodeSafety? left, NodeSafety? right) 
@@ -663,12 +689,13 @@ namespace LethalBots.AI.AIStates
             /// This is mostly the same as the <see cref="FlowermanAI.maxAsync"/>
             /// This makes bots much more responsive when picking a spot to flee to
             /// We do less async calculations the further we are from our target enemy!
+            Vector3 ourPos = npcController.Npc.transform.position;
             Transform enemyTransform = enemy.transform;
             Vector3 enemyPos = enemyTransform.position;
             Vector3 viewPos = enemy.eye?.position ?? enemyPos;
             viewPos += Vector3.up * 0.2f; // Slightly above eye level to avoid ground clipping issues
-            float ourDistanceFromEnemy = (enemyTransform.position - npcController.Npc.transform.position).sqrMagnitude;
-            float headOffset = npcController.Npc.gameplayCamera.transform.position.y - npcController.Npc.transform.position.y;
+            float ourDistanceFromEnemy = (enemyTransform.position - ourPos).sqrMagnitude;
+            float headOffset = npcController.Npc.gameplayCamera.transform.position.y - ourPos.y;
             int maxAsync;
             if (ourDistanceFromEnemy < 16f * 16f)
             {
@@ -703,14 +730,19 @@ namespace LethalBots.AI.AIStates
                 }
 
                 // Skip if the node is too close to the enemy
-                NodeSafety nodeSafety = new NodeSafety(node, true, true);
+                NodeSafety nodeSafety = new NodeSafety(node, fearRange, true, true);
                 Vector3 nodePos = nodeSafety.GetNodePosition();
+                if ((nodePos - ourPos).sqrMagnitude < fearRange * fearRange)
+                {
+                    continue;
+                }
+
                 if (enemy != null)
                 {
                     // Check if they can even path there and their distance from the node!
                     if (enemy.PathIsIntersectedByLineOfSight(nodePos, calculatePathDistance: true, false, false))
                     {
-                        nodeSafety.enemyPathDistance = -1f; // No path, thats REALLY good!
+                        nodeSafety.enemyPathDistance = float.MaxValue; // No path, thats REALLY good!
                     }
                     else
                     {
@@ -742,6 +774,12 @@ namespace LethalBots.AI.AIStates
 
                 // Update the closest part of the path to the enemy we are fleeing from
                 nodeSafety.minPathDistanceToEnemy = minDist;
+
+                // Make sure our path actualy leads us further away from out target
+                if (nodeSafety.minPathDistanceToEnemy <= ourDistanceFromEnemy * 0.9f)
+                {
+                    continue;
+                }
 
                 // Now we test if the node is visible to an enemy!
                 Vector3 simulatedHead = nodePos + Vector3.up * headOffset;

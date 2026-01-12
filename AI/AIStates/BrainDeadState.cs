@@ -44,7 +44,7 @@ namespace LethalBots.AI.AIStates
                 // or the round just ended!
                 if (ai.IsOwner)
                 {
-                    ai.State = new GetCloseToPlayerState(ai, ai.GetClosestIrlPlayer());
+                    ai.State = ai.GetDesiredAIState();
                 }
                 return;
             }

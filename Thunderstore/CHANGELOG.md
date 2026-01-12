@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1 - 2026-1-12
+Hotfix for the 1.2.0 update. I added some experimental retreat code, but it made the bots too afraid to run away at times.
+- Reverted some of the new parts of the experimental retreat code
+- Made bots immediatly reconsider their target safe path postion if they swap states
+- Fixed a minor logic error in the fallback code in BrainDeadState
+
 ## 1.2.0 - 2026-1-9
 As you may or may not be aware. Bots have support for some revive mods. Before this update, bots could only be revived and could not revive other players, now they can! There are also some other improvemnets such as better fallback choices when paniking.
 

@@ -135,6 +135,9 @@ namespace LethalBots.AI
         /// </remarks>
         public virtual void OnEnterState()
         {
+            // Mark our current position as "safe"
+            // We will adjust our safe pos later as required
+            this.safePathPos = this.npcController.Npc.transform.position;
             hasBeenStarted = true;
         }
 

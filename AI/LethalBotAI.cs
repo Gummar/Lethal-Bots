@@ -7705,7 +7705,7 @@ namespace LethalBots.AI
 		/// Helper function for deterimining which state run upon spawning!
 		/// </summary>
 		/// <returns>The <see cref="AIState"/> to run after spawning!</returns>
-		private AIState GetDesiredAIState()
+		internal AIState GetDesiredAIState()
 		{
 			// If we spawned on the ship as it was landing or taking off, follow closest player!
 			PlayerControllerB closestHumanPlayer = GetClosestIrlPlayer();
