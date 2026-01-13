@@ -87,7 +87,13 @@ namespace LethalBots.AI.AIStates
         /// <returns>The grabbable object that had the same <see cref="Item.itemName"/> as <paramref name="name"/></returns>
         private GrabbableObject? FindItemWithName(string name)
         {
-            // So, we don't have a key in our inventory, lets check the ship!
+            // First, we need to check if we have the item in our inventory already!
+            if (ai.HasGrabbableObjectInInventory(item => item != null && item.itemProperties.itemName == name, out _))
+            {
+                return null; // Don't return the item, we will just have the bot skip this think!
+            }
+
+            // So, we don't have a item in our inventory, lets check the ship!
             GrabbableObject? closestItem = null;
             float closestItemSqr = float.MaxValue;
             for (int i = 0; i < LethalBotManager.grabbableObjectsInMap.Count; i++)
