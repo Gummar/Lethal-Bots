@@ -110,7 +110,7 @@ namespace LethalBots.Managers
 
             // Default AI State
             EnumDefaultAIState defaultAIState;
-            if (!Enum.IsDefined(typeof(EnumDefaultAIState), configIdentity))
+            if (!Enum.IsDefined(typeof(EnumDefaultAIState), configIdentity.defaultAIState))
             {
                 Plugin.LogWarning($"Could not get option bot default AI state config in config file, value {configIdentity.defaultAIState}, for {configIdentity.name}, now using default value.");
                 defaultAIState = EnumDefaultAIState.Dynamic;
