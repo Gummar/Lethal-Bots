@@ -93,7 +93,7 @@ namespace LethalBots.AI.AIStates
                 return null; // Don't return the item, we will just have the bot skip this think!
             }
 
-            // So, we don't have a item in our inventory, lets check the ship!
+            // So, we don't have the item in our inventory, lets check the ship!
             GrabbableObject? closestItem = null;
             float closestItemSqr = float.MaxValue;
             LevelWeatherType levelWeatherType = TimeOfDay.Instance.currentLevelWeather;

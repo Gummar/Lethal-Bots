@@ -254,7 +254,7 @@ namespace LethalBots.AI.AIStates
                         ai.SetDestinationToPositionLethalBotAI(this.safePathPos);
 
                         // Sprint if far enough from the ship
-                        if (!npcController.WaitForFullStamina && sqrMagDistanceToSafePos > Const.DISTANCE_START_RUNNING * Const.DISTANCE_START_RUNNING) // NEEDTOVALIDATE: Should we use the distance to the ship or the safe position?
+                        if ((!npcController.WaitForFullStamina && sqrMagDistanceToSafePos > Const.DISTANCE_START_RUNNING * Const.DISTANCE_START_RUNNING) || ai.AreWeExposed()) // NEEDTOVALIDATE: Should we use the distance to the ship or the safe position?
                         {
                             npcController.OrderToSprint();
                         }
