@@ -123,15 +123,20 @@ namespace LethalBots
             }
 
             // Load bot prefab
-            //LethalBotNPCPrefab = Plugin.ModAssets.LoadAsset<EnemyType>("LethalBotNPC");
-            Object[] test = Plugin.ModAssets.LoadAllAssets();
-            for (int i = 0; i < test.Length; i++)
+            LethalBotNPCPrefab = Plugin.ModAssets.LoadAsset<EnemyType>("LethalBotNPC");
+            if (LethalBotNPCPrefab == null)
             {
-                Logger.LogInfo($"Found {test[i]} in asset bundle");
-                if (test[i] is EnemyType enemy)
+                Logger.LogInfo("Failed to directly load LethalBotNPC, manually searching asset bundle instead!");
+
+                Object[] test = Plugin.ModAssets.LoadAllAssets();
+                for (int i = 0; i < test.Length; i++)
                 {
-                    LethalBotNPCPrefab = enemy;
-                    break;
+                    Logger.LogInfo($"Found {test[i]} in asset bundle");
+                    if (test[i] is EnemyType enemy)
+                    {
+                        LethalBotNPCPrefab = enemy;
+                        break;
+                    }
                 }
             }
             if (LethalBotNPCPrefab == null)
