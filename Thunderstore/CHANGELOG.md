@@ -47,7 +47,7 @@ Of course, we can't have an update without **CRUSHING** some bugs! Most of these
 ## Misc. Changes 
 And the changes I don't really know where to put anywhere else, so uh, here you go!
 - Changed ChillAtShipState to be more like ChillWithPlayerState when checking for items in their inventory to charge
-- Bots that are in the SearchingForScrapState will wait for the ship to land before doing anything
+- Bots that are in the SearchingForScrapState and GetCloseToPlayerState will wait for the ship to land before doing anything
 - Cleaned up some code
 - Bots that are returning to the ship will now sprint if they are exposed
 - Made a minor optimization to the loading of this mod's asset bundle.
