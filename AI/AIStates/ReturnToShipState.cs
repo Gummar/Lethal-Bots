@@ -56,6 +56,9 @@ namespace LethalBots.AI.AIStates
 
         public override void DoAI()
         {
+            // Start coroutine for looking around
+            StartLookingAroundCoroutine();
+
             // Check for enemies
             EnemyAI? enemyAI = ai.CheckLOSForEnemy(Const.LETHAL_BOT_FOV, Const.LETHAL_BOT_ENTITIES_RANGE, (int)Const.DISTANCE_CLOSE_ENOUGH_HOR);
             if (enemyAI != null)
@@ -251,7 +254,7 @@ namespace LethalBots.AI.AIStates
                         ai.SetDestinationToPositionLethalBotAI(this.safePathPos);
 
                         // Sprint if far enough from the ship
-                        if (!npcController.WaitForFullStamina && sqrMagDistanceToSafePos > Const.DISTANCE_START_RUNNING * Const.DISTANCE_START_RUNNING) // NEEDTOVALIDATE: Should we use the distance to the ship or the safe position?
+                        if ((!npcController.WaitForFullStamina && sqrMagDistanceToSafePos > Const.DISTANCE_START_RUNNING * Const.DISTANCE_START_RUNNING) || ai.AreWeExposed()) // NEEDTOVALIDATE: Should we use the distance to the ship or the safe position?
                         {
                             npcController.OrderToSprint();
                         }

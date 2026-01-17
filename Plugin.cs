@@ -39,6 +39,7 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 using GameNetcodeStuff;
 using PySpeech;
+using LethalBots.Patches.ModPatches.LCVR;
 
 namespace LethalBots
 {
@@ -70,6 +71,7 @@ namespace LethalBots
     [BepInDependency(Const.FACILITYMELTDOWN_GUID, BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency(Const.NAVMESHINCOMPANY_GUID, BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency(Const.LETHALINTERNS_GUID, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(LCVR.Plugin.PLUGIN_GUID, BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
     {
         // Please don't use the MyPluginInfo class for the GUID, my mod is
@@ -121,15 +123,20 @@ namespace LethalBots
             }
 
             // Load bot prefab
-            //LethalBotNPCPrefab = Plugin.ModAssets.LoadAsset<EnemyType>("LethalBotNPC");
-            Object[] test = Plugin.ModAssets.LoadAllAssets();
-            for (int i = 0; i < test.Length; i++)
+            LethalBotNPCPrefab = Plugin.ModAssets.LoadAsset<EnemyType>("LethalBotNPC");
+            if (LethalBotNPCPrefab == null)
             {
-                Logger.LogInfo($"Found {test[i]} in asset bundle");
-                if (test[i] is EnemyType enemy)
+                Logger.LogInfo("Failed to directly load LethalBotNPC, manually searching asset bundle instead!");
+
+                Object[] test = Plugin.ModAssets.LoadAllAssets();
+                for (int i = 0; i < test.Length; i++)
                 {
-                    LethalBotNPCPrefab = enemy;
-                    break;
+                    Logger.LogInfo($"Found {test[i]} in asset bundle");
+                    if (test[i] is EnemyType enemy)
+                    {
+                        LethalBotNPCPrefab = enemy;
+                        break;
+                    }
                 }
             }
             if (LethalBotNPCPrefab == null)
@@ -266,6 +273,7 @@ namespace LethalBots
             bool isModLCAlwaysHearWalkieModLoaded = IsModLoaded(Const.LCALWAYSHEARWALKIEMOD_GUID);
             bool isModButteryFixesLoaded = IsModLoaded(Const.BUTTERYFIXES_GUID);
             bool isModPeepersLoaded = IsModLoaded(Const.PEEPERS_GUID);
+            bool isModLethalCompanyVRLoaded = IsModLoaded(LCVR.Plugin.PLUGIN_GUID);
 
             // -------------------
             // Read the preloaders
@@ -382,6 +390,17 @@ namespace LethalBots
             {
                 _harmony.PatchAll(typeof(PeeperAttachHitboxPatch));
             }
+            if (isModLethalCompanyVRLoaded)
+            {
+                _harmony.Patch(AccessTools.Method(AccessTools.TypeByName("LCVR.Patches.Spectating.SpectatorPlayerPatches"), "BeforePlayerDeath"),
+                               new HarmonyMethod(typeof(LCVRPatchesPatch), nameof(LCVRPatchesPatch.BeforePlayerDeath_Prefix)));
+                _harmony.Patch(AccessTools.Method(AccessTools.TypeByName("LCVR.Patches.Spectating.SpectatorPlayerPatches"), "OnPlayerDeath"),
+                               new HarmonyMethod(typeof(LCVRPatchesPatch), nameof(LCVRPatchesPatch.OnPlayerDeath_Prefix)));
+                _harmony.Patch(AccessTools.Method(AccessTools.TypeByName("LCVR.Patches.Items.ShotgunItemPatches"), "DisplaySafetyPatch"),
+                               new HarmonyMethod(typeof(LCVRPatchesPatch), nameof(LCVRPatchesPatch.DisplaySafetyPatch_Prefix)));
+                _harmony.Patch(AccessTools.Method(AccessTools.TypeByName("LCVR.Patches.PlayerControllerPatches"), "AfterDamagePlayer"),
+                               new HarmonyMethod(typeof(LCVRPatchesPatch), nameof(LCVRPatchesPatch.AfterDamagePlayer_Prefix)));
+            }
         }
 
         #region Voice Commands
@@ -400,7 +419,8 @@ namespace LethalBots
                 "clear monitoring",
                 "man the ship",
                 "transmit", // FIXME: This command doesn't work due to how speech recognition works, a fix will be made later
-                "transfer loot"
+                "transfer loot",
+                "gear up"
             };
 
             // Register valid phrases for speech recognition

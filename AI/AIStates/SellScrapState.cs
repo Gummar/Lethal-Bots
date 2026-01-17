@@ -177,7 +177,7 @@ namespace LethalBots.AI.AIStates
                 }
 
                 // Sell our item!
-                if (!ai.AreHandsFree())
+                if (!ai.AreHandsFree() && FindObject(ai.HeldItem))
                 {
                     // NEEDTOVALIDATE: Do we use a custom method for this?
                     companyDesk.PlaceItemOnCounter(npcController.Npc);

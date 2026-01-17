@@ -61,6 +61,7 @@ namespace LethalBots.Configs
 
         // Config identities
         public ConfigIdentities ConfigIdentities;
+        public ConfigLoadouts ConfigLoadouts;
 
         public Config(ConfigFile cfg) : base(MyPluginInfo.PLUGIN_GUID)
         {
@@ -195,6 +196,10 @@ namespace LethalBots.Configs
             CopyDefaultConfigIdentitiesJson();
             ReadAndLoadConfigIdentitiesFromUser();
 
+            // Config loadouts
+            CopyDefaultConfigLoadoutsJson();
+            ReadAndLoadConfigLoadoutsFromUser();
+
             ConfigManager.Register(this);
         }
 
@@ -232,6 +237,25 @@ namespace LethalBots.Configs
             catch (Exception ex)
             {
                 Plugin.Logger.LogError($"Error while CopyDefaultConfigIdentitiesJson ! {ex}");
+            }
+        }
+
+        private void CopyDefaultConfigLoadoutsJson()
+        {
+            try
+            {
+                string directoryPath = Utility.CombinePaths(Paths.ConfigPath, MyPluginInfo.PLUGIN_GUID);
+                Directory.CreateDirectory(directoryPath);
+
+                string json = ReadJsonResource("LethalBots.Configs.ConfigLoadouts.json");
+                using (StreamWriter outputFile = new StreamWriter(Utility.CombinePaths(directoryPath, ConfigConst.FILE_NAME_CONFIG_LOADOUTS_DEFAULT)))
+                {
+                    outputFile.WriteLine(json);
+                }
+            }
+            catch (Exception ex)
+            {
+                Plugin.Logger.LogError($"Error while CopyDefaultConfigLoadoutsJson ! {ex}");
             }
         }
 
@@ -294,6 +318,125 @@ namespace LethalBots.Configs
             {
                 Plugin.Logger.LogInfo($"Loaded {ConfigIdentities.configIdentities.Length} identities from file : {path}");
                 foreach (ConfigIdentity configIdentity in ConfigIdentities.configIdentities)
+                {
+                    LogDebugInConfig($"{configIdentity.ToString()}");
+                }
+            }
+        }
+
+        private void ReadAndLoadConfigLoadoutsFromUser()
+        {
+            string json;
+            string path = "No path yet";
+            ConfigLoadouts defaultLoadouts = new ConfigLoadouts() { configLoadouts = null! };
+            ConfigLoadouts userLoadouts = new ConfigLoadouts() { configLoadouts = null! };
+            ConfigLoadouts = new ConfigLoadouts() { configLoadouts = null! };
+            bool defaultLoadoutsLoaded = false;
+            bool userLoadoutsLoaded = false;
+
+            try
+            {
+                path = Utility.CombinePaths(Paths.ConfigPath, MyPluginInfo.PLUGIN_GUID, ConfigConst.FILE_NAME_CONFIG_LOADOUTS_USER);
+                // Try to read user config file
+                if (File.Exists(path))
+                {
+                    Plugin.Logger.LogInfo("User loadout file found! Reading...");
+                    using (StreamReader r = new StreamReader(path))
+                    {
+                        json = r.ReadToEnd();
+                    }
+
+
+                    userLoadouts = JsonUtility.FromJson<ConfigLoadouts>(json);
+                    if (userLoadouts.configLoadouts == null)
+                    {
+                        Plugin.Logger.LogWarning($"Unknown to read loadouts from file at {path}");
+                    }
+                    else
+                    {
+                        userLoadoutsLoaded = true;
+                        Plugin.Logger.LogInfo($"Loaded {userLoadouts.configLoadouts.Length} identities from file : {path}");
+                    }
+
+                    Plugin.Logger.LogInfo("Reading default loadouts...");
+                    path = "LethalBots.Configs.ConfigLoadouts.json";
+                    json = ReadJsonResource(path);
+                    defaultLoadouts = JsonUtility.FromJson<ConfigLoadouts>(json);
+                    if (defaultLoadouts.configLoadouts != null)
+                    {
+                        defaultLoadoutsLoaded = true;
+                        Plugin.Logger.LogInfo($"Loaded {defaultLoadouts.configLoadouts.Length} identities from file : {path}");
+                    }
+                }
+                else
+                {
+                    Plugin.Logger.LogInfo("No user loadout file found. Reading only default loadouts...");
+                    path = "LethalBots.Configs.ConfigLoadouts.json";
+                    json = ReadJsonResource(path);
+                    defaultLoadouts = JsonUtility.FromJson<ConfigLoadouts>(json);
+                    if (defaultLoadouts.configLoadouts != null)
+                    {
+                        defaultLoadoutsLoaded = true;
+                        Plugin.Logger.LogInfo($"Loaded {defaultLoadouts.configLoadouts.Length} identities from file : {path}");
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Plugin.Logger.LogError($"Error while ReadAndLoadConfigLoadoutsFromUser ! {e}");
+                json = "No json, see exception above.";
+            }
+
+            // Now make a combined version
+            if (userLoadouts.configLoadouts != null)
+            {
+                // Check if default was properly loaded
+                if (defaultLoadouts.configLoadouts != null)
+                {
+                    // Now we merge the two files together
+                    List<ConfigLoadout> loadouts = new List<ConfigLoadout>();
+                    List<string> takenNames = new List<string>();
+                    foreach (var loadout in userLoadouts.configLoadouts)
+                    {
+                        // User defined loadouts take priority
+                        loadouts.Add(loadout);
+                        if (!takenNames.Contains(loadout.name))
+                        {
+                            takenNames.Add(loadout.name);
+                        }
+                    }
+
+                    // Now we are onto the default, if the user overwrote the default, just ignore them!
+                    foreach (var loadout in defaultLoadouts.configLoadouts)
+                    {
+                        // Make sure that name is open!
+                        if (!takenNames.Contains(loadout.name))
+                        {
+                            loadouts.Add(loadout);
+                        }
+                    }
+
+                    ConfigLoadouts.configLoadouts = loadouts.ToArray();
+                }
+                else
+                {
+                    ConfigLoadouts = userLoadouts;
+                }
+            }
+            else if (defaultLoadouts.configLoadouts != null)
+            {
+                ConfigLoadouts = defaultLoadouts;
+            }
+
+            if (ConfigLoadouts.configLoadouts == null)
+            {
+                Plugin.Logger.LogWarning($"A problem occured while retrieving loadouts from config file! continuing with no loadouts... json used : \n{json}");
+                ConfigLoadouts = new ConfigLoadouts() { configLoadouts = new ConfigLoadout[0] };
+            }
+            else
+            {
+                Plugin.Logger.LogInfo($"Loaded {ConfigLoadouts.configLoadouts.Length} loadouts from files! Default loaded: {defaultLoadoutsLoaded} and User Loaded: {userLoadoutsLoaded}");
+                foreach (ConfigLoadout configIdentity in ConfigLoadouts.configLoadouts)
                 {
                     LogDebugInConfig($"{configIdentity.ToString()}");
                 }

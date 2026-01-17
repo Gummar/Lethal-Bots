@@ -4,9 +4,11 @@
       "__comment_name": "the name",
       "__comment_suitID": "the id of the suit (if you don't know keep 0), if a mod for a suit is uninstalled, it will be set to 0",
       "__comment_suitConfigOption": "0 Fixed (with the suit id set above), 1 random",
+      "__comment_defaultAIState": "the default state of the given value: 0 Dynamic, 1 FollowPlayer, 2 SearchForScrap, 3 ShipDuty, 4 TransferLoot",
       "__comment_voiceFolder": "the name of the folder in pathToDllOfModInstalled/Audio/Voices",
       "__comment_volume": "volume (decimal like 0.65, 1.4, etc)",
-      "__comment_voicePitch": "the pitch of the voice. Try to stay between 0.8 and 1.2, after that it's too much altered"
+      "__comment_voicePitch": "the pitch of the voice. Try to stay between 0.8 and 1.2, after that it's too much altered",
+      "__comment_loadoutName": "the name of the loadout for the bot to use. Must be a valid loadout from ConfigLoadouts.json, else default of Empty is given"
     }
   ],
   "configIdentities": [
@@ -14,185 +16,231 @@
       "name": "Mathew Kelly",
       "suitID": 0,
       "suitConfigOption": 0,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 1.0
+      "voicePitch": 1.0,
+      "loadoutName": "Empty"
     },
     {
       "name": "Amy Stake",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 1.12
+      "voicePitch": 1.12,
+      "loadoutName": "Empty"
     },
     {
       "name": "Claire Annette",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 1.13
+      "voicePitch": 1.13,
+      "loadoutName": "Empty"
     },
     {
       "name": "Clare Voyant",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 1.14
+      "voicePitch": 1.14,
+      "loadoutName": "Empty"
     },
     {
       "name": "Ella Font",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 1.15
+      "voicePitch": 1.15,
+      "loadoutName": "Empty"
     },
     {
       "name": "Felix Cited",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 0.92
+      "voicePitch": 0.92,
+      "loadoutName": "Empty"
     },
     {
       "name": "Gerry Atrick",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 0.91
+      "voicePitch": 0.91,
+      "loadoutName": "Empty"
     },
     {
       "name": "Harry Legg",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 0.90
+      "voicePitch": 0.90,
+      "loadoutName": "Empty"
     },
     {
       "name": "Justin Case",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 0.89
+      "voicePitch": 0.89,
+      "loadoutName": "Empty"
     },
     {
       "name": "Lee King",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 0.88
+      "voicePitch": 0.88,
+      "loadoutName": "Empty"
     },
     {
       "name": "Luke Atmey",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 0.87
+      "voicePitch": 0.87,
+      "loadoutName": "Empty"
     },
     {
       "name": "Manuel Labour",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 0.86
+      "voicePitch": 0.86,
+      "loadoutName": "Empty"
     },
     {
       "name": "Mia Moore",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 1.16
+      "voicePitch": 1.16,
+      "loadoutName": "Empty"
     },
     {
       "name": "Ophelia Pane",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 1.17
+      "voicePitch": 1.17,
+      "loadoutName": "Empty"
     },
     {
       "name": "Paige Turner",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 1.18
+      "voicePitch": 1.18,
+      "loadoutName": "Empty"
     },
     {
       "name": "Paul Atishon",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 0.85
+      "voicePitch": 0.85,
+      "loadoutName": "Empty"
     },
     {
       "name": "Polly Esther",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 1.2
+      "voicePitch": 1.2,
+      "loadoutName": "Empty"
     },
     {
       "name": "Robyn Banks",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 1.19
+      "voicePitch": 1.19,
+      "loadoutName": "Empty"
     },
     {
       "name": "Terry Aki",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 0.84
+      "voicePitch": 0.84,
+      "loadoutName": "Empty"
     },
     {
       "name": "Tim Burr",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 0.83
+      "voicePitch": 0.83,
+      "loadoutName": "Empty"
     },
     {
       "name": "Toby Lerone",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 0.82
+      "voicePitch": 0.82,
+      "loadoutName": "Empty"
     },
     {
       "name": "Uriel Lucky",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 0.81
+      "voicePitch": 0.81,
+      "loadoutName": "Empty"
     },
     {
       "name": "Zoltan Pepper",
       "suitID": 0,
       "suitConfigOption": 1,
+      "defaultAIState": 0,
       "voiceFolder": "Mathew_kelly",
       "volume": 0.2,
-      "voicePitch": 0.8
+      "voicePitch": 0.8,
+      "loadoutName": "Empty"
     }
   ]
 }
