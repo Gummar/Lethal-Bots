@@ -1407,7 +1407,7 @@ namespace LethalBots.AI
 
             if (ShouldAnimate)
             {
-                if (animationState != 0 && Npc.playerBodyAnimator.GetCurrentAnimatorStateInfo(0).fullPathHash != animationState)
+                if (Npc.playerBodyAnimator.GetCurrentAnimatorStateInfo(0).fullPathHash != animationState)
                 {
                     for (int i = 0; i < Npc.playerBodyAnimator.layerCount; i++)
                     {
