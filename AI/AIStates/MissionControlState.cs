@@ -523,7 +523,7 @@ namespace LethalBots.AI.AIStates
                     }
 
                     // Beam them up Scotty!
-                    yield return TryTeleportPlayer();
+                    yield return TryTeleportPlayer(skipPostCheck: true);
                     continue;
                 }
 
