@@ -3954,30 +3954,60 @@ namespace LethalBots.AI
 			}
 		}
 
-		/// <summary>
-		/// Change the ownership of the lethalBot inventory to the player that owns the bot.
-		/// </summary>
-		/// <remarks>
-		/// This is called on an interval inside of <see cref="StartOfRound.LateUpdate"/> to ensure items are owned by the correct player.
-		/// </remarks>
-		public void UpdateOwnershipOfBotInventoryServer()
+        #endregion
+
+        #region PlayerControllerB Ownership RPCs
+
+        /// <summary>
+        /// Change the ownership of the lethalBot inventory to the player that owns the bot.
+        /// </summary>
+        /// <remarks>
+        /// This is called on an interval inside of <see cref="StartOfRound.LateUpdate"/> to ensure items are owned by the correct player.
+        /// </remarks>
+        public void UpdateOwnershipOfBotServer()
+        {
+            // NetworkObject ownership is only updated on the server
+            if (!IsServer && !IsHost)
+            {
+                ChangeOwnershipOfBotInventoryServerRpc(this.OwnerClientId);
+                ChangeNpcOwnershipOfBotServerRPC(this.OwnerClientId);
+                return;
+            }
+            foreach (var item in NpcController.Npc.ItemSlots)
+            {
+                NetworkObject? networkObject = item?.NetworkObject;
+                if (networkObject != null && networkObject.OwnerClientId != this.OwnerClientId)
+                {
+                    // Change ownership of the item to the player that owns the bot
+                    networkObject.ChangeOwnership(this.OwnerClientId);
+                }
+            }
+
+            // Make sure Npc ownership is up to date!
+            NetworkObject? playerControllerObject = NpcController.Npc.gameObject.GetComponent<NetworkObject>();
+            if (playerControllerObject != null && playerControllerObject.OwnerClientId != this.OwnerClientId)
+            {
+                playerControllerObject.ChangeOwnership(this.OwnerClientId);
+            }
+        }
+
+        /// <summary>
+        /// Change the ownership of the lethalBot's <see cref="PlayerControllerB"/> player.
+        /// </summary>
+        /// <remarks>
+        /// This is called when the bot switches ownership to another player.
+        /// </remarks>
+        /// NEEDTOVALIDATE: Should this be internal? Rather than public?
+        /// <param name="newOwnerClientId"></param>
+        [ServerRpc(RequireOwnership = false)]
+		public void ChangeNpcOwnershipOfBotServerRPC(ulong newOwnerClientId)
 		{
-			// NetworkObject ownership is only updated on the server
-			if (!IsServer && !IsHost)
-			{
-				ChangeOwnershipOfBotInventoryServerRpc(this.OwnerClientId);
-				return;
-			}
-			foreach (var item in NpcController.Npc.ItemSlots)
-			{
-				NetworkObject? networkObject = item?.NetworkObject;
-				if (networkObject != null && networkObject.OwnerClientId != this.OwnerClientId)
-				{
-					// Change ownership of the item to the player that owns the bot
-					networkObject.ChangeOwnership(this.OwnerClientId);
-				}
-			}
-		}
+            NetworkObject? playerControllerObject = NpcController.Npc.gameObject.GetComponent<NetworkObject>();
+            if (playerControllerObject != null && playerControllerObject.OwnerClientId != newOwnerClientId)
+            {
+                playerControllerObject.ChangeOwnership(newOwnerClientId);
+            }
+        }
 
         #endregion
 

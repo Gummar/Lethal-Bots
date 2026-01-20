@@ -45,7 +45,7 @@ namespace LethalBots.Patches.NpcPatches
         }
 
         /// <summary>
-        /// Patch for intercepting when ownership of an bot cahnges.<br/>
+        /// Patch for intercepting when ownership of an bot changes.<br/>
         /// This allows us to change the items' ownership to the lethalBot owner instead of the lethalBot itself
         /// </summary>
         /// <param name="newOwnerClientId"></param>
@@ -59,6 +59,7 @@ namespace LethalBots.Patches.NpcPatches
             {
                 Plugin.LogDebug($"[POSTFIX]: Try ChangeOwnershipOfEnemy for lethalBot newOwnerClientId : {(int)newOwnerClientId}");
                 lethalBotAI.ChangeOwnershipOfBotInventoryServerRpc(newOwnerClientId);
+                lethalBotAI.ChangeNpcOwnershipOfBotServerRPC(newOwnerClientId);
             }
         }
 

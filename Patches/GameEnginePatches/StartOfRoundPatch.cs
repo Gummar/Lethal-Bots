@@ -614,7 +614,7 @@ namespace LethalBots.Patches.GameEnginePatches
                 LethalBotManager.Instance.SetLethalBotsInElevatorLateUpdate(Time.deltaTime);
             }*/
 
-            LethalBotManager.Instance.UpdateOwnershipOfBotInventoryServer(Time.deltaTime);
+            LethalBotManager.Instance.UpdateOwnershipOfBotServer(Time.deltaTime);
         }
 
         /// <summary>

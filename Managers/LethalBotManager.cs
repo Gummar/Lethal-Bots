@@ -254,7 +254,7 @@ namespace LethalBots.Managers
         public Dictionary<string, int> DictTagSurfaceIndex = new Dictionary<string, int>();
 
         private float timerSetLethalBotInElevator;
-        private float timerUpdateOwnershipOfBotInventory;
+        private float timerUpdateOwnershipOfBot;
 
         /// <summary>
         /// Initialize instance,
@@ -2798,14 +2798,14 @@ namespace LethalBots.Managers
             }
         }
 
-        public void UpdateOwnershipOfBotInventoryServer(float deltaTime)
+        public void UpdateOwnershipOfBotServer(float deltaTime)
         {
-            timerUpdateOwnershipOfBotInventory += deltaTime;
-            if (timerUpdateOwnershipOfBotInventory < 0.5 || !base.IsServer)
+            timerUpdateOwnershipOfBot += deltaTime;
+            if (timerUpdateOwnershipOfBot < 0.5 || !base.IsServer)
             {
                 return;
             }
-            timerUpdateOwnershipOfBotInventory = 0f;
+            timerUpdateOwnershipOfBot = 0f;
 
             foreach (LethalBotAI lethalBotAI in AllLethalBotAIs)
             {
@@ -2814,7 +2814,7 @@ namespace LethalBots.Managers
                 {
                     continue;
                 }
-                lethalBotAI.UpdateOwnershipOfBotInventoryServer();
+                lethalBotAI.UpdateOwnershipOfBotServer();
             }
         }
 
