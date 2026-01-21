@@ -103,9 +103,20 @@ namespace LethalBots.NetworkSerializers
         }
 
         /// <summary>
+        /// Does the bot consider itself aiming at where it wants to look at?
+        /// </summary>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsHeadAimingOnTarget()
+        {
+            return isSightedIn;
+        }
+
+        /// <summary>
         /// Is the bot's head steady?
         /// </summary>
         /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsHeadSteady()
         {
             return headSteadyTimer.HasStarted();
