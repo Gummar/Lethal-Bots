@@ -6058,7 +6058,7 @@ namespace LethalBots.AI
 		/// <summary>
 		/// Copied from <c>PlayerControllerB</c>, tells the bot to swap to the specified slot 
 		/// </summary>
-		private void SwitchToItemSlot(int slot, GrabbableObject? fillSlotWithItem = null)
+		internal void SwitchToItemSlot(int slot, GrabbableObject? fillSlotWithItem = null)
 		{
 			if (!CanSwitchItemSlot() && fillSlotWithItem == null)
 			{

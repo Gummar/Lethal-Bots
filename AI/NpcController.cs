@@ -109,9 +109,6 @@ namespace LethalBots.AI
         private LookAtTarget oldLookAtTarget = new LookAtTarget();
         public LookAtTarget LookAtTarget { private set; get; } = new LookAtTarget();
 
-        private Vector3 lastDirectionToLookAt;
-        private Quaternion cameraRotationToUpdateLookAt;
-
         public Vector2 lastMoveVector;
         private float floatSprint;
         private bool goDownLadder;

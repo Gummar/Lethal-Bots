@@ -330,6 +330,26 @@ namespace LethalBots.Patches.NpcPatches
         }
 
         /// <summary>
+        /// Patch to call our SwitchToItemSlot method!
+        /// </summary>
+        /// <param name="__instance"></param>
+        /// <param name="slot"></param>
+        /// <param name="fillSlotWithItem"></param>
+        /// <returns></returns>
+        [HarmonyPatch("SwitchToItemSlot")]
+        [HarmonyPrefix]
+        static bool SwitchToItemSlot_Prefix(PlayerControllerB __instance, int slot, GrabbableObject fillSlotWithItem = null!)
+        {
+            LethalBotAI? lethalBotAI = LethalBotManager.Instance.GetLethalBotAI(__instance);
+            if (lethalBotAI != null)
+            {
+                lethalBotAI.SwitchToItemSlot(slot, fillSlotWithItem);
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
         /// Patch to call the drop item method on the bot rather than the player
         /// </summary>
         /// <param name="__instance"></param>
