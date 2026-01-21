@@ -8520,7 +8520,7 @@ namespace LethalBots.AI
 		/// <summary>
 		/// Server side, call clients to update the stopping the perfoming of emote
 		/// </summary>
-		[ServerRpc]
+		[ServerRpc(RequireOwnership = false)]
 		private void StopPerformingEmoteServerRpc()
 		{
 			StopPerformingEmoteClientRpc();
