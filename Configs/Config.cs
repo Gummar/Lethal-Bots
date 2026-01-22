@@ -44,6 +44,7 @@ namespace LethalBots.Configs
         [SyncedEntryField] public SyncedEntry<bool> GrabItemsNearEntrances;
         [SyncedEntryField] public SyncedEntry<bool> GrabBeesNest;
         [SyncedEntryField] public SyncedEntry<bool> GrabDeadBodies;
+        [SyncedEntryField] public SyncedEntry<bool> GrabDockedApparatus;
         [SyncedEntryField] public SyncedEntry<bool> TakeCareOfManeaterBaby;
         [SyncedEntryField] public SyncedEntry<bool> AdvancedManeaterBabyAI;
         [SyncedEntryField] public SyncedEntry<bool> GrabWheelbarrow;
@@ -156,6 +157,11 @@ namespace LethalBots.Configs
                                       "Grab dead bodies",
                                       defaultVal: true,
                                       "Should the bot try to grab dead bodies? (NOTE: The bot at the terminal will still teleport them back to the ship!))");
+
+            GrabDockedApparatus = cfg.BindSyncedEntry(ConfigConst.ConfigSectionBehavior,
+                                      "Grab docked apparatus",
+                                      defaultVal: true,
+                                      "Is the bot allowed to grab docked apparatuses?");
 
             TakeCareOfManeaterBaby = cfg.BindSyncedEntry(ConfigConst.ConfigSectionBehavior,
                                       "Take care of baby maneater",

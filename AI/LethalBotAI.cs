@@ -4775,6 +4775,15 @@ namespace LethalBots.AI
 				return true;
 			}
 
+            // Apparatus
+            if (!Plugin.Config.GrabDockedApparatus.Value
+				&& enumGrabbable != EnumGrabbableObjectCall.Selling 
+				&& grabbableObjectToEvaluate is LungProp apparatus 
+				&& apparatus.isLungDocked)
+			{
+				return false;
+			}
+
 			// Maneater
 			if (grabbableObjectToEvaluate is CaveDwellerPhysicsProp caveDwellerGrabbableObject) // Was gameObject.name.Contains("CaveDwellerEnemy"), but CaveDwellerPhysicsProp is better and more reliable
 			{
