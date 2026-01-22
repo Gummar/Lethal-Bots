@@ -1404,7 +1404,7 @@ namespace LethalBots.AI
 
             if (ShouldAnimate)
             {
-                if (Npc.playerBodyAnimator.GetCurrentAnimatorStateInfo(0).fullPathHash != animationState)
+                if (animationState != 0 && Npc.playerBodyAnimator.GetCurrentAnimatorStateInfo(0).fullPathHash != animationState)
                 {
                     for (int i = 0; i < Npc.playerBodyAnimator.layerCount; i++)
                     {
@@ -2353,9 +2353,11 @@ namespace LethalBots.AI
             this.LookAtTarget.Update(this, this.LethalBotAIController);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsMoving()
         {
             return MoveVector != Vector3.zero
+                || animationHashLayers[0] != Const.IDLE_STATE_HASH
                 || Npc.playerBodyAnimator.GetCurrentAnimatorStateInfo(0).fullPathHash != Const.IDLE_STATE_HASH;
         }
 
