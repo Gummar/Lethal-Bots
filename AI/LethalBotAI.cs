@@ -4781,7 +4781,7 @@ namespace LethalBots.AI
 				&& grabbableObjectToEvaluate is LungProp apparatus 
 				&& apparatus.isLungDocked)
 			{
-				return false;
+				return true;
 			}
 
 			// Maneater
