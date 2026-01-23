@@ -123,6 +123,7 @@ namespace LethalBots.AI.AIStates
                     if (bellInteractTrigger != null)
                     {
                         // Make the bot ring the bell!
+                        npcController.OrderToLookAtPosition(bellInteractTrigger.transform.position, EnumLookAtPriority.HIGH_PRIORITY);
                         bellInteractTrigger.Interact(npcController.Npc.thisPlayerBody);
                     }
                     else
