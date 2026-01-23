@@ -2788,6 +2788,7 @@ namespace LethalBots.AI
 			return false;
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void ReParentLethalBot(Transform newParent)
 		{
 			NpcController.ReParentNotSpawnedTransform(newParent);

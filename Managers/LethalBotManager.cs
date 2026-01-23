@@ -2,28 +2,20 @@
 using HarmonyLib;
 using LethalBots.AI;
 using LethalBots.AI.AIStates;
-using LethalBots.Configs;
 using LethalBots.Constants;
 using LethalBots.Enums;
 using LethalBots.NetworkSerializers;
 using LethalBots.Patches.GameEnginePatches;
 using LethalBots.Patches.MapPatches;
-using LethalBots.Patches.ModPatches.ModelRplcmntAPI;
 using LethalBots.Patches.NpcPatches;
-using Steamworks.ServerList;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using Unity.Netcode;
-using Unity.Properties;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.Audio;
-using static UnityEngine.InputSystem.InputRemoting;
 using Object = UnityEngine.Object;
 using Quaternion = UnityEngine.Quaternion;
 using Random = System.Random;
@@ -3226,6 +3218,7 @@ namespace LethalBots.Managers
             }
 
             Plugin.LogDebug($"Recreate identities for {configIdentityNetworkSerializable.ConfigIdentities.Length} bots");
+            Plugin.Config.ConfigIdentities.configIdentities = configIdentityNetworkSerializable.ConfigIdentities;
             IdentityManager.Instance.InitIdentities(configIdentityNetworkSerializable.ConfigIdentities);
         }
 
@@ -3247,7 +3240,7 @@ namespace LethalBots.Managers
         }
 
         [ClientRpc]
-        private void SyncLoadedJsonLoadoutsClientRpc(ConfigLoadoutsNetworkSerializable configIdentityNetworkSerializable,
+        private void SyncLoadedJsonLoadoutsClientRpc(ConfigLoadoutsNetworkSerializable configLoadoutNetworkSerializable,
                                                        ClientRpcParams clientRpcParams = default)
         {
             if (IsOwner)
@@ -3256,14 +3249,15 @@ namespace LethalBots.Managers
             }
 
             Plugin.LogInfo($"Client {NetworkManager.LocalClientId} : sync json bots loadouts");
-            Plugin.LogDebug($"Loaded {configIdentityNetworkSerializable.ConfigLoadouts.Length} loadouts from server");
-            foreach (ConfigLoadout configIdentity in configIdentityNetworkSerializable.ConfigLoadouts)
+            Plugin.LogDebug($"Loaded {configLoadoutNetworkSerializable.ConfigLoadouts.Length} loadouts from server");
+            foreach (ConfigLoadout configLoadout in configLoadoutNetworkSerializable.ConfigLoadouts)
             {
-                Plugin.LogDebug($"{configIdentity.ToString()}");
+                Plugin.LogDebug($"{configLoadout.ToString()}");
             }
 
-            Plugin.LogDebug($"Recreate loadouts for {configIdentityNetworkSerializable.ConfigLoadouts.Length} bots");
-            LoadoutManager.Instance.InitLoadouts(configIdentityNetworkSerializable.ConfigLoadouts);
+            Plugin.LogDebug($"Recreate loadouts for {configLoadoutNetworkSerializable.ConfigLoadouts.Length} bots");
+            Plugin.Config.ConfigLoadouts.configLoadouts = configLoadoutNetworkSerializable.ConfigLoadouts;
+            LoadoutManager.Instance.InitLoadouts(configLoadoutNetworkSerializable.ConfigLoadouts);
         }
 
         #endregion

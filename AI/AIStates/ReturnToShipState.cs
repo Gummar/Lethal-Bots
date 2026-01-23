@@ -19,7 +19,7 @@ namespace LethalBots.AI.AIStates
     /// </summary>
     public class ReturnToShipState : AIState
     {
-        private Transform targetShipTransform; // The transform on the ship we want to go to
+        private Transform? targetShipTransform; // The transform on the ship we want to go to
         private Vector3 targetShipPos; // The point of the transform on the ship we want to go to
         private Vector3 targetEntrancePos; // The position we want to path to reach the entrance!
         private bool attemptedToUseTZP = false;
@@ -33,7 +33,8 @@ namespace LethalBots.AI.AIStates
             this.endIfOutside = endIfOutside;
 
             // Lets pick a random node on the ship to go to
-            targetShipTransform = GetRandomInsideShipTransform();
+            targetShipTransform = GetRandomInsideShipTransform(false);
+            targetShipPos = GetTargetShipPos();
         }
 
         public ReturnToShipState(LethalBotAI ai, bool endIfOutside = false, AIState? changeToOnEnd = null) : base(ai, changeToOnEnd)
@@ -42,7 +43,8 @@ namespace LethalBots.AI.AIStates
             this.endIfOutside = endIfOutside;
 
             // Lets pick a random node on the ship to go to
-            targetShipTransform = GetRandomInsideShipTransform();
+            targetShipTransform = GetRandomInsideShipTransform(false);
+            targetShipPos = GetTargetShipPos();
         }
 
         public override void OnEnterState()
@@ -240,6 +242,12 @@ namespace LethalBots.AI.AIStates
                     }
                 }
 
+                // If our target ship transform is invalid, find another one!
+                if (this.targetShipTransform == null)
+                {
+                    targetShipTransform = GetRandomInsideShipTransform();
+                }
+
                 // Keep moving towards the ship!
                 float sqrMagDistanceToShip = (this.GetTargetShipPos() - npcController.Npc.transform.position).sqrMagnitude;
                 if (sqrMagDistanceToShip >= Const.DISTANCE_TO_CHILL_POINT * Const.DISTANCE_TO_CHILL_POINT)
@@ -348,7 +356,7 @@ namespace LethalBots.AI.AIStates
             return desiredDrunkness;
         }
 
-        private Transform GetRandomInsideShipTransform()
+        private Transform? GetRandomInsideShipTransform(bool allowFallback = true)
         {
             // Lets pick a random node on the ship to go to
             List<Transform> ourShip = StartOfRound.Instance.insideShipPositions.ToList();
@@ -367,6 +375,12 @@ namespace LethalBots.AI.AIStates
                 }
             }
 
+            // Makes this function return null instead of the middle of the ship!
+            if (!allowFallback)
+            {
+                return null;
+            }
+
             Plugin.LogError($"Bot {npcController.Npc.playerUsername} failed to find a valid position on the ship to return to! Falling back to middleOfShipNode");
             return StartOfRound.Instance.middleOfShipNode;
         }
@@ -381,7 +395,7 @@ namespace LethalBots.AI.AIStates
         private Vector3 GetTargetShipPos()
         {
             // Update the ship position every so often in case the ship moved!
-            if ((Time.timeSinceLevelLoad - shipPositionUpdateTimer) < Const.TIMER_CHECK_EXPOSED)
+            if (this.targetShipTransform == null || (Time.timeSinceLevelLoad - shipPositionUpdateTimer) < Const.TIMER_CHECK_EXPOSED)
             {
                  return this.targetShipPos;
             }
