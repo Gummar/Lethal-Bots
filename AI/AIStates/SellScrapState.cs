@@ -78,10 +78,12 @@ namespace LethalBots.AI.AIStates
 
         public override void DoAI()
         {
-            // The company desk is invaild or we are not at the company building return!
+            // The company desk is invaild, we are not at the company building,
+            // or the company is pissed, return!
             DepositItemsDesk? companyDesk = LethalBotManager.CompanyDesk;
             if (companyDesk == null 
-                || !LethalBotManager.AreWeAtTheCompanyBuilding())
+                || !LethalBotManager.AreWeAtTheCompanyBuilding() 
+                || companyDesk.attacking)
             {
                 ai.State = new ReturnToShipState(this);
                 return;
