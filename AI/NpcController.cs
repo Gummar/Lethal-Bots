@@ -999,26 +999,25 @@ namespace LethalBots.AI
                 animationHashLayers[0] = Const.IDLE_STATE_HASH;
             }*/
 
-            if (ShouldAnimate)
+            // Update this so we can send the layers to other clients!
+            if (Npc.playerBodyAnimator.GetBool(Const.PLAYER_ANIMATION_BOOL_WALKING) != IsWalking)
             {
-                if (Npc.playerBodyAnimator.GetBool(Const.PLAYER_ANIMATION_BOOL_WALKING) != IsWalking)
-                {
-                    Npc.playerBodyAnimator.SetBool(Const.PLAYER_ANIMATION_BOOL_WALKING, IsWalking);
-                }
-                if (Npc.playerBodyAnimator.GetBool(Const.PLAYER_ANIMATION_BOOL_SPRINTING) != Npc.isSprinting)
-                {
-                    Npc.playerBodyAnimator.SetBool(Const.PLAYER_ANIMATION_BOOL_SPRINTING, Npc.isSprinting);
-                }
+                Npc.playerBodyAnimator.SetBool(Const.PLAYER_ANIMATION_BOOL_WALKING, IsWalking);
             }
-            else
+            if (Npc.playerBodyAnimator.GetBool(Const.PLAYER_ANIMATION_BOOL_SPRINTING) != Npc.isSprinting)
             {
-                CutAnimations();
+                Npc.playerBodyAnimator.SetBool(Const.PLAYER_ANIMATION_BOOL_SPRINTING, Npc.isSprinting);
             }
 
-            // Other layers
+            // Save current layers to be sent to other players
             for (int i = 0; i < Npc.playerBodyAnimator.layerCount; i++)
             {
                 animationHashLayers[i] = Npc.playerBodyAnimator.GetCurrentAnimatorStateInfo(i).fullPathHash;
+            }
+
+            if (!ShouldAnimate)
+            {
+                CutAnimations();
             }
 
             if (NetworkManager.Singleton != null && Npc.playersManager.connectedPlayersAmount > 0)

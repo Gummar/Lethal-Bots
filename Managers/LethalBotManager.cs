@@ -3109,7 +3109,7 @@ namespace LethalBots.Managers
 
                 // Mark the index as used so the post revive function understands what it needs to deactivate!
                 // This is done on purpose so the bots count for the dead body penalties!
-                AllBotPlayerIndexs.Add((int)lethalBotAI.NpcController.Npc.playerClientId);
+                AllBotPlayerIndexs.Add((int)lethalBotController.playerClientId);
             }
         }
 
