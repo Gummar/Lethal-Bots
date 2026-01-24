@@ -20,7 +20,7 @@ namespace LethalBots.AI.AIStates
     public class ReturnToShipState : AIState
     {
         private Transform? targetShipTransform; // The transform on the ship we want to go to
-        private Vector3 targetShipPos; // The point of the transform on the ship we want to go to
+        private Vector3? targetShipPos; // The point of the transform on the ship we want to go to
         private Vector3 targetEntrancePos; // The position we want to path to reach the entrance!
         private bool attemptedToUseTZP = false;
         private bool endIfOutside;
@@ -34,7 +34,7 @@ namespace LethalBots.AI.AIStates
 
             // Lets pick a random node on the ship to go to
             targetShipTransform = GetRandomInsideShipTransform(false);
-            targetShipPos = npcController.Npc.transform.position;
+            targetShipPos = null;
         }
 
         public ReturnToShipState(LethalBotAI ai, bool endIfOutside = false, AIState? changeToOnEnd = null) : base(ai, changeToOnEnd)
@@ -44,7 +44,7 @@ namespace LethalBots.AI.AIStates
 
             // Lets pick a random node on the ship to go to
             targetShipTransform = GetRandomInsideShipTransform(false);
-            targetShipPos = npcController.Npc.transform.position;
+            targetShipPos = null;
         }
 
         public override void OnEnterState()
@@ -231,6 +231,19 @@ namespace LethalBots.AI.AIStates
                     return;
                 }
 
+                // If our target ship transform is invalid, find another one!
+                if (this.targetShipTransform == null)
+                {
+                    targetShipTransform = GetRandomInsideShipTransform();
+                }
+
+                // Wait until we actually get a position to walk back to!
+                Vector3? targetShipPos = this.GetTargetShipPos();
+                if (!targetShipPos.HasValue)
+                {
+                    return;
+                }
+
                 // If we have TZP we should attempt to use to speed up our return trip if needed!
                 if (!attemptedToUseTZP)
                 {
@@ -242,14 +255,8 @@ namespace LethalBots.AI.AIStates
                     }
                 }
 
-                // If our target ship transform is invalid, find another one!
-                if (this.targetShipTransform == null)
-                {
-                    targetShipTransform = GetRandomInsideShipTransform();
-                }
-
                 // Keep moving towards the ship!
-                float sqrMagDistanceToShip = (this.GetTargetShipPos() - npcController.Npc.transform.position).sqrMagnitude;
+                float sqrMagDistanceToShip = (targetShipPos.Value - npcController.Npc.transform.position).sqrMagnitude;
                 if (sqrMagDistanceToShip >= Const.DISTANCE_TO_CHILL_POINT * Const.DISTANCE_TO_CHILL_POINT)
                 {
                     // Find a safe path to the ship
@@ -391,11 +398,17 @@ namespace LethalBots.AI.AIStates
         /// <remarks>
         /// The position is cached and only updated every <see cref="Const.TIMER_CHECK_EXPOSED"/> seconds.
         /// </remarks>
-        /// <returns>A <see cref="Vector3"/> representing the most recently determined position of the target ship.</returns>
-        private Vector3 GetTargetShipPos()
+        /// <returns>A <see cref="Vector3?"/> representing the most recently determined position of the target ship.</returns>
+        private Vector3? GetTargetShipPos()
         {
+            // No transform, no pos!
+            if (this.targetShipTransform == null)
+            {
+                return null;
+            }
+
             // Update the ship position every so often in case the ship moved!
-            if (this.targetShipTransform == null || (Time.timeSinceLevelLoad - shipPositionUpdateTimer) < Const.TIMER_CHECK_EXPOSED)
+            if ((Time.timeSinceLevelLoad - shipPositionUpdateTimer) < Const.TIMER_CHECK_EXPOSED)
             {
                  return this.targetShipPos;
             }
