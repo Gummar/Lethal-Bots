@@ -418,6 +418,8 @@ namespace LethalBots.AI.AIStates
 
                 yield return new WaitForSeconds(GetWeaponAttackInterval(heldItem));
             }
+
+            StopAttackCoroutine();
         }
 
         /// <summary>
