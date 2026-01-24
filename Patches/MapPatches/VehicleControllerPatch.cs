@@ -29,7 +29,8 @@ namespace LethalBots.Patches.MapPatches
                                                   float magnitude)
         {
             PlayerControllerB lethalBotController;
-            foreach (LethalBotAI lethalBotAI in LethalBotManager.Instance.GetLethalBotsAIOwnedByLocal())
+            LethalBotAI[] lethalBotAIs = LethalBotManager.Instance.GetLethalBotsAIOwnedByLocal();
+            foreach (LethalBotAI? lethalBotAI in lethalBotAIs)
             {
                 lethalBotController = lethalBotAI.NpcController.Npc;
 

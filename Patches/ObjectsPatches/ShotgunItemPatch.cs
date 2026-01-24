@@ -208,18 +208,16 @@ namespace LethalBots.Patches.ObjectsPatches
                                      Vector3 shotgunForward)
         {
             // NOTE: This is needed since the shotgun only checks for the local player!
-            PlayerControllerB lethalBotController;
-            LethalBotAI? lethalBotAI;
-            for (int i = 0; i < LethalBotManager.Instance.AllEntitiesCount; i++)
+            LethalBotAI[] lethalBotAIs = LethalBotManager.Instance.GetLethalBotsAIOwnedByLocal();
+            foreach (LethalBotAI? lethalBotAI in lethalBotAIs)
             {
-                lethalBotController = StartOfRound.Instance.allPlayerScripts[i];
-                if (lethalBotController.isPlayerDead || !lethalBotController.isPlayerControlled)
+                PlayerControllerB? lethalBotController = lethalBotAI?.NpcController?.Npc;
+                if (lethalBotController == null || lethalBotController.isPlayerDead || !lethalBotController.isPlayerControlled)
                 {
                     continue;
                 }
 
-                lethalBotAI = LethalBotManager.Instance.GetLethalBotAIIfLocalIsOwner(lethalBotController);
-                if (lethalBotAI == null || __instance.playerHeldBy == lethalBotController)
+                if (__instance.playerHeldBy == lethalBotController)
                 {
                     continue;
                 }
