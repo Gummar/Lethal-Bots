@@ -13,11 +13,6 @@ namespace LethalBots.NetworkSerializers
     /// <summary>
     /// Class for serializing the look at target of the bot
     /// </summary>
-    /// <remarks>
-    /// This really should be rewritten to use a much better system!
-    /// The current is a bit outdated and not very efficient!
-    /// This makes it hard to add new look at targets!
-    /// </remarks>
     [Serializable]
     public class LookAtTarget : INetworkSerializable, IEquatable<LookAtTarget>
     {
