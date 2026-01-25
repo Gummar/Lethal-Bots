@@ -4770,10 +4770,9 @@ namespace LethalBots.AI
         private bool IsGrabbableObjectBlackListed(GrabbableObject grabbableObjectToEvaluate, EnumGrabbableObjectCall enumGrabbable = EnumGrabbableObjectCall.Default)
 		{
 			// Bee nest
-			GameObject gameObject = grabbableObjectToEvaluate.gameObject;
 			if (!Plugin.Config.GrabBeesNest.Value 
 				&& enumGrabbable != EnumGrabbableObjectCall.Selling
-                && gameObject.name.Contains("RedLocustHive"))
+                && grabbableObjectToEvaluate.name.Contains("RedLocustHive"))
 			{
 				return true;
 			}
@@ -4783,9 +4782,9 @@ namespace LethalBots.AI
 			if (!Plugin.Config.GrabDeadBodies.Value
 				&& enumGrabbable != EnumGrabbableObjectCall.Selling
 				&& enumGrabbable != EnumGrabbableObjectCall.Reviving
-                && gameObject.name.Contains("RagdollGrabbableObject")
-				&& gameObject.tag == "PhysicsProp"
-				&& gameObject.GetComponentInParent<DeadBodyInfo>() != null)
+                && grabbableObjectToEvaluate.name.Contains("RagdollGrabbableObject")
+				&& grabbableObjectToEvaluate.tag == "PhysicsProp"
+				&& grabbableObjectToEvaluate.GetComponentInParent<DeadBodyInfo>() != null)
 			{
 				return true;
 			}
@@ -4853,20 +4852,20 @@ namespace LethalBots.AI
 
 			// Wheelbarrow
 			if ((!Plugin.Config.GrabWheelbarrow.Value || enumGrabbable == EnumGrabbableObjectCall.Selling)
-				&& gameObject.name.Contains("Wheelbarrow"))
+				&& grabbableObjectToEvaluate.name.Contains("Wheelbarrow"))
 			{
 				return true;
 			}
 
 			// ShoppingCart
 			if ((!Plugin.Config.GrabShoppingCart.Value || enumGrabbable == EnumGrabbableObjectCall.Selling)
-				&& gameObject.name.Contains("ShoppingCart"))
+				&& grabbableObjectToEvaluate.name.Contains("ShoppingCart"))
 			{
 				return true;
 			}
 
 			// ZedDogs!
-			if (enumGrabbable == EnumGrabbableObjectCall.Selling && gameObject.name.Contains("ZeddogPlushie"))
+			if (enumGrabbable == EnumGrabbableObjectCall.Selling && grabbableObjectToEvaluate.name.Contains("ZeddogPlushie"))
 			{
 				return true;
 			}
