@@ -10,7 +10,7 @@ namespace LethalBots.NetworkSerializers
         public bool DroppedInShipRoom;
         public Vector3 TargetFloorPosition;
         public int FloorYRot;
-        public bool SkipOwner;
+        public ulong? SkipPlayer;
 
         // INetworkSerializable
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -20,7 +20,7 @@ namespace LethalBots.NetworkSerializers
             serializer.SerializeValue(ref DroppedInShipRoom);
             serializer.SerializeValue(ref TargetFloorPosition);
             serializer.SerializeValue(ref FloorYRot);
-            serializer.SerializeValue(ref SkipOwner);
+            LethalBotNetworkSerializer.SerializeNullable(serializer, ref SkipPlayer);
         }
     }
 }

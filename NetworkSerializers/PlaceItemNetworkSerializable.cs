@@ -9,7 +9,7 @@ namespace LethalBots.NetworkSerializers
         public NetworkObjectReference ParentObject;
         public Vector3 PlacePositionOffset;
         public bool MatchRotationOfParent;
-        public bool SkipOwner;
+        public ulong? SkipPlayer;
 
         // INetworkSerializable
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -18,7 +18,7 @@ namespace LethalBots.NetworkSerializers
             serializer.SerializeValue(ref ParentObject);
             serializer.SerializeValue(ref PlacePositionOffset);
             serializer.SerializeValue(ref MatchRotationOfParent);
-            serializer.SerializeValue(ref SkipOwner);
+            LethalBotNetworkSerializer.SerializeNullable(serializer, ref SkipPlayer);
         }
     }
 }

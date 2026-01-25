@@ -6356,8 +6356,8 @@ namespace LethalBots.AI
 						FloorYRot = floorYRot2,
 						GrabbedObject = grabbableObject.NetworkObject,
 						TargetFloorPosition = placePosition,
-						SkipOwner = true
-					});
+						SkipPlayer = NetworkManager.LocalClientId
+                    });
 				}
 				else
 				{
@@ -6377,8 +6377,8 @@ namespace LethalBots.AI
 						MatchRotationOfParent = matchRotationOfParent,
 						ParentObject = parentObjectTo,
 						PlacePositionOffset = placePosition,
-						SkipOwner = true
-					});
+                        SkipPlayer = NetworkManager.LocalClientId
+                    });
 				}
 			}
 			else
@@ -6442,8 +6442,8 @@ namespace LethalBots.AI
 					FloorYRot = floorYRot,
 					GrabbedObject = grabbableObject.NetworkObject,
 					TargetFloorPosition = targetFloorPosition,
-					SkipOwner = true
-				});
+                    SkipPlayer = NetworkManager.LocalClientId
+                });
 			}
 
 
@@ -6724,9 +6724,11 @@ namespace LethalBots.AI
 		private void SetObjectAsNoLongerHeldClientRpc(DropItemNetworkSerializable dropItemNetworkSerializable)
 		{
 			// Skip the owner if we were told to!
-			if (dropItemNetworkSerializable.SkipOwner && base.IsOwner)
+			ulong? skipClientId = dropItemNetworkSerializable.SkipPlayer;
+			if (skipClientId.HasValue && skipClientId.Value == NetworkManager.LocalClientId)
 			{
-				return;
+                Plugin.LogDebug($"{NpcController.Npc.playerUsername} skipping drop held item, on client #{NetworkManager.LocalClientId}");
+                return;
 			}
 
 			if (this.AreHandsFree())
@@ -6808,13 +6810,14 @@ namespace LethalBots.AI
 		[ClientRpc]
 		private void PlaceGrabbableObjectClientRpc(PlaceItemNetworkSerializable placeItemNetworkSerializable)
 		{
-			// Skip the owner if we were told to!
-			if (placeItemNetworkSerializable.SkipOwner && base.IsOwner)
-			{
-				return;
-			}
+            ulong? skipClientId = placeItemNetworkSerializable.SkipPlayer;
+            if (skipClientId.HasValue && skipClientId.Value == NetworkManager.LocalClientId)
+            {
+                Plugin.LogDebug($"{NpcController.Npc.playerUsername} skipping place held item, on client #{NetworkManager.LocalClientId}");
+                return;
+            }
 
-			NetworkObject networkObject;
+            NetworkObject networkObject;
 			if (placeItemNetworkSerializable.GrabbedObject.TryGet(out networkObject, null))
 			{
 				GrabbableObject grabbableObject = networkObject.GetComponent<GrabbableObject>();
