@@ -4777,6 +4777,9 @@ namespace LethalBots.AI
         /// <returns>true: this object is blacklisted. false: we are allowed to pick up this object</returns>
         private bool IsGrabbableObjectBlackListed(GrabbableObject grabbableObjectToEvaluate, EnumGrabbableObjectCall enumGrabbable = EnumGrabbableObjectCall.Default)
 		{
+			// Are we returning to the ship?
+			bool shouldReturnToShip = this.State?.ShouldReturnToShip() ?? false;
+
 			// Bee nest
 			if (!Plugin.Config.GrabBeesNest.Value 
 				&& enumGrabbable != EnumGrabbableObjectCall.Selling
@@ -4879,7 +4882,7 @@ namespace LethalBots.AI
 			}
 
 			// Don't pickup extended extention ladders
-			if (grabbableObjectToEvaluate is ExtensionLadderItem extensionLadder && (bool)extensionLadderItemLadderActivated.GetValue(extensionLadder))
+			if (grabbableObjectToEvaluate is ExtensionLadderItem extensionLadder && (!shouldReturnToShip || (bool)extensionLadderItemLadderActivated.GetValue(extensionLadder)))
 			{
 				return true;
 			}
@@ -4891,7 +4894,7 @@ namespace LethalBots.AI
 			}
 
 			// Don't pickup used flashbangs!
-			if (grabbableObjectToEvaluate is StunGrenadeItem flashbang && ((flashbang.pinPulled && !flashbang.explodeOnCollision ) || flashbang.hasExploded))
+			if (grabbableObjectToEvaluate is StunGrenadeItem flashbang && ((flashbang.pinPulled && !flashbang.explodeOnCollision) || flashbang.hasExploded))
 			{
 				return true;
 			}
