@@ -504,15 +504,34 @@ namespace LethalBots.AI
             }
 
             // Check if the entrance is covered in quicksand
-            RoundManager instanceRM = RoundManager.Instance;
-            float headOffset = npcController.Npc.gameplayCamera.transform.position.y - npcController.Npc.transform.position.y;
             if (entrance != null)
             {
-                Vector3 entrancePos = instanceRM.GetNavMeshPosition(entrance.isEntranceToBuilding ? entrance.entrancePoint.position : entrance.exitPoint.position, instanceRM.navHit, 2.7f, ai.agent.areaMask);
-                Transform closestNode = instanceRM.GetClosestNode(entrancePos, true);
-                Vector3 closestNodePos = instanceRM.GetNavMeshPosition(closestNode.position, instanceRM.navHit, 2.7f, ai.agent.areaMask);
+                return IsPositionCoveredInQuickSand(entrance.isEntranceToBuilding ? entrance.entrancePoint.position : entrance.exitPoint.position);
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Checks if the given position is covered in quicksand
+        /// </summary>
+        /// <param name="targetPos"></param>
+        /// <returns></returns>
+        protected bool IsPositionCoveredInQuickSand(Vector3 targetPos)
+        {
+            // Check to make sure that the quicksand array is not null or empty
+            if (LethalBotAI.QuicksandArray == null || LethalBotAI.QuicksandArray.Length == 0)
+            {
+                return false;
+            }
+
+            // Check if the entrance is covered in quicksand
+            RoundManager instanceRM = RoundManager.Instance;
+            float headOffset = npcController.Npc.gameplayCamera.transform.position.y - npcController.Npc.transform.position.y;
+            if (targetPos != null)
+            {
+                Vector3 entrancePos = instanceRM.GetNavMeshPosition(targetPos, instanceRM.navHit, 2.7f, ai.agent.areaMask);
                 float quicksandBuffer = 2f;
-                Plugin.LogDebug($"Testing quicksand safety for exit {entrance}");
+                Plugin.LogDebug($"Testing quicksand safety for exit {targetPos}");
                 foreach (var quicksand in LethalBotAI.QuicksandArray)
                 {
                     if (!quicksand.isActiveAndEnabled)
@@ -555,6 +574,8 @@ namespace LethalBots.AI
                             // We might be able to walk through the water, lets check the closest node to the entrance
                             // FIXME: This isn't the best way to do this, but it works for now
                             // We should probably get the closest node that is not in the water and check that instead
+                            Transform closestNode = instanceRM.GetClosestNode(entrancePos, true);
+                            Vector3 closestNodePos = instanceRM.GetNavMeshPosition(closestNode.position, instanceRM.navHit, 2.7f, ai.agent.areaMask);
                             float moveSpeed = npcController.Npc.movementSpeed > 0f ? npcController.Npc.movementSpeed : 4.5f;
                             moveSpeed /= npcController.Npc.carryWeight;
                             float modifiedMoveSpeed = moveSpeed / (2f * (1f * quicksand.movementHinderance));
@@ -976,7 +997,7 @@ namespace LethalBots.AI
                 }
 
                 // We failed while using eye position, lets make the checks a bit more lax!
-                if (ai.AreWeExposed())
+                if (npcController.Npc.isUnderwater || ai.AreWeExposed())
                 {
                     Plugin.LogDebug($"Bot {npcController.Npc.playerUsername} failed to find a node out of sight and is exposed! They will now attempt to fallback into cover if possible!");
 
@@ -1044,6 +1065,12 @@ namespace LethalBots.AI
 
                         // This node is dangerous! Pick another one!
                         if (!isNodeSafe)
+                        {
+                            continue;
+                        }
+
+                        // Node is either covered in quicksand or is underwater! Pick another one!
+                        if (IsPositionCoveredInQuickSand(nodePos))
                         {
                             continue;
                         }
