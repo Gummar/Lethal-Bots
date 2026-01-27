@@ -197,7 +197,30 @@ namespace LethalBots.AI.AIStates
         public override void UseHeldItem()
         {
             // Don't use our held item, we manage it ourselves!
-            return;
+            GrabbableObject? heldItem = ai.HeldItem;
+            if (heldItem == null
+                || !ai.CanUseHeldItem())
+            {
+                return;
+            }
+
+            // We manage weapons!
+            if (LethalBotAI.IsItemWeapon(heldItem))
+            {
+                return;
+            }
+            else if (heldItem is WalkieTalkie walkieTalkie)
+            {
+                // Stop talking on the walkie, we are in combat!
+                if (walkieTalkie.isBeingUsed && walkieTalkie.isHoldingButton)
+                {
+                    walkieTalkie.UseItemOnClient(false);
+                }
+
+                return;
+            }
+
+            base.UseHeldItem();
         }
 
         public override void StopAllCoroutines()
