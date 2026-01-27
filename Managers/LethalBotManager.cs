@@ -385,7 +385,27 @@ namespace LethalBots.Managers
             Plugin.LogDebug($"Bot register grabbable object, found : {array.Length}");
             foreach (var grabbableObject in array)
             {
-                grabbableObjectsInMap.Add(grabbableObject.gameObject);
+                // Now you may be asking, why I do this, and that because of a base game desync issue.
+                // Items are not set as in the ship for other clients by default.
+                if (grabbableObject != null)
+                {
+                    Vector3 floorPosition;
+                    bool inShipRoom = false;
+                    bool inElevator = false;
+                    floorPosition = grabbableObject.GetItemFloorPosition(default(Vector3));
+                    if (StartOfRound.Instance.shipStrictInnerRoomBounds.bounds.Contains(floorPosition))
+                    {
+                        inElevator = true;
+                        inShipRoom = true;
+                    }
+                    else if (StartOfRound.Instance.shipBounds.bounds.Contains(floorPosition))
+                    {
+                        inElevator = true;
+                    }
+                    GameNetworkManager.Instance.localPlayerController.SetItemInElevator(inElevator, inShipRoom, grabbableObject);
+
+                    grabbableObjectsInMap.Add(grabbableObject.gameObject);
+                }
                 yield return null;
             }
 
