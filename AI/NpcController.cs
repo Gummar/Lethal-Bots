@@ -1015,11 +1015,6 @@ namespace LethalBots.AI
                 animationHashLayers[i] = Npc.playerBodyAnimator.GetCurrentAnimatorStateInfo(i).fullPathHash;
             }
 
-            if (!ShouldAnimate)
-            {
-                CutAnimations();
-            }
-
             if (NetworkManager.Singleton != null && Npc.playersManager.connectedPlayersAmount > 0)
             {
                 // Sync
@@ -1446,14 +1441,6 @@ namespace LethalBots.AI
         {
             IsWalking = false;
             Npc.isSprinting = false;
-            Npc.playerBodyAnimator.SetBool(Const.PLAYER_ANIMATION_BOOL_WALKING, false);
-            Npc.playerBodyAnimator.SetBool(Const.PLAYER_ANIMATION_BOOL_SPRINTING, false);
-            Npc.playerBodyAnimator.SetBool(Const.PLAYER_ANIMATION_BOOL_SIDEWAYS, false);
-        }
-
-        private void CutAnimations()
-        {
-            //Npc.playerBodyAnimator.SetInteger("emoteNumber", 0);
             Npc.playerBodyAnimator.SetBool(Const.PLAYER_ANIMATION_BOOL_WALKING, false);
             Npc.playerBodyAnimator.SetBool(Const.PLAYER_ANIMATION_BOOL_SPRINTING, false);
             Npc.playerBodyAnimator.SetBool(Const.PLAYER_ANIMATION_BOOL_SIDEWAYS, false);

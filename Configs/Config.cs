@@ -115,7 +115,7 @@ namespace LethalBots.Configs
 
             AllowMissionControlTeleport = cfg.BindSyncedEntry(ConfigConst.ConfigSectionBehavior,
                                                 "Allow the mission controller to teleport living players",
-                                                defaultVal: false,
+                                                defaultVal: true,
                                                 "Should the bot who is the active mission controller be allowed to teleport living players. (NOTE: This doesn't affect dead body teleportation or if a player specifically request to be teleported!)");
 
             StartShipChatCommandProtection = cfg.BindSyncedEntry(ConfigConst.ConfigSectionBehavior,

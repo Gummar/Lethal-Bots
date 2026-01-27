@@ -1083,7 +1083,7 @@ namespace LethalBots.AI.AIStates
             foreach (var weapon in player.ItemSlots)
             {
                 if (LethalBotAI.IsItemWeapon(weapon) 
-                    || (!isPlayerBot && weapon.itemProperties.isDefensiveWeapon))
+                    || (!isPlayerBot && weapon != null && weapon.itemProperties.isDefensiveWeapon))
                 {
                     return true; 
                 }

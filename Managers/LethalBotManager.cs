@@ -2993,9 +2993,12 @@ namespace LethalBots.Managers
 
             // NEEDTOVALIDATE: Is this code better than the one above,
             // I know that its less prone to having a connected player miscount though
-            int newPlayerCount = GameNetworkManager.Instance.connectedPlayers - 1; // StartOfRound doesn't count the host player while NetworkManager does!            instanceSOR.livingPlayers = GameNetworkManager.Instance.connectedPlayers;
-            int newLivingPlayerCount = GameNetworkManager.Instance.connectedPlayers; 
-            SendNewPlayerCountServerRpc(newPlayerCount, newLivingPlayerCount, GameNetworkManager.Instance.connectedPlayers);
+            if (base.IsServer || base.IsHost)
+            {
+                int newPlayerCount = GameNetworkManager.Instance.connectedPlayers - 1; // StartOfRound doesn't count the host player while NetworkManager does!            instanceSOR.livingPlayers = GameNetworkManager.Instance.connectedPlayers;
+                int newLivingPlayerCount = GameNetworkManager.Instance.connectedPlayers;
+                SendNewPlayerCountServerRpc(newPlayerCount, newLivingPlayerCount, GameNetworkManager.Instance.connectedPlayers);
+            }
         }
 
         /// <summary>
@@ -3023,69 +3026,77 @@ namespace LethalBots.Managers
                     continue;
                 }
 
-                PlayerControllerB lethalBotController = lethalBotAI.NpcController.Npc;
-                if (lethalBotController.isPlayerControlled && !lethalBotController.isPlayerDead)
+                // Sigh, we should never error out here, but you never know.....
+                PlayerControllerB lethalBotController = lethalBotAI.NpcController.Npc; // NOTE: We have bigger problems if this is null.....
+                try
                 {
-                    // Leave the terminal if we are using one!
-                    if (lethalBotController.inTerminalMenu)
+                    if (lethalBotController.isPlayerControlled && !lethalBotController.isPlayerDead)
                     {
-                        lethalBotAI.LeaveTerminal();
-                    }
-
-                    // Check if the bot should be abandoned or not
-                    if (!lethalBotController.isInElevator && !lethalBotController.isInHangarShipRoom)
-                    {
-                        Plugin.LogDebug($"Killing player obj #{lethalBotController.playerClientId}, they were not in the ship when it left.");
-                        lethalBotController.KillPlayer(Vector3.zero, spawnBody: false, CauseOfDeath.Abandoned);
-
-                        // NOTE: We use an IsOwner check so the client only calls this once!
-                        // CountAliveAndDisableLethalBots is called for all players!
-                        if (IsOwner)
+                        // Leave the terminal if we are using one!
+                        if (lethalBotController.inTerminalMenu)
                         {
-                            HUDManager.Instance.AddTextToChatOnServer($"{lethalBotController.playerUsername} was left behind.");
+                            lethalBotAI.LeaveTerminal();
                         }
-                    }
-                    else
-                    {
-                        if (!lethalBotController.isInHangarShipRoom)
-                        {
-                            lethalBotController.isInElevator = true;
-                            lethalBotController.isInHangarShipRoom = true;
-                            Vector3 shipPos = StartOfRoundPatch.GetPlayerSpawnPosition_ReversePatch(StartOfRound.Instance, (int)lethalBotController.playerClientId, false);
-                            lethalBotController.thisController.enabled = false;
-                            lethalBotController.TeleportPlayer(shipPos);
-                            // HACKHACK: TeleportLethalBot acts weird at times, so we manually set the player position as well!
-                            lethalBotAI.TeleportLethalBot(shipPos, setOutside: false, targetEntrance: null);
-                            lethalBotAI.serverPosition = shipPos;
-                            lethalBotAI.transform.position = shipPos;
-                            lethalBotAI.transform.localPosition = shipPos;
-                            lethalBotController.serverPlayerPosition = shipPos;
-                            lethalBotController.transform.localPosition = shipPos;
-                            lethalBotController.transform.position = shipPos;
-                            lethalBotController.thisController.enabled = true;
 
-                            // Make sure we move our inventory to the ship as well!
-                            foreach (var item in lethalBotController.ItemSlots)
+                        // Check if the bot should be abandoned or not
+                        if (!lethalBotController.isInElevator && !lethalBotController.isInHangarShipRoom)
+                        {
+                            Plugin.LogDebug($"Killing player obj #{lethalBotController.playerClientId}, they were not in the ship when it left.");
+                            lethalBotController.KillPlayer(Vector3.zero, spawnBody: false, CauseOfDeath.Abandoned);
+
+                            // NOTE: We use an IsOwner check so the client only calls this once!
+                            // CountAliveAndDisableLethalBots is called for all players!
+                            if (IsOwner)
                             {
-                                Transform? parentObject = item?.parentObject;
-                                if (item != null && parentObject != null)
+                                HUDManager.Instance.AddTextToChatOnServer($"{lethalBotController.playerUsername} was left behind.");
+                            }
+                        }
+                        else
+                        {
+                            if (!lethalBotController.isInHangarShipRoom)
+                            {
+                                lethalBotController.isInElevator = true;
+                                lethalBotController.isInHangarShipRoom = true;
+                                Vector3 shipPos = StartOfRoundPatch.GetPlayerSpawnPosition_ReversePatch(StartOfRound.Instance, (int)lethalBotController.playerClientId, false);
+                                lethalBotController.thisController.enabled = false;
+                                lethalBotController.TeleportPlayer(shipPos);
+                                // HACKHACK: TeleportLethalBot acts weird at times, so we manually set the player position as well!
+                                lethalBotAI.TeleportLethalBot(shipPos, setOutside: false, targetEntrance: null);
+                                lethalBotAI.serverPosition = shipPos;
+                                lethalBotAI.transform.position = shipPos;
+                                lethalBotAI.transform.localPosition = shipPos;
+                                lethalBotController.serverPlayerPosition = shipPos;
+                                lethalBotController.transform.localPosition = shipPos;
+                                lethalBotController.transform.position = shipPos;
+                                lethalBotController.thisController.enabled = true;
+
+                                // Make sure we move our inventory to the ship as well!
+                                foreach (var item in lethalBotController.ItemSlots)
                                 {
-                                    item.transform.rotation = parentObject.rotation;
-                                    item.transform.Rotate(item.itemProperties.rotationOffset);
-                                    item.transform.position = parentObject.position;
-                                    Vector3 positionOffset = item.itemProperties.positionOffset;
-                                    positionOffset = parentObject.rotation * positionOffset;
-                                    item.transform.position += positionOffset;
+                                    Transform? parentObject = item?.parentObject;
+                                    if (item != null && parentObject != null)
+                                    {
+                                        item.transform.rotation = parentObject.rotation;
+                                        item.transform.Rotate(item.itemProperties.rotationOffset);
+                                        item.transform.position = parentObject.position;
+                                        Vector3 positionOffset = item.itemProperties.positionOffset;
+                                        positionOffset = parentObject.rotation * positionOffset;
+                                        item.transform.position += positionOffset;
+                                    }
                                 }
                             }
                         }
+
+                        // Stop Emoting
+                        lethalBotAI.NpcController.StopPreformingEmote(true);
+
+                        // Drop our held items
+                        lethalBotController.DropAllHeldItems();
                     }
-
-                    // Stop Emoting
-                    lethalBotAI.NpcController.StopPreformingEmote(true);
-
-                    // Drop our held items
-                    lethalBotController.DropAllHeldItems();
+                }
+                catch (Exception e)
+                {
+                    Plugin.LogError($"An error occured during round cleanup! Error: {e}");
                 }
 
                 // Mark the status as recently used so they are spawned in again!
