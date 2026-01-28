@@ -22,6 +22,7 @@ namespace LethalBots.AI.AIStates
         private static readonly FieldInfo shovelMask = AccessTools.Field(typeof(Shovel), "shovelMask");
         private static readonly FieldInfo isScanning = AccessTools.Field(typeof(PatcherTool), "isScanning");
         private static readonly FieldInfo anomalyMask = AccessTools.Field(typeof(PatcherTool), "anomalyMask");
+        private float attackFOV;
         private RaycastHit[]? enemyColliders;
         private Coroutine? currentAttackRoutine;
         private Collider? _enemyCollision;
@@ -186,7 +187,7 @@ namespace LethalBots.AI.AIStates
             if (!Physics.Linecast(npcController.Npc.gameplayCamera.transform.position, targetPos + Vector3.up * 0.2f, out RaycastHit hitInfo, StartOfRound.Instance.collidersAndRoomMaskAndDefault)
                 || hitInfo.collider.gameObject.GetComponentInParent<EnemyAI>() == this.currentEnemy)
             {
-                npcController.OrderToLookAtPosition(targetPos, EnumLookAtPriority.HIGH_PRIORITY, ai.AIIntervalTime, true);
+                npcController.OrderToLookAtPosition(targetPos, EnumLookAtPriority.HIGH_PRIORITY, ai.AIIntervalTime, true, maxBodyFOV: attackFOV);
             }
             else
             {
@@ -462,6 +463,7 @@ namespace LethalBots.AI.AIStates
 
             // Check if we can potentially hit!
             GetWeaponAttackInfo(heldItem, lethalBotController, out Ray ray, out float maxFOV, out float radius, out float maxRange, out LayerMask hitMask);
+            attackFOV = Mathf.Clamp(maxFOV, 0f, Const.LETHAL_BOT_FOV);
             if (angleToEnemy < maxFOV)
             {
                 // Check if we hit the target!

@@ -235,8 +235,6 @@ namespace LethalBots.Managers
         private bool _areAllHumanPlayersDead;
         private float nextCheckForAllPlayersOnShip;
         private bool _areAllPlayersOnTheShip;
-        private float timerAnimationCulling;
-        private float timerNoAnimationAfterLag;
         private LethalBotAI[] lethalBotsInFOV = null!; // new LethalBotAI[50]
 
         private float timerRegisterAINoiseListener;
@@ -452,8 +450,6 @@ namespace LethalBots.Managers
 
         private void Update()
         {
-            UpdateAnimationsCulling();
-
             StartOfRound instanceSOR = StartOfRound.Instance;
             if (!isSpawningBots.Value && sendPlayerCountUpdate.Value
                     && (IsServer || IsHost))
@@ -3368,165 +3364,6 @@ namespace LethalBots.Managers
                                                           timesPlayedInSameSpot: 0,
                                                           noiseIsInsideClosedShip,
                                                           noiseID);
-        }
-
-        #endregion
-
-        #region Animations culling
-
-        private void UpdateAnimationsCulling()
-        {
-            if (StartOfRound.Instance == null
-                || StartOfRound.Instance.localPlayerController == null)
-            {
-                return;
-            }
-
-            // Check should the bots always be animated?
-            if (Plugin.Config.AlwaysAnimateBots.Value)
-            {
-                foreach (LethalBotAI? lethalBotAI in AllLethalBotAIs)
-                {
-                    if (lethalBotAI == null
-                        || lethalBotAI.isEnemyDead
-                        || lethalBotAI.NpcController == null
-                        || !lethalBotAI.NpcController.Npc.isPlayerControlled
-                        || lethalBotAI.NpcController.Npc.isPlayerDead)
-                    {
-                        continue;
-                    }
-
-                    // Alright, let them be animated!
-                    lethalBotAI.NpcController.ShouldAnimate = true;
-                }
-
-                // No need to run the rest of the code!
-                return;
-            }
-
-            if (timerNoAnimationAfterLag > 0f)
-            {
-                timerNoAnimationAfterLag += Time.deltaTime;
-            }
-
-            timerAnimationCulling += Time.deltaTime;
-            if (timerAnimationCulling < 0.05f)
-            {
-                return;
-            }
-
-            Array.Fill(lethalBotsInFOV, null);
-
-            // If we are dead we need to update the animations based on the spectated player instead!
-            PlayerControllerB localPlayer = StartOfRound.Instance.localPlayerController;
-            PlayerControllerB? spectatedPlayer = localPlayer.spectatedPlayerScript;
-            PlayerControllerB? mapTarget = StartOfRound.Instance.mapScreen.targetedPlayer;
-            Camera localPlayerCamera = localPlayer.gameplayCamera;
-            Vector3 playerPos = localPlayer.transform.position;
-            int baseLayer = localPlayer.gameObject.layer;
-            localPlayer.gameObject.layer = 0;
-            if (localPlayer.isPlayerDead)
-            {
-                playerPos = spectatedPlayer != null ? spectatedPlayer.transform.position : playerPos;
-                localPlayerCamera = StartOfRound.Instance.spectateCamera;
-            }
-
-            int index = 0;
-            Vector3 lethalBotBodyPos;
-            Vector3 vectorPlayerToLethalBot;
-            foreach (LethalBotAI? lethalBotAI in AllLethalBotAIs)
-            {
-                if (lethalBotAI == null
-                    || lethalBotAI.isEnemyDead
-                    || lethalBotAI.NpcController == null
-                    || !lethalBotAI.NpcController.Npc.isPlayerControlled
-                    || lethalBotAI.NpcController.Npc.isPlayerDead)
-                {
-                    continue;
-                }
-
-                // Cut animation before deciding which bot can animate
-                lethalBotAI.NpcController.ShouldAnimate = false;
-
-                // The bot we are spectating should ALWAYS have its animations updated!
-                if (lethalBotAI.NpcController.Npc == spectatedPlayer 
-                    || (mapTarget != null && lethalBotAI.NpcController.Npc == mapTarget))
-                {
-                    lethalBotsInFOV[index++] = lethalBotAI;
-                    continue;
-                }
-
-                if (timerNoAnimationAfterLag > 3f)
-                {
-                    timerNoAnimationAfterLag = 0f;
-                }
-                if (timerNoAnimationAfterLag > 0f)
-                {
-                    continue;
-                }
-                // Stop animation if we are losing frames
-                if (timerNoAnimationAfterLag <= 0f && Time.deltaTime > 0.125f)
-                {
-                    timerNoAnimationAfterLag += timerAnimationCulling;
-                    continue;
-                }
-
-                // We only cull bot movement animations
-                // So, if we can exit out early, we can save a lot of CPU time!
-                if (!lethalBotAI.NpcController.IsMoving())
-                {
-                    continue;
-                }
-
-                lethalBotBodyPos = lethalBotAI.NpcController.Npc.transform.position + new Vector3(0, 1.7f, 0);
-                vectorPlayerToLethalBot = lethalBotBodyPos - localPlayerCamera.transform.position;
-                if (lethalBotAI.AngleFOVWithLocalPlayerTimedCheck.GetAngleFOVWithLocalPlayer(localPlayerCamera.transform, lethalBotBodyPos) < localPlayerCamera.fieldOfView * 0.81f)
-                {
-                    // Bot in FOV
-                    lethalBotsInFOV[index++] = lethalBotAI;
-                }
-            }
-
-            index = 0;
-            var orderedLethalBotInFOV = lethalBotsInFOV.Where(x => x != null)
-                                                 .OrderBy(x => (x.NpcController.Npc.transform.position - playerPos).sqrMagnitude);
-            foreach (LethalBotAI? lethalBotAI in orderedLethalBotInFOV)
-            {
-                if (index >= Plugin.Config.MaxAnimatedBots.Value)
-                {
-                    break;
-                }
-
-                lethalBotAI.NpcController.Npc.gameObject.layer = 0;
-                lethalBotBodyPos = lethalBotAI.NpcController.Npc.transform.position + new Vector3(0, 1.7f, 0);
-                vectorPlayerToLethalBot = lethalBotBodyPos - localPlayerCamera.transform.position;
-
-                bool collideWithAnotherPlayer = false;
-                RaycastHit[] raycastHits = new RaycastHit[5];
-                Ray ray = new Ray(localPlayerCamera.transform.position, vectorPlayerToLethalBot);
-                int raycastResults = Physics.RaycastNonAlloc(ray, raycastHits, vectorPlayerToLethalBot.magnitude, StartOfRound.Instance.playersMask);
-                for (int i = 0; i < raycastResults; i++)
-                {
-                    RaycastHit hit = raycastHits[i];
-                    if (hit.collider != null
-                        && hit.collider.tag == "Player")
-                    {
-                        collideWithAnotherPlayer = true;
-                        break;
-                    }
-                }
-
-                if (!collideWithAnotherPlayer)
-                {
-                    lethalBotAI.NpcController.ShouldAnimate = true;
-                    index++;
-                }
-
-                lethalBotAI.NpcController.Npc.gameObject.layer = baseLayer;
-            }
-
-            localPlayer.gameObject.layer = baseLayer;
-            timerAnimationCulling = 0f;
         }
 
         #endregion

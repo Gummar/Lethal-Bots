@@ -26,7 +26,6 @@ namespace LethalBots.Configs
         // Bot settings
         [SyncedEntryField] public SyncedEntry<int> MaxBotsAllowedToSpawn;
         public ConfigEntry<int> MaxAnimatedBots;
-        public ConfigEntry<bool> AlwaysAnimateBots;
 
         // Identity  
         [SyncedEntryField] public SyncedEntry<bool> SpawnIdentitiesRandomly;
@@ -85,11 +84,6 @@ namespace LethalBots.Configs
                                    defaultValue: ConfigConst.MAX_BOTS_AVAILABLE,
                                    new ConfigDescription("Set the maximum of bots that can be animated at the same time (if heavy lag occurs when looking at a lot of bots) (client only)",
                                                          new AcceptableValueRange<int>(1, ConfigConst.MAX_BOTS_AVAILABLE)));
-
-            AlwaysAnimateBots = cfg.Bind(ConfigConst.ConfigSectionMain,
-                                    "Always animate bots (Client only)",
-                                    defaultValue: false,
-                                    "If set to true, bots will not have their animations culled when you are not looking at them");
 
             // Identities
             SpawnIdentitiesRandomly = cfg.BindSyncedEntry(ConfigConst.ConfigSectionIdentities,
