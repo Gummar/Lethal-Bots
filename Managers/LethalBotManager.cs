@@ -388,19 +388,17 @@ namespace LethalBots.Managers
                 if (grabbableObject != null)
                 {
                     Vector3 floorPosition;
-                    bool inShipRoom = false;
-                    bool inElevator = false;
                     floorPosition = grabbableObject.GetItemFloorPosition(default(Vector3));
                     if (StartOfRound.Instance.shipStrictInnerRoomBounds.bounds.Contains(floorPosition))
                     {
-                        inElevator = true;
-                        inShipRoom = true;
+                        grabbableObject.isInElevator = true;
+                        grabbableObject.isInShipRoom = true;
                     }
                     else if (StartOfRound.Instance.shipBounds.bounds.Contains(floorPosition))
                     {
-                        inElevator = true;
+                        grabbableObject.isInElevator = true;
                     }
-                    GameNetworkManager.Instance.localPlayerController.SetItemInElevator(inElevator, inShipRoom, grabbableObject);
+                    //GameNetworkManager.Instance.localPlayerController.SetItemInElevator(inElevator, inShipRoom, grabbableObject);
 
                     grabbableObjectsInMap.Add(grabbableObject.gameObject);
                 }
