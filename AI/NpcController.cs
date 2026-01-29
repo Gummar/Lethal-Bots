@@ -68,7 +68,6 @@ namespace LethalBots.AI
         public int PlayerMask;
         public bool IsTouchingGround;
         public EnemyAI? EnemyInAnimationWith;
-        public bool ShouldAnimate;
         public Vector3 NearEntitiesPushVector;
 
         private LethalBotAI LethalBotAIController
@@ -109,9 +108,6 @@ namespace LethalBots.AI
         private LookAtTarget oldLookAtTarget = new LookAtTarget();
         public LookAtTarget LookAtTarget { private set; get; } = new LookAtTarget();
 
-        private Vector3 lastDirectionToLookAt;
-        private Quaternion cameraRotationToUpdateLookAt;
-
         public Vector2 lastMoveVector;
         private float floatSprint;
         private bool goDownLadder;
@@ -122,8 +118,6 @@ namespace LethalBots.AI
         private float updatePlayerAnimationsInterval;
         private float currentAnimationSpeed;
         private float previousAnimationSpeed;
-
-        private float timerPlayFootstep;
 
         public NpcController(PlayerControllerB npc)
         {
@@ -155,7 +149,7 @@ namespace LethalBots.AI
 
             this.IsCameraDisabled = true;
             Npc.sprintMeter = 1f;
-            Npc.ItemSlots = new GrabbableObject[4];
+            Npc.ItemSlots ??= new GrabbableObject[4]; // Only create new array if it doesn't exist!
             RightArmProceduralTargetBasePosition = Npc.rightArmProceduralTarget.localPosition;
 
             Npc.usernameBillboardText.text = Npc.playerUsername;
@@ -322,9 +316,6 @@ namespace LethalBots.AI
 
             // Update our player sanity
             PlayerControllerBPatch.SetPlayerSanityLevel_ReversePatch(Npc);
-
-            // Play footstep sounds if we are not currently animating
-            PlayFootstepIfCloseNoAnimation();
         }
 
         /// <summary>
@@ -1002,23 +993,17 @@ namespace LethalBots.AI
                 animationHashLayers[0] = Const.IDLE_STATE_HASH;
             }*/
 
-            if (ShouldAnimate)
+            // Update this so we can send the layers to other clients!
+            if (Npc.playerBodyAnimator.GetBool(Const.PLAYER_ANIMATION_BOOL_WALKING) != IsWalking)
             {
-                if (Npc.playerBodyAnimator.GetBool(Const.PLAYER_ANIMATION_BOOL_WALKING) != IsWalking)
-                {
-                    Npc.playerBodyAnimator.SetBool(Const.PLAYER_ANIMATION_BOOL_WALKING, IsWalking);
-                }
-                if (Npc.playerBodyAnimator.GetBool(Const.PLAYER_ANIMATION_BOOL_SPRINTING) != Npc.isSprinting)
-                {
-                    Npc.playerBodyAnimator.SetBool(Const.PLAYER_ANIMATION_BOOL_SPRINTING, Npc.isSprinting);
-                }
+                Npc.playerBodyAnimator.SetBool(Const.PLAYER_ANIMATION_BOOL_WALKING, IsWalking);
             }
-            else
+            if (Npc.playerBodyAnimator.GetBool(Const.PLAYER_ANIMATION_BOOL_SPRINTING) != Npc.isSprinting)
             {
-                CutAnimations();
+                Npc.playerBodyAnimator.SetBool(Const.PLAYER_ANIMATION_BOOL_SPRINTING, Npc.isSprinting);
             }
 
-            // Other layers
+            // Save current layers to be sent to other players
             for (int i = 0; i < Npc.playerBodyAnimator.layerCount; i++)
             {
                 animationHashLayers[i] = Npc.playerBodyAnimator.GetCurrentAnimatorStateInfo(i).fullPathHash;
@@ -1079,38 +1064,18 @@ namespace LethalBots.AI
             {
                 this.updatePlayerAnimationsInterval = 0f;
 
-                if (ShouldAnimate)
+                // If animation
+                // Update animation if current != previous
+                this.currentAnimationSpeed = Npc.playerBodyAnimator.GetFloat("animationSpeed");
+                for (int i = 0; i < animationsStateHash.Length; i++)
                 {
-                    // If animation
-                    // Update animation if current != previous
-                    this.currentAnimationSpeed = Npc.playerBodyAnimator.GetFloat("animationSpeed");
-                    for (int i = 0; i < animationsStateHash.Length; i++)
+                    this.currentAnimationStateHash[i] = animationsStateHash[i];
+                    if (this.previousAnimationStateHash[i] != this.currentAnimationStateHash[i])
                     {
-                        this.currentAnimationStateHash[i] = animationsStateHash[i];
-                        if (this.previousAnimationStateHash[i] != this.currentAnimationStateHash[i])
-                        {
-                            this.previousAnimationStateHash[i] = this.currentAnimationStateHash[i];
-                            this.previousAnimationSpeed = this.currentAnimationSpeed;
-                            ApplyUpdateLethalBotAnimationsNotOwner(this.currentAnimationStateHash[i], this.currentAnimationSpeed);
-                            return;
-                        }
-                    }
-                }
-                else
-                {
-                    // If no animation
-                    // Return to idle state and keep previous animation state to idle, for an update if animation resume
-                    if (Npc.playerBodyAnimator.GetCurrentAnimatorStateInfo(0).fullPathHash != Const.IDLE_STATE_HASH)
-                    {
-                        for (int i = 0; i < Npc.playerBodyAnimator.layerCount; i++)
-                        {
-                            if (Npc.playerBodyAnimator.HasState(i, Const.IDLE_STATE_HASH))
-                            {
-                                this.previousAnimationStateHash[i] = Const.IDLE_STATE_HASH;
-                                Npc.playerBodyAnimator.CrossFadeInFixedTime(Const.IDLE_STATE_HASH, 0.1f);
-                                return;
-                            }
-                        }
+                        this.previousAnimationStateHash[i] = this.currentAnimationStateHash[i];
+                        this.previousAnimationSpeed = this.currentAnimationSpeed;
+                        ApplyUpdateLethalBotAnimationsNotOwner(this.currentAnimationStateHash[i], this.currentAnimationSpeed);
+                        return;
                     }
                 }
 
@@ -1405,41 +1370,14 @@ namespace LethalBots.AI
                 Npc.playerBodyAnimator.SetFloat("animationSpeed", animationSpeed);
             }
 
-            if (ShouldAnimate)
+            if (animationState != 0 && Npc.playerBodyAnimator.GetCurrentAnimatorStateInfo(0).fullPathHash != animationState)
             {
-                if (animationState != 0 && Npc.playerBodyAnimator.GetCurrentAnimatorStateInfo(0).fullPathHash != animationState)
-                {
-                    for (int i = 0; i < Npc.playerBodyAnimator.layerCount; i++)
-                    {
-                        if (Npc.playerBodyAnimator.HasState(i, animationState))
-                        {
-                            animationHashLayers[i] = animationState;
-                            Npc.playerBodyAnimator.CrossFadeInFixedTime(animationState, 0.1f);
-                            break;
-                        }
-                    }
-                }
-                return;
-            }
-            else
-            {
-                if (Npc.playerBodyAnimator.GetCurrentAnimatorStateInfo(0).fullPathHash != Const.IDLE_STATE_HASH)
-                {
-                    for (int i = 0; i < Npc.playerBodyAnimator.layerCount; i++)
-                    {
-                        if (Npc.playerBodyAnimator.HasState(i, Const.IDLE_STATE_HASH))
-                        {
-                            Npc.playerBodyAnimator.CrossFadeInFixedTime(Const.IDLE_STATE_HASH, 0.1f);
-                            break;
-                        }
-                    }
-                }
-
                 for (int i = 0; i < Npc.playerBodyAnimator.layerCount; i++)
                 {
                     if (Npc.playerBodyAnimator.HasState(i, animationState))
                     {
                         animationHashLayers[i] = animationState;
+                        Npc.playerBodyAnimator.CrossFadeInFixedTime(animationState, 0.1f);
                         break;
                     }
                 }
@@ -1453,53 +1391,6 @@ namespace LethalBots.AI
             Npc.playerBodyAnimator.SetBool(Const.PLAYER_ANIMATION_BOOL_WALKING, false);
             Npc.playerBodyAnimator.SetBool(Const.PLAYER_ANIMATION_BOOL_SPRINTING, false);
             Npc.playerBodyAnimator.SetBool(Const.PLAYER_ANIMATION_BOOL_SIDEWAYS, false);
-        }
-
-        private void CutAnimations()
-        {
-            Npc.playerBodyAnimator.SetInteger("emoteNumber", 0);
-            Npc.playerBodyAnimator.SetBool(Const.PLAYER_ANIMATION_BOOL_WALKING, false);
-            Npc.playerBodyAnimator.SetBool(Const.PLAYER_ANIMATION_BOOL_SPRINTING, false);
-            Npc.playerBodyAnimator.SetBool(Const.PLAYER_ANIMATION_BOOL_SIDEWAYS, false);
-        }
-
-        private void PlayFootstepIfCloseNoAnimation()
-        {
-            if (ShouldAnimate)
-            {
-                return;
-            }
-
-            PlayerControllerB localPlayer = StartOfRound.Instance.localPlayerController;
-            Vector3 localPlayerPos = localPlayer.transform.position;
-            if (localPlayer.isPlayerDead && localPlayer.spectatedPlayerScript != null)
-            {
-                localPlayerPos = localPlayer.spectatedPlayerScript.transform.position;
-            }
-            if ((localPlayerPos - Npc.transform.position).sqrMagnitude > 20f * 20f)
-            {
-                return;
-            }
-
-            float threshold = 0f;
-            if (Npc.isSprinting)
-            {
-                threshold = 0.170f + Random.Range(0f, 0.070f);
-            }
-            else if (IsWalking)
-            {
-                threshold = 0.498f;
-            }
-
-            if (threshold > 0f)
-            {
-                timerPlayFootstep += Time.deltaTime;
-                if (timerPlayFootstep > threshold)
-                {
-                    timerPlayFootstep = 0f;
-                    PlayFootstep(isServer: false);
-                }
-            }
         }
 
         public void PlayFootstep(bool isServer)
@@ -2356,19 +2247,58 @@ namespace LethalBots.AI
             this.LookAtTarget.Update(this, this.LethalBotAIController);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsMoving()
         {
             return MoveVector != Vector3.zero
+                || animationHashLayers[0] != Const.IDLE_STATE_HASH
                 || Npc.playerBodyAnimator.GetCurrentAnimatorStateInfo(0).fullPathHash != Const.IDLE_STATE_HASH;
         }
 
         private void ForceTurnTowardsTarget()
         {
-            if (Npc.inSpecialInteractAnimation && Npc.inShockingMinigame && Npc.shockingTarget != null)
+            PlayerControllerB lethalBotController = Npc;
+            if (lethalBotController.inSpecialInteractAnimation && lethalBotController.inShockingMinigame && lethalBotController.shockingTarget != null)
             {
+                // Tell the bot to keep the beam steady
                 OrderToLookAtPosition(Npc.shockingTarget.position, EnumLookAtPriority.MAXIMUM_PRIORITY);
+
+                // 1:1 copy of the code that would normally be run in default PlayerControllerBV update!
+                lethalBotController.targetScreenPos = lethalBotController.turnCompassCamera.WorldToViewportPoint(lethalBotController.shockingTarget.position);
+                lethalBotController.shockMinigamePullPosition = lethalBotController.targetScreenPos.x - 0.5f;
+                float num = Mathf.Clamp(Time.deltaTime, 0f, 0.1f);
+                if (lethalBotController.targetScreenPos.x > 0.54f)
+                {
+                    lethalBotController.turnCompass.Rotate(Vector3.up * 2000f * num * Mathf.Abs(lethalBotController.shockMinigamePullPosition));
+                    lethalBotController.playerBodyAnimator.SetBool("PullingCameraRight", value: false);
+                    lethalBotController.playerBodyAnimator.SetBool("PullingCameraLeft", value: true);
+                }
+                else if (lethalBotController.targetScreenPos.x < 0.46f)
+                {
+                    lethalBotController.turnCompass.Rotate(Vector3.up * -2000f * num * Mathf.Abs(lethalBotController.shockMinigamePullPosition));
+                    lethalBotController.playerBodyAnimator.SetBool("PullingCameraLeft", value: false);
+                    lethalBotController.playerBodyAnimator.SetBool("PullingCameraRight", value: true);
+                }
+                else
+                {
+                    lethalBotController.playerBodyAnimator.SetBool("PullingCameraLeft", value: false);
+                    lethalBotController.playerBodyAnimator.SetBool("PullingCameraRight", value: false);
+                }
+                lethalBotController.targetScreenPos = lethalBotController.gameplayCamera.WorldToViewportPoint(lethalBotController.shockingTarget.position + Vector3.up * 0.35f);
+                if (lethalBotController.targetScreenPos.y > 0.6f)
+                {
+                    CameraUp = Mathf.Clamp(Mathf.Lerp(CameraUp, CameraUp - 25f, 25f * num * Mathf.Abs(lethalBotController.targetScreenPos.y - 0.5f)), -89f, 89f);
+                }
+                else if (lethalBotController.targetScreenPos.y < 0.35f)
+                {
+                    CameraUp = Mathf.Clamp(Mathf.Lerp(CameraUp, CameraUp + 25f, 25f * num * Mathf.Abs(lethalBotController.targetScreenPos.y - 0.5f)), -89f, 89f);
+                }
+                lethalBotController.gameplayCamera.transform.localEulerAngles = new Vector3(CameraUp, lethalBotController.gameplayCamera.transform.localEulerAngles.y, lethalBotController.gameplayCamera.transform.localEulerAngles.z);
+                Vector3 zero = Vector3.zero;
+                zero.y = lethalBotController.turnCompass.eulerAngles.y;
+                lethalBotController.thisPlayerBody.rotation = Quaternion.Lerp(lethalBotController.thisPlayerBody.rotation, Quaternion.Euler(zero), Time.deltaTime * 20f * (1f - Mathf.Abs(lethalBotController.shockMinigamePullPosition)));
             }
-            else if (Npc.inAnimationWithEnemy
+            else if (lethalBotController.inAnimationWithEnemy
                      && EnemyInAnimationWith != null)
             {
                 Vector3 pos;

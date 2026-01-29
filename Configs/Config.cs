@@ -34,12 +34,17 @@ namespace LethalBots.Configs
         [SyncedEntryField] public SyncedEntry<bool> FollowCrouchWithPlayer;
         [SyncedEntryField] public SyncedEntry<bool> ChangeSuitAutoBehaviour;
         [SyncedEntryField] public SyncedEntry<bool> AllowBotsToChat;
+        [SyncedEntryField] public SyncedEntry<bool> AllowMissionControlTeleport;
+        [SyncedEntryField] public SyncedEntry<bool> StartShipChatCommandProtection;
+        [SyncedEntryField] public SyncedEntry<bool> AutoMissionControl;
+        [SyncedEntryField] public SyncedEntry<float> ReturnToShipTime;
         [SyncedEntryField] public SyncedEntry<bool> TeleportWhenUsingLadders;
         [SyncedEntryField] public SyncedEntry<bool> SellAllScrapOnShip;
         [SyncedEntryField] public SyncedEntry<bool> DropHeldEquipmentAtShip;
         [SyncedEntryField] public SyncedEntry<bool> GrabItemsNearEntrances;
         [SyncedEntryField] public SyncedEntry<bool> GrabBeesNest;
         [SyncedEntryField] public SyncedEntry<bool> GrabDeadBodies;
+        [SyncedEntryField] public SyncedEntry<bool> GrabDockedApparatus;
         [SyncedEntryField] public SyncedEntry<bool> TakeCareOfManeaterBaby;
         [SyncedEntryField] public SyncedEntry<bool> AdvancedManeaterBabyAI;
         [SyncedEntryField] public SyncedEntry<bool> GrabWheelbarrow;
@@ -75,7 +80,7 @@ namespace LethalBots.Configs
                                                                  new AcceptableValueRange<int>(ConfigConst.MIN_BOTS_AVAILABLE, ConfigConst.MAX_BOTS_AVAILABLE)));
 
             MaxAnimatedBots = cfg.Bind(ConfigConst.ConfigSectionMain,
-                                   "Max animated bots at once",
+                                   "Max animated bots at once (Client only)",
                                    defaultValue: ConfigConst.MAX_BOTS_AVAILABLE,
                                    new ConfigDescription("Set the maximum of bots that can be animated at the same time (if heavy lag occurs when looking at a lot of bots) (client only)",
                                                          new AcceptableValueRange<int>(1, ConfigConst.MAX_BOTS_AVAILABLE)));
@@ -86,7 +91,7 @@ namespace LethalBots.Configs
                                               defaultVal: false,
                                               "Spawn the bot with random identities from the file rather than in order?");
 
-            // Behaviour
+            // Behavior
             FollowCrouchWithPlayer = cfg.BindSyncedEntry(ConfigConst.ConfigSectionBehavior,
                                                "Crouch with player",
                                                defaultVal: true,
@@ -102,6 +107,27 @@ namespace LethalBots.Configs
                                                defaultVal: true,
                                                "Should the bot be allowed to use the chat? (NOTE: This is useful if you don't want bots spamming the chat! Also this doesn't affect bots calling out jesters!)");
 
+            AllowMissionControlTeleport = cfg.BindSyncedEntry(ConfigConst.ConfigSectionBehavior,
+                                                "Allow the mission controller to teleport living players",
+                                                defaultVal: true,
+                                                "Should the bot who is the active mission controller be allowed to teleport living players. (NOTE: This doesn't affect dead body teleportation or if a player specifically request to be teleported!)");
+
+            StartShipChatCommandProtection = cfg.BindSyncedEntry(ConfigConst.ConfigSectionBehavior,
+                                                "Start the ship chat command protection",
+                                                defaultVal: true,
+                                                "Should non-host players be allowed to tell the mission controller bot to start the ship? (NOTE: Bots will allow non-host players to start the ship if the host is dead regardless of this option!)");
+
+            AutoMissionControl = cfg.BindSyncedEntry(ConfigConst.ConfigSectionBehavior,
+                                                "Allow automatic mission control assignment",
+                                                defaultVal: true,
+                                                "Should bots that are chilling at the ship automatically assume the mission control state if the current mission controller is not set or dead?");
+
+            ReturnToShipTime = cfg.BindSyncedEntry(ConfigConst.ConfigSectionBehavior,
+                                                "Return to ship time",
+                                                defaultValue: 0.63f,
+                                                new ConfigDescription("At what time should bots automatically return to the ship. This has to be a normalized value. TIP: 10:00 PM is about 0.9f and the time the ship auto leaves at is 0.996f!", 
+                                                    new AcceptableValueRange<float>(0.0f, 1.0f)));
+
             TeleportWhenUsingLadders = cfg.BindSyncedEntry(ConfigConst.ConfigSectionBehavior,
                                                "Teleport when using ladders",
                                                defaultVal: false,
@@ -115,7 +141,7 @@ namespace LethalBots.Configs
             DropHeldEquipmentAtShip = cfg.BindSyncedEntry(ConfigConst.ConfigSectionBehavior,
                                                "Drop held equipment at ship",
                                                defaultVal: false,
-                                               "Should the bot drop all equipment its holding when at the ship? If false, bots will hold onto equipment, such as shovels! (NOTE: This doesn't affect bot if it returns to the ship on its own!)");
+                                               "Should the bot drop all equipment its holding when at the ship? If false, bots will hold onto equipment, such as shovels! (NOTE: This doesn't affect bot loadouts or if it returns to the ship on its own!)");
 
             GrabItemsNearEntrances = cfg.BindSyncedEntry(ConfigConst.ConfigSectionBehavior,
                                                "Grab items near entrances",
@@ -131,6 +157,11 @@ namespace LethalBots.Configs
                                       "Grab dead bodies",
                                       defaultVal: true,
                                       "Should the bot try to grab dead bodies? (NOTE: The bot at the terminal will still teleport them back to the ship!))");
+
+            GrabDockedApparatus = cfg.BindSyncedEntry(ConfigConst.ConfigSectionBehavior,
+                                      "Grab docked apparatus",
+                                      defaultVal: true,
+                                      "Is the bot allowed to grab docked apparatuses?");
 
             TakeCareOfManeaterBaby = cfg.BindSyncedEntry(ConfigConst.ConfigSectionBehavior,
                                       "Take care of baby maneater",
@@ -160,12 +191,12 @@ namespace LethalBots.Configs
 
             // Voice Recognition
             AllowVoiceRecognition = cfg.Bind(ConfigConst.ConfigSectionVoiceRecognition,
-                                            "Enable bot Voice Recognition",
+                                            "Enable bot Voice Recognition (Client only)",
                                             defaultValue: true,
                                             "Should the bots be able to hear what you say in voice chat. (It would only be used for the voice commands!)");
 
             VoiceRecognitionSimilarityThreshold = cfg.Bind(ConfigConst.ConfigSectionVoiceRecognition,
-                                                           "The level of accuracy used when assessing what is said in the voice chat.",
+                                                           "Voice recognition similarity threshold (Client only)",
                                                            defaultValue: 0.8f,
                                                            new ConfigDescription("This is the level of accuracy that would be used by PySpeech when the bot attempts to determine if the given message was a valid chat command. (Higher numbers means a higher level of accuracy is needed!)", 
                                                                             new AcceptableValueRange<float>(0.0f, 1.0f)));

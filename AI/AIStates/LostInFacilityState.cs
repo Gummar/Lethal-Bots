@@ -12,6 +12,7 @@ namespace LethalBots.AI.AIStates
     public class LostInFacilityState : AIState
     {
         private Coroutine searchingWanderCoroutine = null!;
+        private float findEntranceTimer;
         public LostInFacilityState(AIState oldState) : base(oldState)
         {
             CurrentState = EnumAIStates.LostInFacility;
@@ -62,18 +63,27 @@ namespace LethalBots.AI.AIStates
                 return;
             }
 
-            // If there is an entrance we can path to, we will change state to exit the facility
-            EntranceTeleport? potentalExit = FindClosestEntrance();
-            if (potentalExit != null)
+            // If there is an entrance we can path to, we will change state to exit the facility\
+            if (findEntranceTimer > Const.FLEEING_UPDATE_ENTRANCE)
             {
-                ChangeBackToPreviousState();
-                return;
+                findEntranceTimer = 0f;
+                EntranceTeleport? potentalExit = FindClosestEntrance();
+                if (potentalExit != null)
+                {
+                    ChangeBackToPreviousState();
+                    return;
+                }
+            }
+            else
+            {
+                findEntranceTimer += ai.AIIntervalTime; // Don't do this every frame, we could lag the game if we do!
             }
 
             // Find a door that might help us escape!!!!
             DoorLock? lockedDoor = ai.UnlockDoorIfNeeded(200f, false);
             if (lockedDoor != null)
             {
+                findEntranceTimer = float.MaxValue; // Make sure we check as soon as we finish!
                 ai.State = new UseKeyOnLockedDoorState(this, lockedDoor);
                 return;
             }

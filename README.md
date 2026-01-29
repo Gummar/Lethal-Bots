@@ -100,6 +100,13 @@ Note: The bot will also respond to commands on the signal translator, but there 
 </br>**return** - The bot will return to the ship immediately.
 </br>**jester** - The bot will check to see if there is an active jester, if there is, they will try to escape the facility immediately.
 
+### Global Chat Commands
+These chat commands are global meaning bots will always respond to these commands even if they can't normally hear you.
+Please note that these commands are not case sensitive, so you can use any combination of upper and lower case letters.
+</br>**i will man the ship** - If you say this command, you will be marked as the Mission Controller. The previous Bot that was set as Mission Controller will hand the terminal to you. No other bots wil be allowed to automatically assume the Mission Control role unless one of the following things happen:
+1. You die
+2. The day ends
+
 ## How the bots work
 The bots take one of the player objects in the game and I attach an EnemyAI to it for the pathfinding code.
 </br>As a result, the game considers the bots as a human player for most intents and purposes, although there are some hacks added since the game runs most of its player logic on the client/local player only.
@@ -169,7 +176,7 @@ NOTE: All players, "humans and bots," must be on the ship before the bot will vo
 </br>MissionControl
 </br>The bot will use the ship terminal and monitor the ship's crew while executing commands on the terminal as well as teleporting players as needed.
 </br>Here is what the bot can do while on the terminal!
-- Use commands to open heavy doors, turn off turrets, disable landmines, and disable ceiling traps // NOTE: For some reason, they don't seem to be able to disable ceiling traps, I'm looking into this
+- Use commands to open heavy doors, turn off turrets, disable landmines, and disable ceiling traps
 - Open heavy doors for the player they are currently monitoring
 - Teleport bodies of dead players
 - Teleport players who they considered in grave danger

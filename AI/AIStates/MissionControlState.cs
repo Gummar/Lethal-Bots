@@ -123,10 +123,7 @@ namespace LethalBots.AI.AIStates
             if (LethalBotManager.Instance.MissionControlPlayer != npcController.Npc 
                 || StartOfRound.Instance.shipIsLeaving)
             {
-                if (npcController.Npc.inTerminalMenu)
-                {
-                    ai.LeaveTerminal();
-                }
+                GetOffTerminal();
                 if (StartOfRound.Instance.shipIsLeaving)
                 {
                     LethalBotManager.Instance.MissionControlPlayer = null;
@@ -526,7 +523,7 @@ namespace LethalBots.AI.AIStates
                     }
 
                     // Beam them up Scotty!
-                    yield return TryTeleportPlayer();
+                    yield return TryTeleportPlayer(skipPostCheck: true);
                     continue;
                 }
 
@@ -1009,6 +1006,12 @@ namespace LethalBots.AI.AIStates
                 return true;
             }
 
+            // This host has disabled rescuing players if they are in danger.
+            if (!Plugin.Config.AllowMissionControlTeleport.Value)
+            {
+                return false;
+            }
+
             // TODO: Put this behind a config option incase players don't want this!
             // NEEDTOVALIDATE: Should I make it where the bot waits for the player to spin
             // or shake their camera instead?
@@ -1028,6 +1031,14 @@ namespace LethalBots.AI.AIStates
                             if (player.criticallyInjured)
                             {
                                 return true;
+                            }
+
+                            // They are probably fighting an enemy, leave them alone!
+                            LethalBotAI? isPlayerBot = LethalBotManager.Instance.GetLethalBotAI(player);
+                            bool hasRangedWeapon = isPlayerBot?.HasRangedWeapon() ?? false; // NOTE: hasRangedWeapon has no effect for human players in CanEnemyBeKilled
+                            if (LethalBotAI.CanEnemyBeKilled(spawnedEnemy, hasRangedWeapon, isPlayerBot == null) && DoesPlayerHaveWeaponInInventory(player))
+                            {
+                                return false;
                             }
 
                             // They are the one being targeted!
@@ -1053,6 +1064,31 @@ namespace LethalBots.AI.AIStates
                     }
                 }
             }
+            return false;
+        }
+
+        /// <summary>
+        /// Helper function that checks if the given player has a weapon in their inventory!
+        /// </summary>
+        /// <param name="player">The player to check</param>
+        /// <returns><see langword="true"/> if <paramref name="player"/> has a weapon; otherwise <see langword="false"/></returns>
+        private bool DoesPlayerHaveWeaponInInventory(PlayerControllerB? player)
+        {
+            if (player == null)
+            {
+                return false; 
+            }
+
+            bool isPlayerBot = LethalBotManager.Instance.IsPlayerLethalBot(player);
+            foreach (var weapon in player.ItemSlots)
+            {
+                if (LethalBotAI.IsItemWeapon(weapon) 
+                    || (!isPlayerBot && weapon != null && weapon.itemProperties.isDefensiveWeapon))
+                {
+                    return true; 
+                }
+            }
+
             return false;
         }
 
@@ -1466,7 +1502,8 @@ namespace LethalBots.AI.AIStates
                     PlayerControllerB? hostPlayer = LethalBotManager.HostPlayerScript;
                     if (hostPlayer == null
                         || hostPlayer == playerWhoSentMessage
-                        || hostPlayer.isPlayerDead)
+                        || hostPlayer.isPlayerDead 
+                        || !Plugin.Config.StartShipChatCommandProtection.Value)
                     {
                         if (LethalBotManager.AreWeAtTheCompanyBuilding())
                         {
@@ -1478,11 +1515,15 @@ namespace LethalBots.AI.AIStates
                         }
                         playerRequestLeave = true;
                     }
+                    else
+                    {
+                        ai.SendChatMessage($"Sorry {playerWhoSentMessage.playerUsername}, but only the captain can tell me to start the ship!");
+                    }
                 }
                 // A player is requesting we monitor them
                 else if (message.Contains("request monitoring"))
                 {
-                    ai.SendChatMessage("Roger, I will only monitor you.");
+                    ai.SendChatMessage($"Roger, I will only monitor you, {playerWhoSentMessage.playerUsername}.");
                     monitoredPlayer = playerWhoSentMessage;
                 }
                 // The player wants to stop being monitored
@@ -1519,6 +1560,7 @@ namespace LethalBots.AI.AIStates
                     // FIXME: There has to be a better way to do this!
                     int transmitIndex = message.IndexOf(Const.TRANSMIT_KEYWORD) + Const.TRANSMIT_KEYWORD_LENGTH;
                     string messageToTransmit = message.Substring(transmitIndex).Trim();
+                    ai.SendChatMessage($"Alright, I will relay, {messageToTransmit} to the rest of the crew.");
 
                     // Queue the message to be sent!
                     SendMessageUsingSignalTranslator(messageToTransmit, MessagePriority.High);

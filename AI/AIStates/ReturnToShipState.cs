@@ -19,8 +19,8 @@ namespace LethalBots.AI.AIStates
     /// </summary>
     public class ReturnToShipState : AIState
     {
-        private Transform targetShipTransform; // The transform on the ship we want to go to
-        private Vector3 targetShipPos; // The point of the transform on the ship we want to go to
+        private Transform? targetShipTransform; // The transform on the ship we want to go to
+        private Vector3? targetShipPos; // The point of the transform on the ship we want to go to
         private Vector3 targetEntrancePos; // The position we want to path to reach the entrance!
         private bool attemptedToUseTZP = false;
         private bool endIfOutside;
@@ -33,7 +33,8 @@ namespace LethalBots.AI.AIStates
             this.endIfOutside = endIfOutside;
 
             // Lets pick a random node on the ship to go to
-            targetShipTransform = GetRandomInsideShipTransform();
+            targetShipTransform = GetRandomInsideShipTransform(false);
+            targetShipPos = null;
         }
 
         public ReturnToShipState(LethalBotAI ai, bool endIfOutside = false, AIState? changeToOnEnd = null) : base(ai, changeToOnEnd)
@@ -42,7 +43,8 @@ namespace LethalBots.AI.AIStates
             this.endIfOutside = endIfOutside;
 
             // Lets pick a random node on the ship to go to
-            targetShipTransform = GetRandomInsideShipTransform();
+            targetShipTransform = GetRandomInsideShipTransform(false);
+            targetShipPos = null;
         }
 
         public override void OnEnterState()
@@ -229,6 +231,19 @@ namespace LethalBots.AI.AIStates
                     return;
                 }
 
+                // If our target ship transform is invalid, find another one!
+                if (this.targetShipTransform == null)
+                {
+                    targetShipTransform = GetRandomInsideShipTransform();
+                }
+
+                // Wait until we actually get a position to walk back to!
+                Vector3? targetShipPos = this.GetTargetShipPos();
+                if (!targetShipPos.HasValue)
+                {
+                    return;
+                }
+
                 // If we have TZP we should attempt to use to speed up our return trip if needed!
                 if (!attemptedToUseTZP)
                 {
@@ -241,7 +256,7 @@ namespace LethalBots.AI.AIStates
                 }
 
                 // Keep moving towards the ship!
-                float sqrMagDistanceToShip = (this.GetTargetShipPos() - npcController.Npc.transform.position).sqrMagnitude;
+                float sqrMagDistanceToShip = (targetShipPos.Value - npcController.Npc.transform.position).sqrMagnitude;
                 if (sqrMagDistanceToShip >= Const.DISTANCE_TO_CHILL_POINT * Const.DISTANCE_TO_CHILL_POINT)
                 {
                     // Find a safe path to the ship
@@ -348,7 +363,7 @@ namespace LethalBots.AI.AIStates
             return desiredDrunkness;
         }
 
-        private Transform GetRandomInsideShipTransform()
+        private Transform? GetRandomInsideShipTransform(bool allowFallback = true)
         {
             // Lets pick a random node on the ship to go to
             List<Transform> ourShip = StartOfRound.Instance.insideShipPositions.ToList();
@@ -367,6 +382,12 @@ namespace LethalBots.AI.AIStates
                 }
             }
 
+            // Makes this function return null instead of the middle of the ship!
+            if (!allowFallback)
+            {
+                return null;
+            }
+
             Plugin.LogError($"Bot {npcController.Npc.playerUsername} failed to find a valid position on the ship to return to! Falling back to middleOfShipNode");
             return StartOfRound.Instance.middleOfShipNode;
         }
@@ -377,9 +398,15 @@ namespace LethalBots.AI.AIStates
         /// <remarks>
         /// The position is cached and only updated every <see cref="Const.TIMER_CHECK_EXPOSED"/> seconds.
         /// </remarks>
-        /// <returns>A <see cref="Vector3"/> representing the most recently determined position of the target ship.</returns>
-        private Vector3 GetTargetShipPos()
+        /// <returns>A <see cref="Vector3?"/> representing the most recently determined position of the target ship.</returns>
+        private Vector3? GetTargetShipPos()
         {
+            // No transform, no pos!
+            if (this.targetShipTransform == null)
+            {
+                return null;
+            }
+
             // Update the ship position every so often in case the ship moved!
             if ((Time.timeSinceLevelLoad - shipPositionUpdateTimer) < Const.TIMER_CHECK_EXPOSED)
             {

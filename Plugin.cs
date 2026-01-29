@@ -99,6 +99,7 @@ namespace LethalBots
         internal static bool IsModLethalInternsLoaded = false;
         internal static bool IsModFacilityMeltdownLoaded = false;
         internal static bool IsModNavmeshInCompanyLoaded = false;
+        internal static bool IsModReservedItemSlotCoreLoaded = false;
         private readonly Harmony _harmony = new(ModGUID);
 
         private void Awake()
@@ -231,8 +232,11 @@ namespace LethalBots
             _harmony.PatchAll(typeof(TurretPatch));
 
             // Map
+            _harmony.PatchAll(typeof(AnimatedObjectFloatSetterPatch));
+            _harmony.PatchAll(typeof(CompanyMonsterCollisionDetectPatch));
             _harmony.PatchAll(typeof(DoorLockPatch));
             _harmony.PatchAll(typeof(InteractTriggerPatch));
+            _harmony.PatchAll(typeof(OutOfBoundsTriggerPatch));
             _harmony.PatchAll(typeof(ShipTeleporterPatch));
             _harmony.PatchAll(typeof(VehicleControllerPatch));
             _harmony.PatchAll(typeof(DepositItemsDeskPatch));
@@ -263,12 +267,12 @@ namespace LethalBots
             IsModLethalInternsLoaded = IsModLoaded(Const.LETHALINTERNS_GUID);
             IsModFacilityMeltdownLoaded = IsModLoaded(Const.FACILITYMELTDOWN_GUID);
             IsModNavmeshInCompanyLoaded = IsModLoaded(Const.NAVMESHINCOMPANY_GUID);
-            
+            IsModReservedItemSlotCoreLoaded = IsModLoaded(Const.RESERVEDITEMSLOTCORE_GUID);
+
             bool isModMoreEmotesLoaded = IsModLoaded(Const.MOREEMOTES_GUID);
             bool isModBetterEmotesLoaded = IsModLoaded(Const.BETTEREMOTES_GUID);
             bool isModLethalPhonesLoaded = IsModLoaded(Const.LETHALPHONES_GUID);
             bool isModShowCapacityLoaded = IsModLoaded(Const.SHOWCAPACITY_GUID);
-            bool isModReservedItemSlotCoreLoaded = IsModLoaded(Const.RESERVEDITEMSLOTCORE_GUID);
             bool isModLethalProgressionLoaded = IsModLoaded(Const.LETHALPROGRESSION_GUID);
             bool isModLCAlwaysHearWalkieModLoaded = IsModLoaded(Const.LCALWAYSHEARWALKIEMOD_GUID);
             bool isModButteryFixesLoaded = IsModLoaded(Const.BUTTERYFIXES_GUID);
@@ -305,6 +309,7 @@ namespace LethalBots
                                null,
                                null,
                                new HarmonyMethod(typeof(BetterEmotesPatch), nameof(BetterEmotesPatch.PerformEmotePrefix_Transpiler)));
+                _harmony.PatchAll(typeof(BetterEmotesCustomAnimationObjectsPatch));
             }
             if (IsModTooManyEmotesLoaded)
             {

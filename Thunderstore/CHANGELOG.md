@@ -1,5 +1,78 @@
 # Changelog
 
+## 2.1.0 - 2026-1-28
+It was brought to my attention that multiplayer use with the bots had some issues. I have been working with the community on the both GitHub and Discord to find and fix these desync issues that were happening. I have also added some requested configuration options and much needed AI adjustments. Anyway, on to patch notes!
+
+## Animation & Networking
+- Fixed multiple animation networking issues that caused bots to slide or fail to animate on non-owning clients.
+  - Corrected handling of animation slot 0 and animation hash layers.
+  - Resolved issues where IsMoving returned false due to non-networked movement data.
+- The animation culling system, to be honest, is a waste of CPU resources. Unlike Lethal Internship the bots only take up open player slots. This means if your PC can handle 16 animated players, then your PC can handle 16 bots. (NOTE: Not 1:1, but you should hopefully get what I mean) The animation culling system also created many animation desync issues with other players, so I have just decided to retire it.
+- Removed CutAnimations, it was causing more issues than optimzations it gave.
+- Fixed emote-related errors, including BetterEmotes compatibility and preventing emote spam when idle.
+- Fixed a base game item desync bug
+There is a bug in the base game when first opening a lobby that clients that join don't update the in-ship status of items. This causes bots to pickup items in the ship because they think said item is "outside" of the ship.
+
+## Mission Control State Improvements
+- Fixed multiple logic errors:
+  - Bots now correctly teleport players who request it
+  - Added AllowMissionControlTeleport config option, if AllowMissionControlTeleport is set to false, bots will no longer teleport players or bots they consider in danger. There is ONE exception to this, if the player is in an animation with an enemy, for example Forest Giants eating the player!
+  - Mission Controller bots no longer teleport armed players fighting an enemy unless critically injured.
+- Added new mission control-related config and chat command:
+  - StartShipChatCommandProtection: If set to false, non-host clients can tell the Mission Controller bot to start the ship. By default this is true, making it so only the host can tell the bot to start the ship. Regardless if this setting is true or false, bots will allow non-host clients to use this chat command if the host is dead!
+  - AutoMissionControl: if true, bots will be allowed to assume the mission control state if the current mission controller is not set or dead. If false, bots will not be allowed to assume the mission control position.
+  - Added new chat command "i will man the ship", this tells all bots that the player who said this will be the mission controller. THIS WORKS FOR HUMAN PLAYERS! Good for if you want AutoMissionControl true, but a human player wants the role!
+- Bots in the ChillAtShip state will no longer auto-follow the player assigned as Mission Controller.
+
+## General AI, Movement, & Pathfinding Improvements
+- Fixed several AI logic and pathfinding issues:
+  - Improved safe path handling and stuck detection.
+  - Prevented NavMeshAgents from being disabled during safe path usage.
+  -  Changed the bot movement system to be more the one players use. This also fixes a bug where bots would move slower or even spin in place with low FPS!
+- Added some new helpers and improvements:
+  - Added IsHeadAimingOnTarget helper to LookAtTarget class
+  - Added RegisterCustomThreats to LethalBotManager This makes it easier for modders to add custom fear ranges and functions for bots.
+  - Added AIState.IsSafePathRunning, allows me to check if the safePathCoroutine is running on a state
+  - The static version of LethalBotAI.IsValidPathToTarget can now return path distance. Don't know why I forgot to add that in the first place......
+  - Made the instance version of LethalBotAI.IsValidPathToTarget's logs a bit better and changed its code to be more consitent with how the base game does path checks.
+
+## Return To Ship State improvements
+- Fixed entrance detection and return-to-ship logic, bots should no longer only pick the middle of the ship when returning.
+- Bots will now return to the ship if the ~~company~~ is attacking when selling.
+- Added another config option ReturnToShipTime, determines what time should bots automatically return to the ship. This has to be a normalized value. TIP: 10:00 PM is about 0.9f and the time the ship auto leaves at is 0.996f!
+
+## Item Interaction & Inventory
+- Fixed player controller ownership being on the wrong client and desync issues when bots pick up or drop items.
+- Bots now ignore unspawned network objects when searching for items.
+- Fixed a logic error in FetchingObjectState. 
+When checking if an object could be picked up bots would check their current position rather than their camera position like the base game. This caused the bots to fail to pickup high up items that were reachable.
+- Fixed blacklist logic to prevent bots from grabbing dangerous or forbidden items (e.g., Giant Sapsucker eggs while parent is alive).
+- Added config option GrabDockedApparatus: If set to false, bots will no longer be allowed to pull the apparatus. Bots will still be able to pick them up if a human player decides to pull the apparatus themselves.
+ - Bots will no longer grab extension ladders unless they returning to the ship at the end of the day and they are not actively deployed.
+
+## Reserved Item Slots && Hotbar Plus Support
+- Bots will no longer reset their inventory size back to the default value of 4. They will now allow other mods to adjust their inventory size!
+- Bots have a basic understanding of how Reserved Item Slots works. When they pickup items they will automatedly check if they can put it into its respective reserved item slot. Bots are also able to use items in reserved item slots.
+- Special thanks to https://github.com/cmooref17 for adjusting parts of their mod I needed to make this happen.
+
+## Fight Enemy State && Company Building fixes
+- Fixed a rare issue where bots could forget how to use their weapon.
+- Fixed a rare bug where bots fail to stop using their held item, this would make the bot unable to swap to its chosen weapon!
+- Fixed bots being unabled to use the zap gun in some cases.
+- Bots are hopefully better at aiming weapons they are attempting to use
+FightEnemyState had a rare issue where bots would fail to stop using their held item. This has been fixed.
+- Bots can now trigger AnimatedObjectFloatSetters and OutOfBoundsTriggers. These triggers are commonly used to kill players!
+- Fixed the company killing the local player when colliding with bots.
+
+## Miscellaneous
+- Added SwitchToItemSlot prefix for bots and cleaned up unused PlayerControllerB patches.
+- Removed outdated comments and unused code.
+- Multiple minor backend optimizations and stability fixes.
+- Fixed non-host clients attempting to update player counts at the end of the round. A warning would be logged, but nothing would happen due to my failsafe code!
+- Put CountAliveAndDisableLethalBots in a try catch statement to make sure bots are cleared even if an error occurs!
+- Fixed bot voice chat not respecting the default volume set in the Identity file
+- Updated NpcControler.ForceTurnTowardsTarget to be more in line with how PlayerControllerB.ForceTurnTowardsTarget is.
+
 ## 2.0.0 - 2026-1-16
 Hello and welcome the the first **MAJOR** patch of Lethal Bots! Please do note that you **MUST** update your custom identity config files. If not, many errors may occur! Ok, now onto the changes!
 

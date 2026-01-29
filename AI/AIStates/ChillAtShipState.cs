@@ -98,7 +98,8 @@ namespace LethalBots.AI.AIStates
                 // If there is no mission controller, or its dead, we should be it!
                 else if (!StartOfRound.Instance.shipIsLeaving)
                 {
-                    if (missionController == null || !missionController.isPlayerControlled || missionController.isPlayerDead)
+                    if ((missionController == null || !missionController.isPlayerControlled || missionController.isPlayerDead) 
+                        && Plugin.Config.AutoMissionControl.Value)
                     {
                         LethalBotManager.Instance.MissionControlPlayer = npcController.Npc;
                         canInverseTeleport = false;
@@ -170,7 +171,7 @@ namespace LethalBots.AI.AIStates
 
                 // Try to find the closest player to target
                 PlayerControllerB? player = ai.CheckLOSForClosestPlayer(Const.LETHAL_BOT_FOV, Const.LETHAL_BOT_ENTITIES_RANGE, (int)Const.DISTANCE_CLOSE_ENOUGH_HOR);
-                if (player != null) // new target
+                if (player != null && player != LethalBotManager.Instance.MissionControlPlayer) // new target
                 {
                     // Don't compromise the ship by being loud!
                     if (!ai.CheckProximityForEyelessDogs())

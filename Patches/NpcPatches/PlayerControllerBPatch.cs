@@ -330,6 +330,26 @@ namespace LethalBots.Patches.NpcPatches
         }
 
         /// <summary>
+        /// Patch to call our SwitchToItemSlot method!
+        /// </summary>
+        /// <param name="__instance"></param>
+        /// <param name="slot"></param>
+        /// <param name="fillSlotWithItem"></param>
+        /// <returns></returns>
+        [HarmonyPatch("SwitchToItemSlot")]
+        [HarmonyPrefix]
+        static bool SwitchToItemSlot_Prefix(PlayerControllerB __instance, int slot, GrabbableObject fillSlotWithItem = null!)
+        {
+            LethalBotAI? lethalBotAI = LethalBotManager.Instance.GetLethalBotAI(__instance);
+            if (lethalBotAI != null)
+            {
+                lethalBotAI.SwitchToItemSlot(slot, fillSlotWithItem);
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
         /// Patch to call the drop item method on the bot rather than the player
         /// </summary>
         /// <param name="__instance"></param>
@@ -440,53 +460,6 @@ namespace LethalBots.Patches.NpcPatches
                 __instance.currentTriggerInAnimationWith.StopSpecialAnimation();
             }
             return false;
-        }
-
-        /// <summary>
-        /// Patch for player to be able to take item from lethalBot if pointing at item held in hands,<br/>
-        /// makes the lethalBot drop and immediately grab by the player
-        /// </summary>
-        /// <returns></returns>
-        [HarmonyPatch("BeginGrabObject")]
-        [HarmonyPrefix]
-        static bool BeginGrabObject_PreFix(PlayerControllerB __instance,
-                                           ref Ray ___interactRay,
-                                           ref RaycastHit ___hit,
-                                           ref int ___interactableObjectsMask)
-        {
-            ___interactRay = new Ray(__instance.gameplayCamera.transform.position, __instance.gameplayCamera.transform.forward);
-            if (Physics.Raycast(___interactRay, out ___hit, __instance.grabDistance, ___interactableObjectsMask)
-                && ___hit.collider.gameObject.layer != 8
-                && ___hit.collider.tag == "PhysicsProp")
-            {
-                GrabbableObject grabbableObject = ___hit.collider.transform.gameObject.GetComponent<GrabbableObject>();
-                if (grabbableObject == null)
-                {
-                    // Quit and continue original method
-                    return true;
-                }
-
-                if (!grabbableObject.isHeld)
-                {
-                    // Quit and continue original method
-                    return true;
-                }
-
-                LethalBotAI? lethalBotAI = LethalBotManager.Instance.GetLethalBotAiOwnerOfObject(grabbableObject);
-                if (lethalBotAI == null)
-                {
-                    // Quit and continue original method
-                    Plugin.LogDebug($"no lethalBot found who hold item {grabbableObject.name}");
-                    return true;
-                }
-
-                // FIXME: Make sure the player has room for the item!
-                Plugin.LogDebug($"lethalBot {lethalBotAI.NpcController.Npc.playerUsername} drop item {grabbableObject.name} before grab by player");
-                grabbableObject.isHeld = false;
-                lethalBotAI.DropItem();
-            }
-
-            return true;
         }
 
         /// <summary>
